@@ -337,7 +337,7 @@ class App extends React.Component {
     try{
       const web3 = this.state.web3;
       console.log(web3.utils.toBN(web3.utils.toHex(e.target.value)).toString())
-      let dna = web3.utils.toBN(web3.utils.toHex(e.target.value)).toString().replace(".","").substring(0,21);
+      let dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value))).toString().replace(".","").substring(0,21);
       console.log(dna.length)
       if(dna.length < 21){
         for(let i = 0; i < (40 - dna.length);i++){
