@@ -35,6 +35,7 @@ import Avatar from 'avataaars';
 
 import ERC721 from './contracts/ItemsERC721.json'
 
+
 /*
 const ipfs = new IPFS({
   host: "ipfs.infura.io",
@@ -42,6 +43,7 @@ const ipfs = new IPFS({
   protocol: "https",
 });
 */
+
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
@@ -62,8 +64,8 @@ class App extends React.Component {
     mouth: ["Concerned", "Default", "Disbelief", "Eating", "Grimace", "Sad", "ScreamOpen", "Serious", "Smile", "Tongue", "Twinkle"],
     skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"],
     savedBlobs: [],
-    allNAvatars: [],
-    yourNAvatars: [],
+    allHashAvatars: [],
+    yourHashAvatars: [],
 
   }
   constructor(props){
@@ -98,6 +100,8 @@ class App extends React.Component {
       }
     });
 
+
+
   }
 
   initWeb3 = async () => {
@@ -110,7 +114,7 @@ class App extends React.Component {
         web3 = new Web3(window.ethereum);
         coinbase = await web3.eth.getCoinbase();
       } else {
-        if(window.location.href.includes("&rinkeby")){
+        if(window.location.href.includes("?rinkeby")){
           web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
         } else {
           web3 = new Web3("https://bsc-dataseed.binance.org/")
@@ -124,7 +128,7 @@ class App extends React.Component {
       } else if(netId === 4){
         itoken = new web3.eth.Contract(ERC721.abi, ERC721.rinkeby);
       } else if(netId === 56){
-        itoken = new web3.eth.Contract(ERC721.abi, ERC721.binance);
+        itoken = new web3.eth.Contract(ERC721.abi, ERC721.xdai);
       }
 
       let address = window.location.search.split('?address=')[1];
@@ -194,14 +198,37 @@ class App extends React.Component {
   mint = async () => {
 
     try{
+      if(this.state.avatar.name.replace(/ /g, '') === "" || !this.state.avatar.name){
+        return;
+      }
+      let cont = true;
+      let dnaNotUsed = true;
+      this.state.allHashAvatars.map(string => {
+        const obj = JSON.parse(string);
+        if(obj.metadata.name === this.state.avatar.name) {
+          cont = false
+        }
+        if(obj.metadata.dna === this.state.avatar.dna) {
+          cont = false
+        }
+      });
+      if(!cont){
+        alert("HashAvatar with that name already claimed");
+        return;
+      }
+      if(!dnaNotUsed){
+        let approve = window.confirm("HashAvatar with same image (DNA) was already claimed, would you like to mint it?");
+        if(!approve){
+          return;
+        }
+      }
       const ipfs = this.state.ipfs;
-      const lastTokenId = Number(await this.state.itoken.methods.totalSupply().call());
-      const tokenId = lastTokenId + 1;
-      const imgres = await ipfs.add(ReactDOMServer.renderToString(<Avatar {...this.state.avatar} />));
+      const imgres = await ipfs.add(this.state.svg);
+      console.log(imgres[0].hash)
       let metadata = {
           name: this.state.avatar.name,
           image: `ipfs://${imgres[0].hash}`,
-          external_url: ``,
+          external_url: `https://thehashavatars.com`,
           description: "Generate and mint you own avatar as NFT",
           attributes: [
             {
@@ -254,9 +281,11 @@ class App extends React.Component {
             },
           ]
       }
+      console.log(metadata)
       const res = await ipfs.add(JSON.stringify(metadata));
       //const uri = res[0].hash;
       const uri = res[0].hash;
+      console.log(uri);
       await this.state.itoken.methods.mint(this.state.coinbase, uri).send({
         from: this.state.coinbase,
         value: 10 ** 18
@@ -317,12 +346,12 @@ class App extends React.Component {
       }
 
       const owner = await this.state.itoken.methods.ownerOf(res.returnValues.tokenId).call();
-      if(owner.toLowerCase() === this.state.coinbase.toLowerCase() && !this.state.yourNAvatars.includes(JSON.stringify(obj))){
-        this.state.yourNAvatars.unshift(JSON.stringify(obj));
+      if(owner.toLowerCase() === this.state.coinbase.toLowerCase() && !this.state.yourHashAvatars.includes(JSON.stringify(obj))){
+        this.state.yourHashAvatars.unshift(JSON.stringify(obj));
         await this.forceUpdate();
       }
-      if (!this.state.allNAvatars.includes(JSON.stringify(obj))) {
-        this.state.allNAvatars.unshift(JSON.stringify(obj));
+      if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
+        this.state.allHashAvatars.unshift(JSON.stringify(obj));
         await this.forceUpdate();
       }
 
@@ -346,70 +375,82 @@ class App extends React.Component {
       }
       dna = dna.substring(0,21);
       console.log(dna);
-      let topIndex = (Number(dna.substring(0,1)) % 34 + 1).toFixed(0);
+      let topIndex = (Number(dna.substring(0,1)) % 35 + 1).toFixed(0);
       console.log(topIndex)
       if(topIndex > this.state.top.length - 1){
         topIndex = topIndex - (this.state.top.length - 1)*(topIndex/(this.state.top.length - 1));
       }
-      let accessoriesIndex = (Number(dna.substring(2,3)) % 5 + 1).toFixed(0);
+      let accessoriesIndex = (Number(dna.substring(2,3)) % 6 + 1).toFixed(0);
       if(accessoriesIndex > this.state.accessories.length - 1){
         accessoriesIndex = accessoriesIndex - (this.state.accessories.length - 1)*(accessoriesIndex/(this.state.accessories.length - 1));
       }
-      let hairColorIndex = (Number(dna.substring(4,5)) % 8 + 1).toFixed(0);
+      let hairColorIndex = (Number(dna.substring(4,5)) % 9 + 1).toFixed(0);
       if(hairColorIndex > this.state.hairColor.length - 1){
         hairColorIndex = hairColorIndex - (this.state.hairColor.length - 1)*(hairColorIndex/(this.state.hairColor.length - 1));
       }
-      let facialHairIndex = (Number(dna.substring(6,7)) % 5 + 1).toFixed(0);
+      let facialHairIndex = (Number(dna.substring(6,7)) % 6 + 1).toFixed(0);
       if(facialHairIndex > this.state.facialHair.length - 1){
         facialHairIndex = facialHairIndex - (this.state.facialHair.length - 1)*(facialHairIndex/(this.state.facialHair.length - 1));
       }
-      let facialHairColorIndex = (Number(dna.substring(8,9)) % 6 + 1).toFixed(0);
+      let facialHairColorIndex = (Number(dna.substring(8,9)) % 7 + 1).toFixed(0);
       if(facialHairColorIndex > this.state.facialHairColor.length - 1){
         facialHairColorIndex = facialHairColorIndex - (this.state.facialHairColor.length - 1)*(facialHairColorIndex/(this.state.facialHairColor.length - 1));
       }
-      let clotheIndex = (Number(dna.substring(10,11)) % 7 + 1).toFixed(0);
+      let clotheIndex = (Number(dna.substring(10,11)) % 8 + 1).toFixed(0);
       if(clotheIndex > this.state.clothes.length - 1){
         clotheIndex = clotheIndex - (this.state.clothes.length - 1)*(clotheIndex/(this.state.clothes.length - 1));
       }
-      let clotheColorIndex = (Number(dna.substring(12,13)) % 13 + 1).toFixed(0);
+      let clotheColorIndex = (Number(dna.substring(12,13)) % 14 + 1).toFixed(0);
       if(clotheColorIndex > this.state.clothesColor.length - 1){
         clotheColorIndex = clotheColorIndex - (this.state.clothesColor.length - 1)*(clotheColorIndex/(this.state.clothesColor.length - 1));
       }
-      let eyeTypeIndex = (Number(dna.substring(14,15)) % 13 + 1).toFixed(0);
+      let eyeTypeIndex = (Number(dna.substring(14,15)) % 14 + 1).toFixed(0);
       if(eyeTypeIndex > this.state.eye.length - 1){
         eyeTypeIndex = eyeTypeIndex - (this.state.eye.length - 1)*(eyeTypeIndex/(this.state.eye.length - 1));
       }
-      let eyebrowIndex = (Number(dna.substring(16,17)) % 10 + 1).toFixed(0);
+      let eyebrowIndex = (Number(dna.substring(16,17)) % 11 + 1).toFixed(0);
       if(eyebrowIndex > this.state.eyebrown.length - 1){
         eyebrowIndex = eyebrowIndex - (this.state.eyebrown.length - 1)*(eyebrowIndex/(this.state.eyebrown.length - 1));
       }
-      let mounthTypeIndex = (Number(dna.substring(18,19)) % 10 + 1).toFixed(0);
+      let mounthTypeIndex = (Number(dna.substring(18,19)) % 11 + 1).toFixed(0);
       if(mounthTypeIndex > this.state.mouth.length - 1){
         mounthTypeIndex = mounthTypeIndex - (this.state.mouth.length - 1)*(mounthTypeIndex/(this.state.mouth.length - 1));
       }
-      let skinTypeIndex = (Number(dna.substring(20,21)) % 5 + 1).toFixed(0);
+      let skinTypeIndex = (Number(dna.substring(20,21)) % 6 + 1).toFixed(0);
       if(skinTypeIndex > this.state.skin.length - 1){
         skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
       }
+      const avatar = {
+        avatarStyle: 'Circle',
+        topType: this.state.top[topIndex],
+        accessoriesType: this.state.accessories[accessoriesIndex],
+        hairColor: this.state.hairColor[hairColorIndex],
+        facialHairType: this.state.facialHair[facialHairIndex],
+        facialHairColor:  this.state.facialHairColor[facialHairColorIndex],
+        clotheType: this.state.clothes[clotheIndex],
+        clotheColor : this.state.clothesColor[clotheColorIndex],
+        eyeType: this.state.eye[eyeTypeIndex],
+        eyebrowType: this.state.eyebrown[eyebrowIndex],
+        mounthType: this.state.mouth[mounthTypeIndex],
+        skinColor: this.state.skin[skinTypeIndex],
+        name: e.target.value,
+        dna: dna
+      }
 
-      this.setState({
-        avatar: {
-          avatarStyle: 'Circle',
-          topType: this.state.top[topIndex],
-          accessoriesType: this.state.accessories[accessoriesIndex],
-          hairColor: this.state.hairColor[hairColorIndex],
-          facialHairType: this.state.facialHair[facialHairIndex],
-          facialHairColor:  this.state.facialHairColor[facialHairColorIndex],
-          clotheType: this.state.clothes[clotheIndex],
-          clotheColor : this.state.clothesColor[clotheColorIndex],
-          eyeType: this.state.eye[eyeTypeIndex],
-          eyebrowType: this.state.eyebrown[eyebrowIndex],
-          mounthType: this.state.mouth[mounthTypeIndex],
-          skinColor: this.state.skin[skinTypeIndex],
-          name: e.target.value,
-          dna: dna
-        }
-      });
+      console.log(<Avatar {...avatar} />)
+      console.log(ReactDOMServer.renderToString(<Avatar {...avatar} />))
+
+
+      const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />)
+
+
+      if(this.state.avatar !== avatar) {
+        this.setState({
+          avatar: avatar,
+          svg: svg.replace(/id="(A-z)"/g, '')
+        });
+      }
+
     } catch(err){
       console.log(err)
     }
@@ -423,23 +464,23 @@ class App extends React.Component {
             <ColorModeSwitcher justifySelf="flex-end" />
             <VStack spacing={1} style={{paddingBottom: "100px"}}>
               <Box w="300px"   align="center">
-                <Heading>CryptoAvatars</Heading>
+                <Heading>HashAvatars</Heading>
                 <Avatar {...this.state.avatar} style={{width: "100px"}}/>
                 <Text fontSize="sm" align="left">
-                  <p>The <b>CryptoAvatars</b> are unique Avatars waiting to be claimed by anyone on xDain Chain.</p>
+                  <p>The <b>HashAvatars</b> are unique Avatars waiting to be claimed by anyone on xDain Chain.</p>
                   <br/>
                   <p>Once you mint your avatar, that unique version is only owned by you, not anyone else can mint exactly the same avatar again.</p>
                   <br/>
-                  <p>Choose your preferred CryptoAvatar and start your collection now!</p>
+                  <p>Choose your preferred HashAvatar and start your collection now!</p>
                 </Text>
               </Box>
             </VStack>
             <VStack spacing={8}>
-              <Heading>CryptoAvatars</Heading>
+              <Heading>HashAvatars</Heading>
               <Avatar {...this.state.avatar} />
               <Text>
-                <p>Make your Crypto Avatar and mint it!</p>
-                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange}/>
+                <p>Make your HashAvatar and mint it!</p>
+                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange}/>
                 <Button onClick={this.mint}>Mint</Button>
               </Text>
 
@@ -462,20 +503,22 @@ class App extends React.Component {
                         justifyContent="left"
                       >
                         <Text style={{textAlign: 'left'}} fontSize="md">
-                          <p>Each CryptoAvatar can be minted for 1 xDAI (1 USD), after that you can sell for any price you want. Your collectable can not be replicated or ever destroyed, it will be stored on Blockchain forever.</p>
-                          <p>Choose your preferred CryptoAvatar and start your collection now!</p>
+                          <p>Each HashAvatar can be minted for 1 xDai (1 USD), after that you can sell for any price you want. Your collectable can not be replicated or ever destroyed, it will be stored on Blockchain forever.</p>
+                          <p>Choose your preferred HashAvatar and start your collection now!</p>
                           <br/>
-                          <p>1 xDai = 1 CryptoAvatar</p>
+                          <p>1 xDai = 1 HashAvatar</p>
                           <br/>
-                          <p>The CryptoAvatar is built on xDai Chain, a sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
+                          <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
+                          <p>xDai ERC721 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC721.xdai}`} isExternal>{ERC721.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
+
                           <br/>
                           <p>You can also use it in rinkeby testnetwork to test.</p>
-                          <p>Rinkeby ERC721 at <Link href="https://rinkeby.etherscan.io/address/0xb872f457b5a4d48e89509e82507f672fd4ae600b" isExternal>0xb872f457b5a4d48e89509e82507f672fd4ae600b <ExternalLinkIcon mx="2px" /></Link></p>
+                          <p>Rinkeby ERC721 at <Link href={`https://rinkeby.etherscan.io/address/${ERC721.rinkeby}`} isExternal>{ERC721.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
                           <br/>
                           <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <ExternalLinkIcon mx="2px" /></Link> and can be copied / modified by anyone.</p>
                         </Text>
                         <Center>
-                          <Image boxSize="300px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
+                          <Image boxSize="250px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
                         </Center>
                       </SimpleGrid>
                       </Stack>
@@ -510,7 +553,7 @@ class App extends React.Component {
                               justifyContent="space-between"
                             >
                               <LinkOverlay
-                                style={{ textTransform: 'uppercase', fontWeight: 600 }}
+                                style={{ fontWeight: 600 }}
                                 href={blob.url}
                               >
                                 {blob.metadata.name}
@@ -551,7 +594,7 @@ class App extends React.Component {
                     justifyContent="center"
                   >
                   {
-                    this.state.yourNAvatars?.map((string) => {
+                    this.state.yourHashAvatars?.map((string) => {
                       const blob = JSON.parse(string);
                       return(
                           <LinkBox
@@ -571,7 +614,7 @@ class App extends React.Component {
                               justifyContent="space-between"
                             >
                               <LinkOverlay
-                                style={{ textTransform: 'uppercase', fontWeight: 600 }}
+                                style={{  fontWeight: 600 }}
                                 href={blob.url}
                               >
                                 {blob.metadata.name}
@@ -611,7 +654,7 @@ class App extends React.Component {
                     justifyContent="center"
                   >
                   {
-                    this.state.allNAvatars?.map((string) => {
+                    this.state.allHashAvatars?.map((string) => {
                       const blob = JSON.parse(string);
                       return(
                           <LinkBox
@@ -631,7 +674,7 @@ class App extends React.Component {
                               justifyContent="space-between"
                             >
                               <LinkOverlay
-                                style={{ textTransform: 'uppercase', fontWeight: 600 }}
+                                style={{  fontWeight: 600 }}
                                 href={blob.url}
                               >
                                 {blob.metadata.name}
