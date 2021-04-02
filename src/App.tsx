@@ -1,6 +1,12 @@
 import * as React from "react";
 import ReactDOMServer from 'react-dom/server';
 import {
+  HashRouter as Router,
+  Route,
+  Switch,
+  Redirect
+} from 'react-router-dom';
+import {
   ChakraProvider,
   Box,
   Heading,
@@ -30,19 +36,14 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 import Web3 from 'web3';
 
 import IPFS from 'ipfs-http-client-lite';
-import { ColorModeSwitcher } from "./ColorModeSwitcher"
 import Avatar from 'avataaars';
 
-import ERC721 from './contracts/ItemsERC721.json'
+import ERC1150 from './contracts/ItemsERC1155.json'
+import Nav from './components/Nav';
+import MintPage from './pages/Mint';
+import OwnedAvatars from './pages/OwnedAvatars';
+import AllAvatars from './pages/AllAvatars';
 
-
-/*
-const ipfs = new IPFS({
-  host: "ipfs.infura.io",
-  port: 5001,
-  protocol: "https",
-});
-*/
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
@@ -73,8 +74,7 @@ class App extends React.Component {
     this.randomize = this.randomize.bind(this);
     this.initWeb3 = this.initWeb3.bind(this);
     this.mint = this.mint.bind(this);
-    this.handleEvents = this.handleEvents.bind(this);
-    this.handleEventsAll = this.handleEventsAll.bind(this);
+    this.checkTokens = this.checkTokens.bind(this);
   }
   componentDidMount = async () => {
     this.randomize();
@@ -126,9 +126,9 @@ class App extends React.Component {
       if(netId !== 4 && netId !== 56){
         alert('Connect to xDAI network or Rinkeby testnet');
       } else if(netId === 4){
-        itoken = new web3.eth.Contract(ERC721.abi, ERC721.rinkeby);
+        itoken = new web3.eth.Contract(ERC1150.abi, ERC1150.rinkeby);
       } else if(netId === 56){
-        itoken = new web3.eth.Contract(ERC721.abi, ERC721.xdai);
+        itoken = new web3.eth.Contract(ERC1150.abi, ERC1150.xdai);
       }
 
       let address = window.location.search.split('?address=')[1];
@@ -157,39 +157,11 @@ class App extends React.Component {
         //img: img,
         ipfs:ipfs
       })
-      const lastId = await itoken.methods.totalSupply().call();
-      const promises = [];
-      for(let i = 1;i<=lastId;i++){
-        const res = {
-          returnValues: {
-            tokenId: i
-          }
-        }
-        const owner = await itoken.methods.ownerOf(i).call();
-        if(owner.toLowerCase() === coinbase.toLowerCase()){
-          promises.push(this.handleEvents(null,res))
-        }
-        promises.push(this.handleEventsAll(null,res))
-      }
-      await Promise.all(promises);
-
       this.setState({
         loading: false
       });
-      itoken.events.Transfer({
-        filter: {
-          from: '0x0000000000000000000000000000000000000000',
-          to: address
-        },
-        fromBlock: 'latest'
-      }, this.handleEvents);
 
-      itoken.events.Transfer({
-        filter: {
-          from: '0x0000000000000000000000000000000000000000'
-        },
-        fromBlock: 'latest'
-      }, this.handleEventsAll);
+
     }catch(err){
       console.log(err)
     }
@@ -229,7 +201,7 @@ class App extends React.Component {
           name: this.state.avatar.name,
           image: `ipfs://${imgres[0].hash}`,
           external_url: `https://thehashavatars.com`,
-          description: "Generate and mint you own avatar as NFT",
+          description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
             {
               trait_type: "Top Type",
@@ -286,7 +258,11 @@ class App extends React.Component {
       //const uri = res[0].hash;
       const uri = res[0].hash;
       console.log(uri);
-      await this.state.itoken.methods.mint(this.state.coinbase, uri).send({
+
+      const id = Number(await this.state.itoken.methods.totalSupply().call()) + 1;
+      console.log(id)
+      const fees = [];
+      await this.state.itoken.methods.mint(id,fees,this.state.supply,uri).send({
         from: this.state.coinbase,
         value: 10 ** 18
       });
@@ -295,420 +271,121 @@ class App extends React.Component {
     }
   }
 
-
-  handleEvents = async (err, res) => {
-    try {
-      const web3 = this.state.web3;
-      let uri = await this.state.itoken.methods.tokenURI(res.returnValues.tokenId).call();
-      console.log(uri)
-      if(uri.includes("ipfs://ipfs/")){
-        uri = uri.replace("ipfs://ipfs/", "")
-      } else {
-        uri = uri.replace("ipfs://", "");
-      }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
-      const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
-
-
-      console.log(metadata)
-      const obj = {
-        returnValues: res.returnValues,
-        metadata: metadata
-      }
-      if (!this.state.savedBlobs.includes(JSON.stringify(obj))) {
-        this.state.savedBlobs.unshift(JSON.stringify(obj));
-        await this.forceUpdate();
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  }
-  handleEventsAll = async (err, res) => {
-    try {
-      const web3 = this.state.web3;
-      let uri = await this.state.itoken.methods.tokenURI(res.returnValues.tokenId).call();
-      console.log(uri)
-      if(uri.includes("ipfs://ipfs/")){
-        uri = uri.replace("ipfs://ipfs/", "")
-      } else {
-        uri = uri.replace("ipfs://", "");
-      }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
-      const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
-
-
-      console.log(metadata)
-      const obj = {
-        returnValues: res.returnValues,
-        metadata: metadata
-      }
-
-      const owner = await this.state.itoken.methods.ownerOf(res.returnValues.tokenId).call();
-      if(owner.toLowerCase() === this.state.coinbase.toLowerCase() && !this.state.yourHashAvatars.includes(JSON.stringify(obj))){
-        this.state.yourHashAvatars.unshift(JSON.stringify(obj));
-        await this.forceUpdate();
-      }
-      if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
-        this.state.allHashAvatars.unshift(JSON.stringify(obj));
-        await this.forceUpdate();
-      }
-
-
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  handleOnChange = (e) => {
-    e.preventDefault();
-    try{
-      const web3 = this.state.web3;
-      console.log(web3.utils.toBN(web3.utils.toHex(e.target.value)).toString())
-      let dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value))).toString().replace(".","").substring(0,21);
-      console.log(dna.length)
-      if(dna.length < 21){
-        for(let i = 0; i < (40 - dna.length);i++){
-          dna = dna + "0"
+  checkTokens = async () => {
+    const itoken = this.state.itoken;
+    const lastId = await itoken.methods.totalSupply().call();
+    const results = [];
+    for(let i = 1;i<=lastId;i++){
+      const res = {
+        returnValues: {
+          _id: i,
         }
       }
-      dna = dna.substring(0,21);
-      console.log(dna);
-      let topIndex = (Number(dna.substring(0,1)) % 35 + 1).toFixed(0);
-      console.log(topIndex)
-      if(topIndex > this.state.top.length - 1){
-        topIndex = topIndex - (this.state.top.length - 1)*(topIndex/(this.state.top.length - 1));
-      }
-      let accessoriesIndex = (Number(dna.substring(2,3)) % 6 + 1).toFixed(0);
-      if(accessoriesIndex > this.state.accessories.length - 1){
-        accessoriesIndex = accessoriesIndex - (this.state.accessories.length - 1)*(accessoriesIndex/(this.state.accessories.length - 1));
-      }
-      let hairColorIndex = (Number(dna.substring(4,5)) % 9 + 1).toFixed(0);
-      if(hairColorIndex > this.state.hairColor.length - 1){
-        hairColorIndex = hairColorIndex - (this.state.hairColor.length - 1)*(hairColorIndex/(this.state.hairColor.length - 1));
-      }
-      let facialHairIndex = (Number(dna.substring(6,7)) % 6 + 1).toFixed(0);
-      if(facialHairIndex > this.state.facialHair.length - 1){
-        facialHairIndex = facialHairIndex - (this.state.facialHair.length - 1)*(facialHairIndex/(this.state.facialHair.length - 1));
-      }
-      let facialHairColorIndex = (Number(dna.substring(8,9)) % 7 + 1).toFixed(0);
-      if(facialHairColorIndex > this.state.facialHairColor.length - 1){
-        facialHairColorIndex = facialHairColorIndex - (this.state.facialHairColor.length - 1)*(facialHairColorIndex/(this.state.facialHairColor.length - 1));
-      }
-      let clotheIndex = (Number(dna.substring(10,11)) % 8 + 1).toFixed(0);
-      if(clotheIndex > this.state.clothes.length - 1){
-        clotheIndex = clotheIndex - (this.state.clothes.length - 1)*(clotheIndex/(this.state.clothes.length - 1));
-      }
-      let clotheColorIndex = (Number(dna.substring(12,13)) % 14 + 1).toFixed(0);
-      if(clotheColorIndex > this.state.clothesColor.length - 1){
-        clotheColorIndex = clotheColorIndex - (this.state.clothesColor.length - 1)*(clotheColorIndex/(this.state.clothesColor.length - 1));
-      }
-      let eyeTypeIndex = (Number(dna.substring(14,15)) % 14 + 1).toFixed(0);
-      if(eyeTypeIndex > this.state.eye.length - 1){
-        eyeTypeIndex = eyeTypeIndex - (this.state.eye.length - 1)*(eyeTypeIndex/(this.state.eye.length - 1));
-      }
-      let eyebrowIndex = (Number(dna.substring(16,17)) % 11 + 1).toFixed(0);
-      if(eyebrowIndex > this.state.eyebrown.length - 1){
-        eyebrowIndex = eyebrowIndex - (this.state.eyebrown.length - 1)*(eyebrowIndex/(this.state.eyebrown.length - 1));
-      }
-      let mounthTypeIndex = (Number(dna.substring(18,19)) % 11 + 1).toFixed(0);
-      if(mounthTypeIndex > this.state.mouth.length - 1){
-        mounthTypeIndex = mounthTypeIndex - (this.state.mouth.length - 1)*(mounthTypeIndex/(this.state.mouth.length - 1));
-      }
-      let skinTypeIndex = (Number(dna.substring(20,21)) % 6 + 1).toFixed(0);
-      if(skinTypeIndex > this.state.skin.length - 1){
-        skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
-      }
-      const avatar = {
-        avatarStyle: 'Circle',
-        topType: this.state.top[topIndex],
-        accessoriesType: this.state.accessories[accessoriesIndex],
-        hairColor: this.state.hairColor[hairColorIndex],
-        facialHairType: this.state.facialHair[facialHairIndex],
-        facialHairColor:  this.state.facialHairColor[facialHairColorIndex],
-        clotheType: this.state.clothes[clotheIndex],
-        clotheColor : this.state.clothesColor[clotheColorIndex],
-        eyeType: this.state.eye[eyeTypeIndex],
-        eyebrowType: this.state.eyebrown[eyebrowIndex],
-        mounthType: this.state.mouth[mounthTypeIndex],
-        skinColor: this.state.skin[skinTypeIndex],
-        name: e.target.value,
-        dna: dna
-      }
-
-      console.log(<Avatar {...avatar} />)
-      console.log(ReactDOMServer.renderToString(<Avatar {...avatar} />))
-
-
-      const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />)
-
-
-      if(this.state.avatar !== avatar) {
-        this.setState({
-          avatar: avatar,
-          svg: svg.replace(/id="(A-z)"/g, '')
-        });
-      }
-
-    } catch(err){
-      console.log(err)
+      results.push(res)
     }
+    return(results)
   }
 
   render(){
     return(
+
+      <Router>
       <ChakraProvider theme={theme}>
+        <Box>
+          <Nav />
+        </Box>
         <Box textAlign="center" fontSize="xl">
           <Grid minH="100vh" p={3}>
-            <ColorModeSwitcher justifySelf="flex-end" />
-            <VStack spacing={1} style={{paddingBottom: "100px"}}>
-              <Box w="300px"   align="center">
-                <Heading>HashAvatars</Heading>
-                <Avatar {...this.state.avatar} style={{width: "100px"}}/>
-                <Text fontSize="sm" align="left">
-                  <p>The <b>HashAvatars</b> are unique Avatars waiting to be claimed by anyone on xDain Chain.</p>
-                  <br/>
-                  <p>Once you mint your avatar, that unique version is only owned by you, not anyone else can mint exactly the same avatar again.</p>
-                  <br/>
-                  <p>Choose your preferred HashAvatar and start your collection now!</p>
-                </Text>
-              </Box>
-            </VStack>
-            <VStack spacing={8}>
-              <Heading>HashAvatars</Heading>
-              <Avatar {...this.state.avatar} />
-              <Text>
-                <p>Make your HashAvatar and mint it!</p>
-                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange}/>
-                <Button onClick={this.mint}>Mint</Button>
-              </Text>
+            <Switch>
+              <Route path={"/home"} render={() => {
+                return(
+                  <Box>
+                    <VStack spacing={12}>
+                      <Heading>HashAvatars</Heading>
 
-              <Tabs isFitted variant="enclosed">
-                <TabList mb="1em">
-                  <Tab>Info</Tab>
-                  <Tab>Avatars created by you</Tab>
-                  <Tab>Avatars you own</Tab>
-                  <Tab>List of avatars</Tab>
-                </TabList>
-                <TabPanels>
-
-                  <TabPanel>
-                    <Box>
                       <Stack>
-                      <SimpleGrid
-                        columns={{ sm: 1, md: 2 }}
-                        spacing="40px"
-                        mb="20"
-                        justifyContent="left"
-                      >
-                        <Text style={{textAlign: 'left'}} fontSize="md">
-                          <p>Each HashAvatar can be minted for 1 xDai (1 USD), after that you can sell for any price you want. Your collectable can not be replicated or ever destroyed, it will be stored on Blockchain forever.</p>
-                          <p>Choose your preferred HashAvatar and start your collection now!</p>
-                          <br/>
-                          <p>1 xDai = 1 HashAvatar</p>
-                          <br/>
-                          <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
-                          <p>xDai ERC721 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC721.xdai}`} isExternal>{ERC721.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
+                        <SimpleGrid
+                          columns={{ sm: 1, md: 2 }}
+                          spacing="40px"
+                          mb="20"
+                          justifyContent="left"
+                        >
+                          <Text style={{textAlign: 'left'}} fontSize="md">
+                            <p>Each HashAvatar can be minted for 1 xDai (1 USD), after that you can sell for any price you want. Your collectable can not be replicated or ever destroyed, it will be stored on Blockchain forever.</p>
+                            <p>Choose your preferred HashAvatar and start your collection now!</p>
+                            <br/>
+                            <p>1 xDai = 1 HashAvatar</p>
+                            <br/>
+                            <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
+                            <p>xDai ERC1150 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC1150.xdai}`} isExternal>{ERC1150.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
 
-                          <br/>
-                          <p>You can also use it in rinkeby testnetwork to test.</p>
-                          <p>Rinkeby ERC721 at <Link href={`https://rinkeby.etherscan.io/address/${ERC721.rinkeby}`} isExternal>{ERC721.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
-                          <br/>
-                          <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <ExternalLinkIcon mx="2px" /></Link> and can be copied / modified by anyone.</p>
-                        </Text>
-                        <Center>
-                          <Image boxSize="250px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
-                        </Center>
-                      </SimpleGrid>
+                            <br/>
+                            <p>You can also use it in rinkeby testnetwork to test.</p>
+                            <p>Rinkeby ERC1150 at <Link href={`https://rinkeby.etherscan.io/address/${ERC1150.rinkeby}`} isExternal>{ERC1150.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
+                            <br/>
+                            <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <ExternalLinkIcon mx="2px" /></Link> and can be copied / modified by anyone.</p>
+                          </Text>
+                          <Center>
+                            <Image boxSize="250px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
+                          </Center>
+                        </SimpleGrid>
                       </Stack>
-                    </Box>
-                  </TabPanel>
+                    </VStack>
+                  </Box>
+                  )
+                }
+              }/>
 
-                  <TabPanel>
-                  <SimpleGrid
-                    columns={{ sm: 1, md: 5 }}
-                    spacing="40px"
-                    mb="20"
-                    justifyContent="center"
-                  >
-                  {
-                    this.state.savedBlobs?.map((string) => {
-                      const blob = JSON.parse(string);
-                      return(
-                          <LinkBox
-                            // h="200"
-                            rounded="2xl"
-                            p="5"
-                            borderWidth="1px"
-                            _hover={{ boxShadow: '2xl' }}
-                            role="group"
-                            as={Link}
-                            to={`/token-info/?tokenId=${blob.returnValues.tokenId}`}
-                          >
-                            <Text
-                              fontSize="sm"
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="space-between"
-                            >
-                              <LinkOverlay
-                                style={{ fontWeight: 600 }}
-                                href={blob.url}
-                              >
-                                {blob.metadata.name}
-                              </LinkOverlay>
-                            </Text>
-                            <Divider mt="4" />
-                            {
-                              (
-                                blob.metadata.image.includes('ipfs://') ?
-                                (
-                                  <center>
-                                    <object type="text/html"
-                                    data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                                    width="196px"
-                                    style={{borderRadius: "100px"}}>
-                                    </object>
-                                  </center>
-                                ) :
-                                (
-                                  <center>
-                                    <img src={blob.metadata.image} width='196px' alt=""  style={{borderRadius: "100px"}} />
-                                  </center>
-                                )
-                              )
-                            }
-                          </LinkBox>
-                      )
-                    })
-                  }
-                  </SimpleGrid>
-                  </TabPanel>
-                  <TabPanel>
 
-                  <SimpleGrid
-                    columns={{ sm: 1, md: 5 }}
-                    spacing="40px"
-                    mb="20"
-                    justifyContent="center"
-                  >
-                  {
-                    this.state.yourHashAvatars?.map((string) => {
-                      const blob = JSON.parse(string);
-                      return(
-                          <LinkBox
-                            // h="200"
-                            rounded="2xl"
-                            p="5"
-                            borderWidth="1px"
-                            _hover={{ boxShadow: '2xl' }}
-                            role="group"
-                            as={Link}
-                            to={`/token-info/?tokenId=${blob.returnValues.tokenId}`}
-                          >
-                            <Text
-                              fontSize="sm"
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="space-between"
-                            >
-                              <LinkOverlay
-                                style={{  fontWeight: 600 }}
-                                href={blob.url}
-                              >
-                                {blob.metadata.name}
-                              </LinkOverlay>
-                            </Text>
-                            <Divider mt="4" />
-                            {
-                              (
-                                blob.metadata.image.includes('ipfs://') ?
-                                (
-                                  <center>
-                                    <object type="text/html"
-                                    data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                                    width="196px"
-                                    style={{borderRadius: "100px"}}>
-                                    </object>
-                                  </center>
-                                ) :
-                                (
-                                  <center>
-                                    <img src={blob.metadata.image} width='196px' alt=""  style={{borderRadius: "100px"}} />
-                                  </center>
-                                )
-                              )
-                            }
-                          </LinkBox>
-                      )
-                    })
-                  }
-                  </SimpleGrid>
-                  </TabPanel>
-                  <TabPanel>
-                  <SimpleGrid
-                    columns={{ sm: 1, md: 5 }}
-                    spacing="40px"
-                    mb="20"
-                    justifyContent="center"
-                  >
-                  {
-                    this.state.allHashAvatars?.map((string) => {
-                      const blob = JSON.parse(string);
-                      return(
-                          <LinkBox
-                            // h="200"
-                            rounded="2xl"
-                            p="5"
-                            borderWidth="1px"
-                            _hover={{ boxShadow: '2xl' }}
-                            role="group"
-                            as={Link}
-                            to={`/token-info/?tokenId=${blob.returnValues.tokenId}`}
-                          >
-                            <Text
-                              fontSize="sm"
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="space-between"
-                            >
-                              <LinkOverlay
-                                style={{  fontWeight: 600 }}
-                                href={blob.url}
-                              >
-                                {blob.metadata.name}
-                              </LinkOverlay>
-                            </Text>
-                            <Divider mt="4" />
-                            {
-                              (
-                                blob.metadata.image.includes('ipfs://') ?
-                                (
-                                  <center>
-                                    <object type="text/html"
-                                    data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                                    width="196px"
-                                    style={{borderRadius: "100px"}}>
-                                    </object>
-                                  </center>
-                                ) :
-                                (
-                                  <center>
-                                    <img src={blob.metadata.image} width='196px' alt=""  style={{borderRadius: "100px"}} />
-                                  </center>
-                                )
-                              )
-                            }
-                          </LinkBox>
-                      )
-                    })
-                  }
-                  </SimpleGrid>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
-            </VStack>
+              <Route path={"/created-avatars"} render={() => {
+                  return(
+                    <MintPage
+                      itoken={this.state.itoken}
+                      web3={this.state.web3}
+                      initWeb3={this.initWeb3}
+                      checkTokens={this.checkTokens}
+                      coinbase={this.state.coinbase}
+                      ipfs={ipfs}
+                    />
+                  )
+                }
+              }/>
+
+              <Route path={"/owned-avatars"} render={() => {
+                  return(
+                    <OwnedAvatars
+                      itoken={this.state.itoken}
+                      web3={this.state.web3}
+                      initWeb3={this.initWeb3}
+                      checkTokens={this.checkTokens}
+                      coinbase={this.state.coinbase}
+                    />
+                  )
+                }
+              }/>
+
+              <Route path={"/all-avatars"} render={() => {
+                  return(
+                    <AllAvatars
+                      itoken={this.state.itoken}
+                      web3={this.state.web3}
+                      initWeb3={this.initWeb3}
+                      checkTokens={this.checkTokens}
+                      coinbase={this.state.coinbase}
+                    />
+                  )
+                }
+              }/>
+
+
+              <Route render={() => {
+
+                return(
+                  <Redirect to="/home" />
+                );
+
+              }} />
+            </Switch>
           </Grid>
           <Center my="6">
             <HStack
@@ -721,6 +398,8 @@ class App extends React.Component {
           </Center>
         </Box>
       </ChakraProvider>
+
+      </Router>
     )
   }
 }
