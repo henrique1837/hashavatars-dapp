@@ -38,7 +38,7 @@ import Web3 from 'web3';
 import IPFS from 'ipfs-http-client-lite';
 import Avatar from 'avataaars';
 
-import ERC1150 from './contracts/ItemsERC1155.json'
+import ERC1155 from './contracts/ItemsERC1155.json'
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
 import OwnedAvatars from './pages/OwnedAvatars';
@@ -117,18 +117,18 @@ class App extends React.Component {
         if(window.location.href.includes("?rinkeby")){
           web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
         } else {
-          web3 = new Web3("https://bsc-dataseed.binance.org/")
+          web3 = new Web3("https://rpc.xdaichain.com/")
         }
       }
 
       const netId = await web3.eth.net.getId();
       let itoken;
-      if(netId !== 4 && netId !== 56){
+      if(netId !== 4 && netId !== 0x64){
         alert('Connect to xDAI network or Rinkeby testnet');
       } else if(netId === 4){
-        itoken = new web3.eth.Contract(ERC1150.abi, ERC1150.rinkeby);
-      } else if(netId === 56){
-        itoken = new web3.eth.Contract(ERC1150.abi, ERC1150.xdai);
+        itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
+      } else if(netId === 0x64){
+        itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
       }
 
       let address = window.location.search.split('?address=')[1];
@@ -317,11 +317,11 @@ class App extends React.Component {
                             <p>1 xDai = 1 HashAvatar</p>
                             <br/>
                             <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
-                            <p>xDai ERC1150 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC1150.xdai}`} isExternal>{ERC1150.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
+                            <p>xDai ERC1155 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC1155.xdai}`} isExternal>{ERC1155.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
 
                             <br/>
                             <p>You can also use it in rinkeby testnetwork to test.</p>
-                            <p>Rinkeby ERC1150 at <Link href={`https://rinkeby.etherscan.io/address/${ERC1150.rinkeby}`} isExternal>{ERC1150.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
+                            <p>Rinkeby ERC1155 at <Link href={`https://rinkeby.etherscan.io/address/${ERC1155.rinkeby}`} isExternal>{ERC1155.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
                             <br/>
                             <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <ExternalLinkIcon mx="2px" /></Link> and can be copied / modified by anyone.</p>
                           </Text>
