@@ -73,9 +73,11 @@ class AllAvatars extends React.Component {
         returnValues: res.returnValues,
         metadata: metadata
       }
-
-      this.state.savedBlobs.push(JSON.stringify(obj));
-      await this.forceUpdate();
+      const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,res.returnValues._id).call();
+      if(balance > 0 && !this.state.savedBlobs.includes(JSON.stringify(obj))){
+        this.state.savedBlobs.push(JSON.stringify(obj));
+        await this.forceUpdate();
+      }
 
     } catch (err) {
       console.log(err);

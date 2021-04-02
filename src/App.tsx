@@ -53,25 +53,11 @@ const ipfs = IPFS({
 class App extends React.Component {
 
   state = {
-    top: ["NoHair", "Eyepatch", "Hat", "Hijab", "Turban", "WinterHat1", "WinterHat2", "WinterHat3", "WinterHat4", "LongHairBigHair", "LongHairBob", "LongHairBun", "LongHairCurly", "LongHairCurvy", "LongHairDreads", "LongHairFrida", "LongHairFro", "LongHairFroBand", "LongHairNotTooLong", "LongHairShavedSides", "LongHairMiaWallace", "LongHairStraight", "LongHairStraight2", "LongHairStraightStrand", "ShortHairDreads01", "ShortHairDreads02", "ShortHairFrizzle", "ShortHairShaggyMullet", "ShortHairShortCurly", "ShortHairShortFlat", "ShortHairShortRound", "ShortHairShortWaved", "ShortHairSides", "ShortHairTheCaesar"],
-    accessories: ["Blank", "Kurt", "Prescription01", "Prescription02", "Round", "Sunglasses"],
-    hairColor: ["Auburn", "Black", "Blonde", "BlondeGolden", "Brown", "BrownDark", "PastelPink", "Platinum", "Red"],
-    facialHair: ["Blank", "BeardMedium","Blank", "BeardLight", "BeardMajestic", "MoustacheFancy"],
-    facialHairColor: ["Auburn", "Black", "Blonde", "BlondeGolden", "Brown", "BrownDark", "Platinum"],
-    clothes: ["BlazerShirt", "BlazerSweater", "CollarSweater", "GraphicShirt", "Hoodie", "Overall", "ShirtCrewNeck", "ShirtScoopNeck"],
-    clothesColor: ["Black", "Blue01", "Blue02", "Blue03", "Gray01", "Gray02", "Heather", "PastelBlue", "PastelGreen", "PastelOrange", "PastelRed", "PastelYellow", "Pink", "Red"],
-    eye: ["Close", "Cry", "Default", "Dizzy", "EyeRoll", "Happy", "Hearts", "Side", "Squint", "Surprised", "Wink"],
-    eyebrown: ["Angry", "AngryNatural", "Default", "DefaultNatural", "FlatNatural", "RaisedExcited", "RaisedExcitedNatural", "SadConcerned", "SadConcernedNatural", "UnibrowNatural", "UpDown"],
-    mouth: ["Concerned", "Default", "Disbelief", "Eating", "Grimace", "Sad", "ScreamOpen", "Serious", "Smile", "Tongue", "Twinkle"],
-    skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"],
-    savedBlobs: [],
-    allHashAvatars: [],
-    yourHashAvatars: [],
+
 
   }
   constructor(props){
     super(props)
-    this.randomize = this.randomize.bind(this);
     this.initWeb3 = this.initWeb3.bind(this);
     this.mint = this.mint.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
@@ -81,28 +67,6 @@ class App extends React.Component {
     await this.initWeb3();
   }
 
-  randomize = async () => {
-
-    this.setState({
-      avatar: {
-        avatarStyle: 'Circle',
-        topType: this.state.top[Math.floor(Math.random() * this.state.top.length)],
-        accessoriesType: this.state.accessories[Math.floor(Math.random() * this.state.accessories.length)],
-        hairColor: this.state.hairColor[Math.floor(Math.random() * this.state.hairColor.length)],
-        facialHairType: this.state.facialHair[Math.floor(Math.random() * this.state.facialHair.length)],
-        facialHairColor:  this.state.facialHairColor[Math.floor(Math.random() * this.state.facialHairColor.length)],
-        clotheType: this.state.clothes[Math.floor(Math.random() * this.state.clothes.length)],
-        clotheColor : this.state.clothesColor[Math.floor(Math.random() * this.state.clothesColor.length)],
-        eyeType: this.state.eye[Math.floor(Math.random() * this.state.eye.length)],
-        eyebrowType: this.state.eyebrown[Math.floor(Math.random() * this.state.eyebrown.length)],
-        mounthType: this.state.mouth[Math.floor(Math.random() * this.state.mouth.length)],
-        skinColor: this.state.skin[Math.floor(Math.random() * this.state.skin.length)],
-      }
-    });
-
-
-
-  }
 
   initWeb3 = async () => {
     try{
