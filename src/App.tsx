@@ -63,7 +63,6 @@ class App extends React.Component {
     this.checkTokens = this.checkTokens.bind(this);
   }
   componentDidMount = async () => {
-    this.randomize();
     await this.initWeb3();
   }
 
@@ -302,41 +301,70 @@ class App extends React.Component {
 
 
               <Route path={"/created-avatars"} render={() => {
-                  return(
-                    <MintPage
-                      itoken={this.state.itoken}
-                      web3={this.state.web3}
-                      initWeb3={this.initWeb3}
-                      checkTokens={this.checkTokens}
-                      coinbase={this.state.coinbase}
-                      ipfs={ipfs}
-                    />
-                  )
-                }
+
+                    return(
+                      <>
+                      {
+                        (
+                          this.state.itoken &&
+                          (
+                            <MintPage
+                              itoken={this.state.itoken}
+                              web3={this.state.web3}
+                              initWeb3={this.initWeb3}
+                              checkTokens={this.checkTokens}
+                              coinbase={this.state.coinbase}
+                              ipfs={ipfs}
+                            />
+                          )
+                        )
+                      }
+                      </>
+                    )
+                  }
+
               }/>
 
               <Route path={"/owned-avatars"} render={() => {
                   return(
-                    <OwnedAvatars
-                      itoken={this.state.itoken}
-                      web3={this.state.web3}
-                      initWeb3={this.initWeb3}
-                      checkTokens={this.checkTokens}
-                      coinbase={this.state.coinbase}
-                    />
+                    <>
+                    {
+                      (
+                        this.state.itoken &&
+                        (
+                          <OwnedAvatars
+                            itoken={this.state.itoken}
+                            web3={this.state.web3}
+                            initWeb3={this.initWeb3}
+                            checkTokens={this.checkTokens}
+                            coinbase={this.state.coinbase}
+                          />
+                        )
+                      )
+                    }
+                    </>
                   )
                 }
               }/>
 
               <Route path={"/all-avatars"} render={() => {
                   return(
-                    <AllAvatars
-                      itoken={this.state.itoken}
-                      web3={this.state.web3}
-                      initWeb3={this.initWeb3}
-                      checkTokens={this.checkTokens}
-                      coinbase={this.state.coinbase}
-                    />
+                    <>
+                    {
+                      (
+                        this.state.itoken &&
+                        (
+                          <AllAvatars
+                            itoken={this.state.itoken}
+                            web3={this.state.web3}
+                            initWeb3={this.initWeb3}
+                            checkTokens={this.checkTokens}
+                            coinbase={this.state.coinbase}
+                          />
+                        )
+                      )
+                    }
+                    </>
                   )
                 }
               }/>
@@ -345,7 +373,7 @@ class App extends React.Component {
               <Route render={() => {
 
                 return(
-                  <Redirect to="/home" />
+                  <Redirect to="/created-avatars" />
                 );
 
               }} />

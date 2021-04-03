@@ -41,10 +41,12 @@ class OwnedAvatars extends React.Component {
   }
   componentDidMount = async () => {
     await this.props.initWeb3();
+    const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
-      await this.handleEvents(null,res);
+      promises.push(this.handleEvents(null,res));
     }
+    await Promise.all(promises);
     const itoken = this.props.itoken;
     itoken.events.TransferSingle({
       filter: {
@@ -75,7 +77,7 @@ class OwnedAvatars extends React.Component {
       }
       this.state.savedBlobs.push(JSON.stringify(obj));
       await this.forceUpdate();
-      
+
     } catch (err) {
       console.log(err);
     }

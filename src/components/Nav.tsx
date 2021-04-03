@@ -31,9 +31,9 @@ const NavLink = (props) => (
       textDecoration: 'none',
       bg: useColorModeValue('gray.200', 'gray.700'),
     }}
-    href={`/`}
-    to={`/`}>
-    Home
+    href={`/home`}
+    to={`/home`}>
+    Informations
   </Link>
   <Link
     px={2}

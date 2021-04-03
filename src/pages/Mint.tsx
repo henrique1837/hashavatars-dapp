@@ -67,16 +67,17 @@ class MintPage extends React.Component {
     this.randomize = this.randomize.bind(this);
     this.handleEvents = this.handleEvents.bind(this);
     this.mint = this.mint.bind(this);
-    this.checkTokens = this.props.checkTokens;
   }
   componentDidMount = async () => {
     await this.props.initWeb3();
 
     this.randomize();
+    const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
-      await this.handleEvents(null,res);
+      promises.push(this.handleEvents(null,res));
     }
+    await Promise.all(promises)
     const itoken = this.props.itoken;
     itoken.events.TransferSingle({
       filter: {
@@ -355,26 +356,25 @@ class MintPage extends React.Component {
   render(){
     return(
         <Box>
-          <VStack spacing={12}>
-            <Box w="300px"   align="center">
+          <VStack spacing={4}>
+            <Box>
               <Heading>HashAvatars</Heading>
-              <Avatar {...this.state.avatar} style={{width: "100px"}}/>
-              <Text fontSize="sm" align="left">
+            </Box>
+            <Box align="center">
+              <Text fontSize="sm">
                 <p>The <b>HashAvatars</b> are Avatars waiting to be claimed by anyone on xDain Chain.</p>
-                <br/>
                 <p>Once you select the avatar's name a specific avatar figure will be generated and you can mint single or multiple copies of it.</p>
-                <br/>
                 <p>Choose your preferred HashAvatar and start your collection now!</p>
               </Text>
             </Box>
             <Box align="center">
               <Avatar {...this.state.avatar} />
               <Text>
-                <p>Select the name of you HashAvatar and mint it!</p>
-                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange}/>
+                <p>Select the name of you HashAvatar and claim it!</p>
+                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
                 <Input placeholder="Total number of copies" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply"/>
 
-                <Button onClick={this.mint}>Mint</Button>
+                <Button onClick={this.mint}>Claim</Button>
               </Text>
             </Box>
             <Box>
