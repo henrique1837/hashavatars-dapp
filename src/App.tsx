@@ -30,13 +30,14 @@ import {
   Link,
   Image,
   Center,
+  Spinner,
+  Avatar,
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import Web3 from 'web3';
 
 import IPFS from 'ipfs-http-client-lite';
-import Avatar from 'avataaars';
 
 import ERC1155 from './contracts/ItemsERC1155.json'
 import Nav from './components/Nav';
@@ -152,10 +153,8 @@ class App extends React.Component {
         return;
       }
       if(!dnaNotUsed){
-        let approve = window.confirm("HashAvatar with same image (DNA) was already claimed, would you like to mint it?");
-        if(!approve){
-          return;
-        }
+        alert("HashAvatar with same image (DNA) was already claimed.");
+        return;
       }
       const ipfs = this.state.ipfs;
       const imgres = await ipfs.add(this.state.svg);
@@ -306,7 +305,7 @@ class App extends React.Component {
                       <>
                       {
                         (
-                          this.state.itoken &&
+                          this.state.itoken ?
                           (
                             <MintPage
                               itoken={this.state.itoken}
@@ -316,6 +315,20 @@ class App extends React.Component {
                               coinbase={this.state.coinbase}
                               ipfs={ipfs}
                             />
+                          ):
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
                           )
                         )
                       }
@@ -330,7 +343,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken &&
+                        this.state.itoken ?
                         (
                           <OwnedAvatars
                             itoken={this.state.itoken}
@@ -339,6 +352,20 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
                           />
+                        ):
+                        (
+                          <Center>
+                           <VStack spacing={4}>
+                            <Heading>Loading ...</Heading>
+                            <Avatar
+                              size={'xl'}
+                              src={
+                                'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                              }
+                            />
+                            <Spinner size="xl" />
+                            </VStack>
+                          </Center>
                         )
                       )
                     }
@@ -352,7 +379,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken &&
+                        this.state.itoken ?
                         (
                           <AllAvatars
                             itoken={this.state.itoken}
@@ -361,6 +388,20 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
                           />
+                        ):
+                        (
+                          <Center>
+                           <VStack spacing={4}>
+                            <Heading>Loading ...</Heading>
+                            <Avatar
+                              size={'xl'}
+                              src={
+                                'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                              }
+                            />
+                            <Spinner size="xl" />
+                            </VStack>
+                          </Center>
                         )
                       )
                     }
@@ -385,6 +426,7 @@ class App extends React.Component {
               fontSize="sm"
               flexDirection={{ base: 'column-reverse', lg: 'row' }}
             >
+            <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
             <Link href="https://github.com/henrique1837/cryptoavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
             </HStack>
           </Center>

@@ -70,7 +70,8 @@ class MintPage extends React.Component {
   }
   componentDidMount = async () => {
     await this.props.initWeb3();
-
+    document.getElementById("input_name").focus();
+    document.getElementById("input_name").select();
     this.randomize();
     const promises = [];
     const results = await this.props.checkTokens();
@@ -262,8 +263,8 @@ class MintPage extends React.Component {
     }
     try{
       const web3 = this.props.web3;
-      console.log(web3.utils.toBN(web3.utils.toHex(e.target.value)).toString())
-      let dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value))).toString().replace(".","").substring(0,21);
+      console.log(web3.utils.toBN(web3.utils.toHex(e.target.value.trim())).toString())
+      let dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString().replace(".","").substring(0,21);
       console.log(dna.length)
       if(dna.length < 21){
         for(let i = 0; i < (40 - dna.length);i++){
@@ -317,6 +318,7 @@ class MintPage extends React.Component {
       if(skinTypeIndex > this.state.skin.length - 1){
         skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
       }
+      console.log(e.target.value.trim())
       const avatar = {
         avatarStyle: 'Circle',
         topType: this.state.top[topIndex],
@@ -330,7 +332,7 @@ class MintPage extends React.Component {
         eyebrowType: this.state.eyebrown[eyebrowIndex],
         mounthType: this.state.mouth[mounthTypeIndex],
         skinColor: this.state.skin[skinTypeIndex],
-        name: e.target.value,
+        name: e.target.value.trim(),
         dna: dna
       }
 
@@ -370,9 +372,9 @@ class MintPage extends React.Component {
             <Box align="center">
               <Avatar {...this.state.avatar} />
               <Text>
-                <p>Select the name of you HashAvatar and claim it!</p>
-                <Input placeholder="Avatar's Name" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
-                <Input placeholder="Total number of copies" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply"/>
+                <p>Select the name of your HashAvatar and claim it!</p>
+                <Input placeholder="Avatar's Name" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
+                <Input placeholder="Total number of copies" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply" style={{marginBottom: '10px'}}/>
 
                 <Button onClick={this.mint}>Claim</Button>
               </Text>
@@ -396,8 +398,8 @@ class MintPage extends React.Component {
                       borderWidth="1px"
                       _hover={{ boxShadow: '2xl' }}
                       role="group"
-                      as={Link}
-                      to={`/token-info/?tokenId=${blob.returnValues._id}`}
+                      target="_blank"
+                      href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`}
                     >
                       <Text
                         fontSize="sm"

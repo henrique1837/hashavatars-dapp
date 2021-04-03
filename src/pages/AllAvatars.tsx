@@ -106,7 +106,8 @@ class OwnedAvatars extends React.Component {
                       _hover={{ boxShadow: '2xl' }}
                       role="group"
                       as={Link}
-                      to={`/token-info/?tokenId=${blob.returnValues._id}`}
+                      target="_blank"
+                      href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`}
                     >
                       <Text
                         fontSize="sm"
