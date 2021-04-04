@@ -61,6 +61,7 @@ class MintPage extends React.Component {
     skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"],
     savedBlobs: [],
     allHashAvatars: [],
+    supply: 1
   }
   constructor(props){
     super(props)
@@ -69,22 +70,26 @@ class MintPage extends React.Component {
     this.mint = this.mint.bind(this);
   }
   componentDidMount = async () => {
-    await this.props.initWeb3();
-    document.getElementById("input_name").focus();
-    document.getElementById("input_name").select();
-    this.randomize();
-    const promises = [];
-    const results = await this.props.checkTokens();
-    for(let res of results){
-      promises.push(this.handleEvents(null,res));
+    try{
+      //await this.props.initWeb3();
+      document.getElementById("input_name").focus();
+      document.getElementById("input_name").select();
+      this.randomize();
+      const promises = [];
+      const results = await this.props.checkTokens();
+      for(let res of results){
+        promises.push(this.handleEvents(null,res));
+      }
+      await Promise.all(promises)
+      const itoken = this.props.itoken;
+      itoken.events.TransferSingle({
+        filter: {
+        },
+        fromBlock: 'latest'
+      }, this.handleEvents);
+    } catch(err){
+
     }
-    await Promise.all(promises)
-    const itoken = this.props.itoken;
-    itoken.events.TransferSingle({
-      filter: {
-      },
-      fromBlock: 'latest'
-    }, this.handleEvents);
   }
 
   randomize = async () => {
@@ -206,9 +211,14 @@ class MintPage extends React.Component {
       const id = Number(await this.props.itoken.methods.totalSupply().call()) + 1;
       console.log(id)
       const fees = [];
-      await this.props.itoken.methods.mint(id,fees,this.state.supply,uri).send({
+      let supply = this.state.supply;
+      if(typeof(supply !== Number)){
+        supply = 1
+      }
+      await this.props.itoken.methods.mint(id,fees,supply,uri).send({
         from: this.props.coinbase,
-        value: 10 ** 18
+        value: 10 ** 18,
+        gasPrice: 1000000000
       });
     } catch(err){
       console.log(err)
@@ -374,9 +384,17 @@ class MintPage extends React.Component {
               <Text>
                 <p>Select the name of your HashAvatar and claim it!</p>
                 <Input placeholder="Avatar's Name" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
-                <Input placeholder="Total number of copies" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply" style={{marginBottom: '10px'}}/>
+                <Input placeholder="Total number of copies (if empty, default = 1)" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply" style={{marginBottom: '10px'}}/>
 
-                <Button onClick={this.mint}>Claim</Button>
+                {
+                  (
+                    this.props.coinbase ?
+                    (
+                      <Button onClick={this.mint}>Claim</Button>
+                    ) :
+                    <Button onClick={this.props.connectWeb3}>Connect Wallet</Button>
+                  )
+                }
               </Text>
             </Box>
             <Box>
@@ -398,8 +416,9 @@ class MintPage extends React.Component {
                       borderWidth="1px"
                       _hover={{ boxShadow: '2xl' }}
                       role="group"
+                      as={Link}
                       target="_blank"
-                      href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`}
+                      href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`}
                     >
                       <Text
                         fontSize="sm"

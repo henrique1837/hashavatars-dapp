@@ -36,6 +36,7 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import Web3 from 'web3';
+import detectEthereumProvider from '@metamask/detect-provider'
 
 import IPFS from 'ipfs-http-client-lite';
 
@@ -72,29 +73,18 @@ class App extends React.Component {
     try{
       let coinbase
       let web3;
-      //const ipfs = await IPFS.create()
-      if(window.ethereum){
-        await window.ethereum.enable();
-        web3 = new Web3(window.ethereum);
-        coinbase = await web3.eth.getCoinbase();
+      if(window.location.href.includes("?rinkeby")){
+        web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
       } else {
-        if(window.location.href.includes("?rinkeby")){
-          web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
-        } else {
-          web3 = new Web3("https://rpc.xdaichain.com/")
-        }
+        web3 = new Web3("https://rpc.xdaichain.com/")
       }
-
       const netId = await web3.eth.net.getId();
       let itoken;
-      if(netId !== 4 && netId !== 0x64){
-        alert('Connect to xDAI network or Rinkeby testnet');
-      } else if(netId === 4){
+      if(netId === 4){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
       } else if(netId === 0x64){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
       }
-
       let address = window.location.search.split('?address=')[1];
       if(address?.includes('&rinkeby')){
         address = address.split("&rinkeby")[0];
@@ -119,16 +109,63 @@ class App extends React.Component {
         address:address,
         coinbase: coinbase,
         //img: img,
-        ipfs:ipfs
-      })
-      this.setState({
-        loading: false
+        loading:false
       });
-
 
     }catch(err){
       console.log(err)
     }
+  }
+
+  connectWeb3 = async () => {
+
+    this.setState({
+      loading: true
+    });
+    const provider = await detectEthereumProvider()
+
+    if(provider){
+      try{
+        await provider.request({ method: 'eth_requestAccounts' });
+      } catch(err){
+        console.log(err);
+        this.setState({
+          loading: false
+        });
+        return;
+      }
+    } else {
+      alert('Web3 provider not detected, please install metamask');
+      this.setState({
+        loading: false
+      });
+      return;
+    }
+    const web3 = new Web3(provider);
+    const coinbase = await web3.eth.getCoinbase();
+    const netId = await web3.eth.net.getId();
+    let itoken;
+    if(netId === 4){
+      itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
+    } else if(netId === 0x64){
+      itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
+    }
+    if(netId !== 4 && netId !== 0x64){
+      alert('Connect to xDAI network or Rinkeby testnet');
+      if(window.location.href.includes("?rinkeby")){
+        web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
+      } else {
+        web3 = new Web3("https://rpc.xdaichain.com/")
+      }
+    }
+    this.setState({
+      web3: web3,
+      itoken: itoken,
+      coinbase:coinbase,
+      loading: false
+    });
+
+
   }
 
   mint = async () => {
@@ -254,7 +291,7 @@ class App extends React.Component {
       <Router>
       <ChakraProvider theme={theme}>
         <Box>
-          <Nav />
+          <Nav connectWeb3={this.connectWeb3} loading={this.state.loading} coinbase={this.state.coinbase}/>
         </Box>
         <Box textAlign="center" fontSize="xl">
           <Grid minH="100vh" p={3}>
@@ -310,7 +347,7 @@ class App extends React.Component {
                             <MintPage
                               itoken={this.state.itoken}
                               web3={this.state.web3}
-                              initWeb3={this.initWeb3}
+                              connectWeb3={this.connectWeb3}
                               checkTokens={this.checkTokens}
                               coinbase={this.state.coinbase}
                               ipfs={ipfs}
@@ -427,7 +464,9 @@ class App extends React.Component {
               flexDirection={{ base: 'column-reverse', lg: 'row' }}
             >
             <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
+            <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
             <Link href="https://github.com/henrique1837/cryptoavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
+
             </HStack>
           </Center>
         </Box>

@@ -40,7 +40,7 @@ class AllAvatars extends React.Component {
     this.checkTokens = this.props.checkTokens;
   }
   componentDidMount = async () => {
-    await this.props.initWeb3();
+    //await this.props.initWeb3();
     const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
@@ -110,7 +110,7 @@ class AllAvatars extends React.Component {
                       role="group"
                       as={Link}
                       target="_blank"
-                      href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`}
+                      href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`}
                     >
                       <Text
                         fontSize="sm"
