@@ -55,14 +55,12 @@ const ipfs = IPFS({
 class App extends React.Component {
 
   state = {
-
-
   }
   constructor(props){
     super(props)
     this.initWeb3 = this.initWeb3.bind(this);
-    this.mint = this.mint.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
+    this.addNetwork = this.addNetwork.bind(this);
   }
   componentDidMount = async () => {
     await this.initWeb3();
@@ -123,21 +121,27 @@ class App extends React.Component {
       loading: true
     });
     const provider = await detectEthereumProvider()
-
+    if(!provider._metamask.isUnlocked()){
+      alert("Please unlock your metamask first");
+      this.setState({
+        loading: false
+      });
+      return
+    }
     if(provider){
       try{
         await provider.request({ method: 'eth_requestAccounts' });
       } catch(err){
         console.log(err);
         this.setState({
-          loading: false
+          loading: false,
         });
         return;
       }
     } else {
       alert('Web3 provider not detected, please install metamask');
       this.setState({
-        loading: false
+        loading: false,
       });
       return;
     }
@@ -162,113 +166,13 @@ class App extends React.Component {
       web3: web3,
       itoken: itoken,
       coinbase:coinbase,
-      loading: false
+      loading: false,
+      provider: provider
     });
 
 
   }
 
-  mint = async () => {
-
-    try{
-      if(this.state.avatar.name.replace(/ /g, '') === "" || !this.state.avatar.name){
-        return;
-      }
-      let cont = true;
-      let dnaNotUsed = true;
-      this.state.allHashAvatars.map(string => {
-        const obj = JSON.parse(string);
-        if(obj.metadata.name === this.state.avatar.name) {
-          cont = false
-        }
-        if(obj.metadata.dna === this.state.avatar.dna) {
-          cont = false
-        }
-      });
-      if(!cont){
-        alert("HashAvatar with that name already claimed");
-        return;
-      }
-      if(!dnaNotUsed){
-        alert("HashAvatar with same image (DNA) was already claimed.");
-        return;
-      }
-      const ipfs = this.state.ipfs;
-      const imgres = await ipfs.add(this.state.svg);
-      console.log(imgres[0].hash)
-      let metadata = {
-          name: this.state.avatar.name,
-          image: `ipfs://${imgres[0].hash}`,
-          external_url: `https://thehashavatars.com`,
-          description: "Generate and mint your own avatar as ERC1155 NFT",
-          attributes: [
-            {
-              trait_type: "Top Type",
-              value: this.state.avatar.topType
-            },
-            {
-              trait_type: "Acessories Type",
-              value: this.state.avatar.accessoriesType
-            },
-            {
-              trait_type: "Hair Color",
-              value: this.state.avatar.hairColor
-            },
-            {
-                trait_type: "Facial Hair Type",
-                value: this.state.avatar.facialHairType
-            },
-            {
-                trait_type: "Facial Hair Color",
-                value: this.state.avatar.facialHairColor
-            },
-            {
-                trait_type: "Clothe Type",
-                value: this.state.avatar.clotheType
-            },
-            {
-                trait_type: "Clothe Color",
-                value: this.state.avatar.clotheColor
-            },
-            {
-                trait_type: "Eye Type",
-                value: this.state.avatar.eyeType
-            },
-            {
-                trait_type: "Eyebrow Type",
-                value: this.state.avatar.eyebrowType
-            },
-            {
-                trait_type: "Mounth Type",
-                value: this.state.avatar.mounthType
-            },
-            {
-                trait_type: "Skin Color",
-                value: this.state.avatar.skinColor
-            },
-            {
-                trait_type: "DNA",
-                value: this.state.avatar.dna
-            },
-          ]
-      }
-      console.log(metadata)
-      const res = await ipfs.add(JSON.stringify(metadata));
-      //const uri = res[0].hash;
-      const uri = res[0].hash;
-      console.log(uri);
-
-      const id = Number(await this.state.itoken.methods.totalSupply().call()) + 1;
-      console.log(id)
-      const fees = [];
-      await this.state.itoken.methods.mint(id,fees,this.state.supply,uri).send({
-        from: this.state.coinbase,
-        value: 10 ** 18
-      });
-    } catch(err){
-      console.log(err)
-    }
-  }
 
   checkTokens = async () => {
     const itoken = this.state.itoken;
@@ -283,6 +187,25 @@ class App extends React.Component {
       results.push(res)
     }
     return(results)
+  }
+
+  addNetwork = async () => {
+    try{
+      const data = {
+        chainId: "0x64", // A 0x-prefixed hexadecimal string
+        chainName: "xDai",
+        nativeCurrency: {
+          name: "xDai",
+          symbol: "xDai", // 2-6 characters long
+          decimals: 18,
+        },
+        rpcUrls: ["https://rpc.xdaichain.com/"],
+        blockExplorerUrls: 'https://blockscout.com/xdai/mainnet'
+      }
+      await this.state.provider.request({method: 'wallet_addEthereumChain', params:data})
+    } catch(err){
+
+    }
   }
 
   render(){
@@ -317,7 +240,6 @@ class App extends React.Component {
                             <br/>
                             <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <ExternalLinkIcon mx="2px" /></Link> in order to join.</p>
                             <p>xDai ERC1155 at <Link href={`https://blockscout.com/xdai/mainnet/address/${ERC1155.xdai}`} isExternal>{ERC1155.xdai} <ExternalLinkIcon mx="2px" /></Link></p>
-
                             <br/>
                             <p>You can also use it in rinkeby testnetwork to test.</p>
                             <p>Rinkeby ERC1155 at <Link href={`https://rinkeby.etherscan.io/address/${ERC1155.rinkeby}`} isExternal>{ERC1155.rinkeby} <ExternalLinkIcon mx="2px" /></Link></p>
@@ -351,6 +273,8 @@ class App extends React.Component {
                               checkTokens={this.checkTokens}
                               coinbase={this.state.coinbase}
                               ipfs={ipfs}
+                              provider={this.state.provider}
+                              loading={this.state.loading}
                             />
                           ):
                           (
@@ -388,6 +312,7 @@ class App extends React.Component {
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
+                            provider={this.state.provider}
                           />
                         ):
                         (

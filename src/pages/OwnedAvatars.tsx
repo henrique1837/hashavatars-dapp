@@ -53,6 +53,20 @@ class AllAvatars extends React.Component {
       },
       fromBlock: 'latest'
     }, this.handleEvents);
+    
+    let hasNotConnected = true;
+    setInterval(async () => {
+      if(this.props.provider && hasNotConnected){
+        const promises = [];
+        const results = await this.props.checkTokens();
+        for(let res of results){
+          promises.push(this.handleEvents(null,res));
+        }
+        await Promise.all(promises)
+        const itoken = this.props.itoken;
+        hasNotConnected = false;
+      }
+    },500);
   }
 
   handleEvents = async (err, res) => {

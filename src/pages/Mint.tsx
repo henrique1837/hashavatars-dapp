@@ -24,6 +24,7 @@ import {
   Link,
   Image,
   Center,
+  Spinner,
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -61,7 +62,8 @@ class MintPage extends React.Component {
     skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"],
     savedBlobs: [],
     allHashAvatars: [],
-    supply: 1
+    supply: 1,
+    minting: false
   }
   constructor(props){
     super(props)
@@ -82,11 +84,26 @@ class MintPage extends React.Component {
       }
       await Promise.all(promises)
       const itoken = this.props.itoken;
+
       itoken.events.TransferSingle({
         filter: {
         },
         fromBlock: 'latest'
       }, this.handleEvents);
+      let hasNotConnected = true;
+      setInterval(async () => {
+        if(this.props.provider && hasNotConnected){
+          const promises = [];
+          const results = await this.props.checkTokens();
+          for(let res of results){
+            promises.push(this.handleEvents(null,res));
+          }
+          await Promise.all(promises)
+          const itoken = this.props.itoken;
+          hasNotConnected = false;
+        }
+      },500);
+
     } catch(err){
 
     }
@@ -117,9 +134,14 @@ class MintPage extends React.Component {
 
 
   mint = async () => {
-
     try{
+      this.setState({
+        minting: true
+      });
       if(this.state.avatar.name.replace(/ /g, '') === "" || !this.state.avatar.name){
+        this.setState({
+          minting: false
+        });
         return;
       }
       let cont = true;
@@ -135,11 +157,17 @@ class MintPage extends React.Component {
       });
       if(!cont){
         alert("HashAvatar with that name already claimed");
+        this.setState({
+          minting: false
+        });
         return;
       }
       if(!dnaNotUsed){
         let approve = window.confirm("HashAvatar with same image (DNA) was already claimed, would you like to mint it?");
         if(!approve){
+          this.setState({
+            minting: false
+          });
           return;
         }
       }
@@ -220,8 +248,14 @@ class MintPage extends React.Component {
         value: 10 ** 18,
         gasPrice: 1000000000
       });
+      this.setState({
+        minting: false
+      });
     } catch(err){
-      console.log(err)
+      console.log(err);
+      this.setState({
+        minting: false
+      });
     }
   }
 
@@ -274,15 +308,7 @@ class MintPage extends React.Component {
     try{
       const web3 = this.props.web3;
       console.log(web3.utils.toBN(web3.utils.toHex(e.target.value.trim())).toString())
-      let dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString().replace(".","").substring(0,21);
-      console.log(dna.length)
-      if(dna.length < 21){
-        for(let i = 0; i < (40 - dna.length);i++){
-          dna = dna + "0"
-        }
-      }
-      dna = dna.substring(0,21);
-      console.log(dna);
+      const dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString().replace(".","").substring(0,21);
       let topIndex = (Number(dna.substring(0,1)) % 35 + 1).toFixed(0);
       console.log(topIndex)
       if(topIndex > this.state.top.length - 1){
@@ -390,9 +416,23 @@ class MintPage extends React.Component {
                   (
                     this.props.coinbase ?
                     (
-                      <Button onClick={this.mint}>Claim</Button>
+                      !this.state.minting ?
+                      (
+                        <Button onClick={this.mint}>Claim</Button>
+                      ) :
+                      (
+                        <Spinner size="xl" />
+                      )
                     ) :
-                    <Button onClick={this.props.connectWeb3}>Connect Wallet</Button>
+                    (
+                      !this.props.loading ?
+                      (
+                        <Button onClick={this.props.connectWeb3}>Connect Wallet</Button>
+                      ) :
+                      (
+                        <Spinner size="xl" />
+                      )
+                    )
                   )
                 }
               </Text>
