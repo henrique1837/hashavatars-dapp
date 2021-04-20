@@ -41,6 +41,7 @@ import detectEthereumProvider from '@metamask/detect-provider'
 import IPFS from 'ipfs-http-client-lite';
 
 import ERC1155 from './contracts/ItemsERC1155.json'
+import ERC20Rewards from './contracts/ERC20Rewards.json'
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
 import OwnedAvatars from './pages/OwnedAvatars';
@@ -55,15 +56,25 @@ const ipfs = IPFS({
 class App extends React.Component {
 
   state = {
+    netId: 0x64
   }
   constructor(props){
     super(props)
     this.initWeb3 = this.initWeb3.bind(this);
+    this.connectWeb3 = this.connectWeb3.bind(this);
+    this.checkClaimed = this.checkClaimed.bind(this);
+    this.claim = this.claim.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
   }
   componentDidMount = async () => {
-    await this.initWeb3();
+    const hasLogged = localStorage.getItem('logged');
+    if(hasLogged){
+      await this.connectWeb3();
+    } else {
+      await this.initWeb3();
+    }
+
   }
 
 
@@ -83,6 +94,9 @@ class App extends React.Component {
       } else if(netId === 0x64){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
       }
+      this.setState({
+        netId: netId
+      })
       let address = window.location.search.split('?address=')[1];
       if(address?.includes('&rinkeby')){
         address = address.split("&rinkeby")[0];
@@ -120,13 +134,18 @@ class App extends React.Component {
     this.setState({
       loading: true
     });
-    const provider = await detectEthereumProvider()
-    if(!provider._metamask.isUnlocked()){
-      alert("Please unlock your metamask first");
-      this.setState({
-        loading: false
-      });
-      return
+    let provider;
+    if(window.ethereum?.isMetamask){
+      provider = await detectEthereumProvider();
+      if(!provider._metamask.isUnlocked()){
+        alert("Please unlock your metamask first");
+        this.setState({
+          loading: false
+        });
+        return
+      }
+    } else {
+      provider = window.ethereum;
     }
     if(provider){
       try{
@@ -145,17 +164,21 @@ class App extends React.Component {
       });
       return;
     }
-    const web3 = new Web3(provider);
+    let web3 = new Web3(provider);
     const coinbase = await web3.eth.getCoinbase();
     const netId = await web3.eth.net.getId();
     let itoken;
+    let rewards;
     if(netId === 4){
       itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
+      rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
+
     } else if(netId === 0x64){
       itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
+      rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.xdai);
+
     }
     if(netId !== 4 && netId !== 0x64){
-      alert('Connect to xDAI network or Rinkeby testnet');
       if(window.location.href.includes("?rinkeby")){
         web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
       } else {
@@ -165,10 +188,15 @@ class App extends React.Component {
     this.setState({
       web3: web3,
       itoken: itoken,
+      rewards: rewards,
       coinbase:coinbase,
+      netId:netId,
       loading: false,
       provider: provider
     });
+    localStorage.setItem('logged',true);
+    provider.on('accountsChanged', accounts => window.location.reload(true));
+    provider.on('chainChanged', chainId => window.location.reload(true));
 
 
   }
@@ -188,7 +216,29 @@ class App extends React.Component {
     }
     return(results)
   }
-
+  checkClaimed = async (id) => {
+    if(id > 1500) {
+      return
+    }
+    const creator = await this.state.itoken.methods.creators(id).call();
+    const hasClaimed = await this.state.rewards.methods.claimed(creator,id).call();
+    return({
+      id: id,
+      creator: creator,
+      hasClaimed: hasClaimed
+    });
+  }
+  claim = async (ids) => {
+    try{
+      const hash = await this.state.rewards.methods.claimMany(ids).send({
+        from: this.state.coinbase,
+        gasPrice: 1000000000
+      });
+      return(hash);
+    } catch(err){
+      console.log(err)
+    }
+  }
   addNetwork = async () => {
     try{
       const data = {
@@ -214,7 +264,13 @@ class App extends React.Component {
       <Router>
       <ChakraProvider theme={theme}>
         <Box>
-          <Nav connectWeb3={this.connectWeb3} loading={this.state.loading} coinbase={this.state.coinbase}/>
+          <Nav
+            connectWeb3={this.connectWeb3}
+            loading={this.state.loading}
+            coinbase={this.state.coinbase}
+            rewards={this.state.rewards}
+            netId={this.state.netId}
+          />
         </Box>
         <Box textAlign="center" fontSize="xl">
           <Grid minH="100vh" p={3}>
@@ -268,6 +324,9 @@ class App extends React.Component {
                           (
                             <MintPage
                               itoken={this.state.itoken}
+                              rewards={this.state.rewards}
+                              checkClaimed={this.checkClaimed}
+                              claim={this.claim}
                               web3={this.state.web3}
                               connectWeb3={this.connectWeb3}
                               checkTokens={this.checkTokens}
@@ -278,18 +337,35 @@ class App extends React.Component {
                             />
                           ):
                           (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
+                            (this.state.netId === 4 || this.state.netId === 0x64) ?
+                            (
+                              <Center>
+                               <VStack spacing={4}>
+                                <Heading>Loading ...</Heading>
+                                <Avatar
+                                  size={'xl'}
+                                  src={
+                                    'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                  }
+                                />
+                                <Spinner size="xl" />
+                                </VStack>
+                              </Center>
+                            ) :
+                            (
+                              <Center>
+                               <VStack spacing={4}>
+                                <Heading>WRONG NETWORK</Heading>
+                                <Avatar
+                                  size={'xl'}
+                                  src={
+                                    'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                  }
+                                />
+                                <p>Please connect to xDai network</p>
+                                </VStack>
+                              </Center>
+                            )
                           )
                         )
                       }
@@ -308,6 +384,9 @@ class App extends React.Component {
                         (
                           <OwnedAvatars
                             itoken={this.state.itoken}
+                            rewards={this.state.rewards}
+                            checkClaimed={this.checkClaimed}
+                            claim={this.claim}
                             web3={this.state.web3}
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
@@ -316,18 +395,35 @@ class App extends React.Component {
                           />
                         ):
                         (
-                          <Center>
-                           <VStack spacing={4}>
-                            <Heading>Loading ...</Heading>
-                            <Avatar
-                              size={'xl'}
-                              src={
-                                'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                              }
-                            />
-                            <Spinner size="xl" />
-                            </VStack>
-                          </Center>
+                          (this.state.netId === 4 || this.state.netId === 0x64) ?
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
+                          ) :
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>WRONG NETWORK</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <p>Please connect to xDai network</p>
+                              </VStack>
+                            </Center>
+                          )
                         )
                       )
                     }
@@ -352,18 +448,35 @@ class App extends React.Component {
                           />
                         ):
                         (
-                          <Center>
-                           <VStack spacing={4}>
-                            <Heading>Loading ...</Heading>
-                            <Avatar
-                              size={'xl'}
-                              src={
-                                'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                              }
-                            />
-                            <Spinner size="xl" />
-                            </VStack>
-                          </Center>
+                          (this.state.netId === 4 || this.state.netId === 0x64) ?
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
+                          ) :
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>WRONG NETWORK</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <p>Please connect to xDai network</p>
+                              </VStack>
+                            </Center>
+                          )
                         )
                       )
                     }
@@ -371,7 +484,6 @@ class App extends React.Component {
                   )
                 }
               }/>
-
 
               <Route render={() => {
 
@@ -390,7 +502,7 @@ class App extends React.Component {
             >
             <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
             <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
-            <Link href="https://github.com/henrique1837/cryptoavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
+            <Link href="https://github.com/henrique1837/hashavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
 
             </HStack>
           </Center>

@@ -17,8 +17,10 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import {Link} from 'react-router-dom';
-import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, CloseIcon,ExternalLinkIcon } from '@chakra-ui/icons';
 import { ColorModeSwitcher } from "../ColorModeSwitcher"
+
+import makeBlockie from 'ethereum-blockies-base64';
 
 
 const NavLink = (props) => (
@@ -76,7 +78,10 @@ const NavLink = (props) => (
 
 export default function Simple(props) {
   const { isOpen, onOpen, onClose } = useDisclosure();
-
+  let img;
+  if(props.coinbase){
+    img = makeBlockie(props.coinbase);
+  }
   return (
     <>
       <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
@@ -108,7 +113,25 @@ export default function Simple(props) {
                 spacing={4}
                 display={{ base: 'none', md: 'flex' }}>
                 <NavLink props={props} />
-
+                {
+                  (
+                    props.netId === 4 &&
+                    (
+                      <a
+                        px={2}
+                        py={1}
+                        rounded={'md'}
+                        _hover={{
+                          textDecoration: 'none',
+                        }}
+                        href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`}
+                        target="_blank"
+                        >
+                        Governance BETA {' '}<ExternalLinkIcon mx="2px" />
+                      </a>
+                    )
+                  )
+                }
                 <a
                   px={2}
                   py={1}
@@ -146,7 +169,7 @@ export default function Simple(props) {
                     textDecoration: 'none',
                     bg: useColorModeValue('gray.200', 'gray.700'),
                   }}
-                  href="https://github.com/henrique1837/cryptoavatars-dapp"
+                  href="https://github.com/henrique1837/hashavatars-dapp"
 
                   target="_blank"
                   >
@@ -170,11 +193,31 @@ export default function Simple(props) {
                          </Button>
                        ) :
                        (
-                         <>{' '}<small>Web3 connected</small>{' '}</>
+                         <>{' '}<Avatar src={img} size='sm' alt="" />{' '}</>
                        )
                     ) :
                     (
                       <>{' '}<small>Connecting ...</small>{' '}</>
+                    )
+                  )
+                }
+                {
+                  (
+                    props.netId && props.coinbase &&
+                    (
+                      props.netId === 4 ?
+                      (
+                        <small>RINKEBY</small>
+                      ) :
+                      (
+                        props.netId === 0x64 ?
+                        (
+                          <small>XDAI</small>
+                        ) :
+                        (
+                          <small style={{color: "red"}}>WRONG NETWORK</small>
+                        )
+                      )
                     )
                   )
                 }
@@ -203,11 +246,31 @@ export default function Simple(props) {
                        </Button>
                      ) :
                      (
-                       <>{' '}<small>Web3 connected</small>{' '}</>
+                       <>{' '}<Avatar src={img} size='sm' alt="" />{' '}</>
                      )
                   ) :
                   (
                     <>{' '}<small>Connecting ...</small>{' '}</>
+                  )
+                )
+              }
+              {
+                (
+                  props.netId && props.coinbase &&
+                  (
+                    props.netId === 4 ?
+                    (
+                      <small>RINKEBY</small>
+                    ) :
+                    (
+                      props.netId === 0x64 ?
+                      (
+                        <small>XDAI</small>
+                      ) :
+                      (
+                        <small style={{color: "red"}}>WRONG NETWORK</small>
+                      )
+                    )
                   )
                 )
               }

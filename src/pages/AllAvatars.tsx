@@ -88,6 +88,8 @@ class OwnedAvatars extends React.Component {
           <VStack spacing={12}>
             <Box>
             <Heading>All HashAvatars generated</Heading>
+            </Box>
+            <Box>
             <SimpleGrid
               columns={{ sm: 1, md: 5 }}
               spacing="40px"

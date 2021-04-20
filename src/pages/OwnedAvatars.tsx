@@ -21,8 +21,10 @@ import {
   SimpleGrid,
   Divider,
   Link,
-  Image,
   Center,
+  Alert,
+  AlertIcon,
+  Spinner
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -53,18 +55,31 @@ class AllAvatars extends React.Component {
       },
       fromBlock: 'latest'
     }, this.handleEvents);
-    
+
     let hasNotConnected = true;
     setInterval(async () => {
       if(this.props.provider && hasNotConnected){
         const promises = [];
+        const claimed = [];
         const results = await this.props.checkTokens();
         for(let res of results){
           promises.push(this.handleEvents(null,res));
+          claimed.push(this.props.checkClaimed(res.returnValues._id));
         }
         await Promise.all(promises)
+        let toClaim = await Promise.all(claimed);
+        console.log(toClaim)
+        toClaim = toClaim.filter(item => {
+          if(item.hasClaimed === false && this.props.coinbase.toLowerCase() === item.creator.toLowerCase()){
+            return(item);
+          }
+        });
+        console.log(toClaim)
         const itoken = this.props.itoken;
         hasNotConnected = false;
+        this.setState({
+          toClaim: toClaim
+        });
       }
     },500);
   }
@@ -105,6 +120,8 @@ class AllAvatars extends React.Component {
           <VStack spacing={12}>
             <Box>
             <Heading>HashAvatars you own</Heading>
+            </Box>
+            <Box>
             <SimpleGrid
               columns={{ sm: 1, md: 5 }}
               spacing="40px"

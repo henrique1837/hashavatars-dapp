@@ -25,6 +25,8 @@ import {
   Image,
   Center,
   Spinner,
+  Alert,
+  AlertIcon
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -63,7 +65,8 @@ class MintPage extends React.Component {
     savedBlobs: [],
     allHashAvatars: [],
     supply: 1,
-    minting: false
+    minting: false,
+    toClaim: []
   }
   constructor(props){
     super(props)
@@ -94,13 +97,30 @@ class MintPage extends React.Component {
       setInterval(async () => {
         if(this.props.provider && hasNotConnected){
           const promises = [];
+          const claimed = [];
           const results = await this.props.checkTokens();
           for(let res of results){
             promises.push(this.handleEvents(null,res));
+            claimed.push(this.props.checkClaimed(res.returnValues._id));
           }
           await Promise.all(promises)
-          const itoken = this.props.itoken;
+          if(this.props.rewards){
+            let toClaim = await Promise.all(claimed);
+
+            console.log(toClaim)
+            toClaim = toClaim.filter(item => {
+              if(item.hasClaimed === false && this.props.coinbase.toLowerCase() === item.creator?.toLowerCase()){
+                return(item);
+              }
+            });
+            console.log(toClaim);
+            this.setState({
+              toClaim: toClaim
+            });
+          }
+
           hasNotConnected = false;
+
         }
       },500);
 
@@ -288,6 +308,13 @@ class MintPage extends React.Component {
         this.state.savedBlobs.push(JSON.stringify(obj));
         await this.forceUpdate();
       }
+      if(this.props.rewards){
+        const claim = await this.props.checkClaimed(res.returnValues._id);
+        if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
+          this.state.toClaim.push(claim);
+          await this.forceUpdate();
+        }
+      }
       if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
         this.state.allHashAvatars.push(JSON.stringify(obj));
         await this.forceUpdate();
@@ -398,9 +425,55 @@ class MintPage extends React.Component {
             <Box>
               <Heading>HashAvatars</Heading>
             </Box>
+
+            {
+              (
+                this.state.toClaim?.length > 0 &&
+                (
+                  !this.state.doingClaim ?
+                  (
+                    <Center>
+                    <Alert status="info">
+                      <AlertIcon />You have rewards to claim!{' '}
+                      <Button onClick={async () => {
+                        console.log(this.state.toClaim);
+                        const ids = this.state.toClaim.map(item => {
+                          return(item.id);
+                        });
+                        this.setState({
+                          doingClaim: true
+                        })
+                        const hash = await this.props.claim(ids);
+                        const results = await this.props.checkTokens();
+                        const claimed = [];
+                        for(let res of results){
+                          claimed.push(this.props.checkClaimed(res.returnValues._id));
+                        }
+                        let toClaim = await Promise.all(claimed);
+                        toClaim = toClaim.filter(item => {
+                          if(item.hasClaimed === false && this.props.coinbase.toLowerCase() === item.creator.toLowerCase()){
+                            return(item);
+                          }
+                        });
+                        this.setState({
+                          doingClaim: false,
+                          toClaim: toClaim
+                        })
+                      }}>Claim</Button>
+                    </Alert>
+                    </Center>
+
+                  ) :
+                  (
+                    <Spinner size="xl" />
+                  )
+
+                )
+              )
+            }
             <Box align="center">
               <Text fontSize="sm">
-                <p>The <b>HashAvatars</b> are Avatars waiting to be claimed by anyone on xDain Chain.</p>
+                <p>The <b>HashAvatars</b> are Avatars waiting to be claimed by anyone on xDai Chain.</p>
                 <p>Once you select the avatar's name a specific avatar figure will be generated and you can mint single or multiple copies of it.</p>
                 <p>Choose your preferred HashAvatar and start your collection now!</p>
               </Text>
@@ -435,10 +508,13 @@ class MintPage extends React.Component {
                     )
                   )
                 }
+
               </Text>
             </Box>
             <Box>
             <Heading>HashAvatars Created by you</Heading>
+            </Box>
+            <Box>
             <SimpleGrid
               columns={{ sm: 1, md: 5 }}
               spacing="40px"
