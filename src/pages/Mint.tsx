@@ -93,7 +93,7 @@ class MintPage extends React.Component {
         },
         fromBlock: 'latest'
       }, this.handleEvents);
-      let hasNotConnected = true;
+      let hasNotConnected = !this.props.coinbase;
       setInterval(async () => {
         if(this.props.provider && hasNotConnected){
           const promises = [];
@@ -164,15 +164,22 @@ class MintPage extends React.Component {
         });
         return;
       }
+      const results = await this.props.checkTokens();
+      const metadatas = []
+      for(let res of results){
+        const uriToken = await this.props.itoken.methods.uri(res.returnValues._id).call();
+        const metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
+        metadatas.push(metadataToken)
+      }
       let cont = true;
       let dnaNotUsed = true;
-      this.state.allHashAvatars.map(string => {
-        const obj = JSON.parse(string);
-        if(obj.metadata.name === this.state.avatar.name) {
+      metadatas.map(obj => {
+        //const obj = JSON.parse(string);
+        if(obj.name === this.state.avatar.name) {
           cont = false
         }
-        if(obj.metadata.dna === this.state.avatar.dna) {
-          cont = false
+        if(obj.attributes[11].value === this.state.avatar.dna) {
+          dnaNotUsed = false
         }
       });
       if(!cont){
@@ -183,13 +190,8 @@ class MintPage extends React.Component {
         return;
       }
       if(!dnaNotUsed){
-        let approve = window.confirm("HashAvatar with same image (DNA) was already claimed, would you like to mint it?");
-        if(!approve){
-          this.setState({
-            minting: false
-          });
-          return;
-        }
+        alert("HashAvatar with same image (DNA) was already claimed.");
+        return;
       }
       const ipfs = this.props.ipfs;
       const imgres = await ipfs.add(this.state.svg);
@@ -284,7 +286,6 @@ class MintPage extends React.Component {
     try {
       const web3 = this.props.web3;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
-      console.log(uri)
       if(uri.includes("ipfs://ipfs/")){
         uri = uri.replace("ipfs://ipfs/", "")
       } else {
@@ -294,8 +295,6 @@ class MintPage extends React.Component {
       console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
 
-
-      console.log(metadata)
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata
@@ -308,16 +307,17 @@ class MintPage extends React.Component {
         this.state.savedBlobs.push(JSON.stringify(obj));
         await this.forceUpdate();
       }
+      if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
+        this.state.allHashAvatars.push(JSON.stringify(obj));
+        await this.forceUpdate();
+      }
+      console.log(this.state.allHashAvatars);
       if(this.props.rewards){
         const claim = await this.props.checkClaimed(res.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
           await this.forceUpdate();
         }
-      }
-      if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
-        this.state.allHashAvatars.push(JSON.stringify(obj));
-        await this.forceUpdate();
       }
     } catch (err) {
       console.log(err);
