@@ -23,6 +23,7 @@ import {
   Link,
   Image,
   Center,
+  Spinner
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -33,10 +34,14 @@ class OwnedAvatars extends React.Component {
 
   state = {
     savedBlobs: [],
+    hasLiked: [],
+    likes: [],
+    loadingLikes: []
   }
   constructor(props){
     super(props)
     this.handleEvents = this.handleEvents.bind(this);
+    this.handleLikes = this.handleLikes.bind(this);
     this.checkTokens = this.props.checkTokens;
   }
   componentDidMount = async () => {
@@ -48,11 +53,21 @@ class OwnedAvatars extends React.Component {
     }
     await Promise.all(promises);
     const itoken = this.props.itoken;
+    const tokenLikes = this.props.tokenLikes;
+
     itoken.events.TransferSingle({
       filter: {
       },
       fromBlock: 'latest'
     }, this.handleEvents);
+    if(tokenLikes){
+      tokenLikes.events.LikeOrUnlike({
+        filter:{
+
+        },
+        fromBlock:'latest'
+      },this.handleLikes);
+    }
   }
 
   handleEvents = async (err, res) => {
@@ -65,6 +80,14 @@ class OwnedAvatars extends React.Component {
       } else {
         uri = uri.replace("ipfs://", "");
       }
+      let likes = 0;
+      let liked;
+      if(this.props.tokenLikes){
+        likes = await this.props.tokenLikes.methods.likes(res.returnValues._id).call();
+        if(this.props.coinbase){
+          liked = await this.props.tokenLikes.methods.liked(this.props.coinbase,res.returnValues._id).call();
+        }
+      }
       console.log(uri)
       console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
@@ -75,12 +98,68 @@ class OwnedAvatars extends React.Component {
         returnValues: res.returnValues,
         metadata: metadata
       }
-      this.state.savedBlobs.push(JSON.stringify(obj));
+      if (!this.state.savedBlobs.includes(JSON.stringify(obj))) {
+        this.state.savedBlobs.push(JSON.stringify(obj));
+      }
+      this.state.likes[obj.returnValues._id] =  {
+                                                  likes: likes,
+                                                  liked: liked
+                                                };
       await this.forceUpdate();
 
     } catch (err) {
       console.log(err);
     }
+  }
+
+  handleLikes = async (err,res) => {
+
+    let likes = 0;
+    let liked;
+    if(this.props.tokenLikes){
+      likes = await this.props.tokenLikes.methods.likes(res.returnValues.id).call();
+      if(this.props.coinbase){
+        liked = await this.props.tokenLikes.methods.liked(this.props.coinbase,res.returnValues.id).call();
+      }
+    }
+
+    this.state.loadingLikes[res.returnValues.id] =  true
+    await this.forceUpdate();
+    this.state.likes[res.returnValues.id] =  {
+                                                likes: likes,
+                                                liked: liked
+                                              };
+    this.state.loadingLikes[res.returnValues.id] =  false
+    await this.forceUpdate();
+  }
+  like = async(id) => {
+    try{
+      this.state.loadingLikes[id] =  true
+      await this.forceUpdate();
+      await this.props.tokenLikes.methods.like(id).send({
+        from: this.props.coinbase,
+        gasPrice: 1000000000
+      });
+    } catch(err){
+      console.log(err)
+    }
+    this.state.loadingLikes[id] =  false
+    await this.forceUpdate();
+  }
+
+  unlike = async(id) => {
+    try{
+      this.state.loadingLikes[id] =  true
+      await this.forceUpdate();
+      await this.props.tokenLikes.methods.unlike(id).send({
+        from: this.props.coinbase,
+        gasPrice: 1000000000
+      });
+    } catch(err){
+      console.log(err)
+    }
+    this.state.loadingLikes[id] =  false
+    await this.forceUpdate();
   }
   render(){
     return(
@@ -100,16 +179,18 @@ class OwnedAvatars extends React.Component {
               this.state.savedBlobs?.map((string) => {
                 const blob = JSON.parse(string);
                 return(
+                  <Box
+                    rounded="2xl"
+                    p="5"
+                    borderWidth="1px"
+                    _hover={{ boxShadow: '2xl', background: this.state.cardHoverBg }}
+                  >
                     <LinkBox
                       // h="200"
-                      rounded="2xl"
-                      p="5"
-                      borderWidth="1px"
-                      _hover={{ boxShadow: '2xl' }}
                       role="group"
                       as={Link}
-                      target="_blank"
                       href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`}
+                      isExternal
                     >
                       <Text
                         fontSize="sm"
@@ -118,33 +199,70 @@ class OwnedAvatars extends React.Component {
                         justifyContent="space-between"
                       >
                         <LinkOverlay
-                          style={{ fontWeight: 600 }}
+                          style={{fontWeight: 600 }}
                           href={blob.url}
                         >
                           {blob.metadata.name}
                         </LinkOverlay>
                       </Text>
                       <Divider mt="4" />
-                      {
+                      <center>
+                        <object type="text/html"
+                        data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
+                        width="196px"
+                        style={{borderRadius: "100px"}}>
+                        </object>
+                      </center>
+
+                    </LinkBox>
+                    <Divider mt="4" />
+                    <Center>
+                      <Text>
+                        <p>Likes: {this.state.likes[blob.returnValues._id].likes}</p>
+                      </Text>
+                    </Center>
+                    <Center>
+
+                    {
+                      (
+                        this.props.coinbase &&
                         (
-                          blob.metadata.image.includes('ipfs://') ?
+                          !this.state.loadingLikes[blob.returnValues._id] ?
                           (
-                            <center>
-                              <object type="text/html"
-                              data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                              width="196px"
-                              style={{borderRadius: "100px"}}>
-                              </object>
-                            </center>
+                            !this.state.likes[blob.returnValues._id].liked ?
+                            (
+                              <Button
+                                variant="heavy"
+                                leftIcon={<Image boxSize="25px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAC3UlEQVRoge2ZPWgUQRTHf2f0NBYGJTYSxELwExKCwYA2KgiKpFHsLC1EMViIFiIGK7HRRkUQJJigCGJhYaEoKIqNBDvNKRJN/Iz4hacYE4t3x769u72dm7nb2eJ+sDDsvPvP/92+/ZgZaNIk9cwBTgHvgXfAHWCHV0c1chqYqXAM+DRlSjuQp3ICM8ABf9bM2ENg9gnQAVxX574Bbd7cGTBEYPZo4VwWeKnO7/VjLZ4W4DOB0S7V16/OX03emhm9BCbHgYzq61R9z10GmeXy4xi2qfZtxGyRV6q9pIEenHhK8C/vKunLqr58wr6M6CMw+JvyJ02H6p9M1lo8C4EJAoMXKsRsVf0jyVkz4zKBuQkkoVIOqZjB5KzFs53wm7YvIu6GitmfjLV42oAxAmNXIuJmA19V3IpE3BlwicDUR2BxRNwGFfc6GWvxbAGmCYztrBI7oOIuNtpYa2HAHDBFuL6jjmsxmo+r/PYv8BYYRq6Us/mHhqZNSqfI9xr0ziH3jBX6Upseuw10TyIvN1PN87YJ5JTIYWRqWAk9mCstwFrgVonuRhsxXfPZKnH1TKBIBripdIdtREyNNSIBgG6lO2Yj4DuBBUr3V1RQI+cDrixV7S9RQWlOYL1qR36xpjmBzap9z0bA9z0wrnS7bQR8JrBKaU5SpVLSWkK6fO4jH4oVSWsCm1Tbqv7BXwllgE9Kc42tkK8EupTeB8ILYmWksYR0/d8l5o9JYwJ1qX/wU0LzgR9Kb7mLmI8E9imtZ65iJvMBvcb5D1jkMN4ywsvx/Q5aQHhGdoTyJLLIpoW+AtPIcvkgsn3UQ/RMTrOyZLwcMNc1gRMl5myPPPAIOItsOa1GJuqtyBfnGcL7aHlgnat5qG1VYgTZA/vjmOxPZOG3bswDjgOjlK8LTQEvgGOFOJDL3gscRPbHRmsw/wD5iKuJqm+5OtGO3As9SGl0IrOtPPAGMT6E4zO/SRNL/gNVZHTiig40MgAAAABJRU5ErkJggg=="/>}
+                                aria-label="Like it"
+                                onClick={() => {
+                                  this.like(blob.returnValues._id)
+                                }}
+                              >
+                                Like it
+                              </Button>
+                            ):
+                            (
+                              <Button
+                                variant="heavy"
+                                aria-label="Unlike it"
+                                onClick={() => {
+                                  this.unlike(blob.returnValues._id)
+                                }}
+                              >
+                                <Image boxSize="25px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABJ0lEQVRIie3UsSuFYRTH8Q/uILtbDEzsEpMk2y13MIlBBuVfMBopE4tSMpDMZgwWZVTKIOUWWVGSWwz3eev1dnlc3lsGvzqd87yn5/c9w3kf/pBacI87bKM/b0Af3lLxhKE8AXPB+AKnoT6MXWptADAS8hnWQj2cF2Aes6E+V5seXn4LaMUqNlHAPi7RG/pXMUDhi14HdjCJKtZxFHoDIR/HAGkl25FoN5wfsIiJEGXc+rhR6aiglJi0ZADpb89ox0IwTDSIpciwFfTEAMm5HDHL6iDt08ia/kh5A4ohPzYLMBXyXjMARYzjFcvNAMyo/VdbuM4b0IUxtelX0o28ANNok5k+L0A3RtWZPqvsU1Hx+XNQLzZik2QBJdx8w7iKE3TGAP+qq3d99VWqfM7/ZgAAAABJRU5ErkJggg=="/>
+                              </Button>
+                            )
                           ) :
                           (
-                            <center>
-                              <img src={blob.metadata.image} width='196px' alt=""  style={{borderRadius: "100px"}} />
-                            </center>
+                            <Spinner />
                           )
+
                         )
-                      }
-                    </LinkBox>
+                      )
+                    }
+                    </Center>
+                  </Box>
                 )
               })
             }

@@ -42,6 +42,8 @@ import IPFS from 'ipfs-http-client-lite';
 
 import ERC1155 from './contracts/ItemsERC1155.json'
 import ERC20Rewards from './contracts/ERC20Rewards.json'
+import ERC1155Likes from './contracts/ERC1155Likes.json'
+
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
 import OwnedAvatars from './pages/OwnedAvatars';
@@ -89,10 +91,13 @@ class App extends React.Component {
       }
       const netId = await web3.eth.net.getId();
       let itoken;
+      let tokenLikes;
       if(netId === 4){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
+        tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
       } else if(netId === 0x64){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
+        tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
       }
       this.setState({
         netId: netId
@@ -120,6 +125,7 @@ class App extends React.Component {
         //profile: profile,
         address:address,
         coinbase: coinbase,
+        tokenLikes: tokenLikes,
         //img: img,
         loading:false
       });
@@ -169,14 +175,15 @@ class App extends React.Component {
     const netId = await web3.eth.net.getId();
     let itoken;
     let rewards;
+    let tokenLikes;
     if(netId === 4){
       itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
       rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
-
+      tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
     } else if(netId === 0x64){
       itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
       rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.xdai);
-
+      tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
     }
     if(netId !== 4 && netId !== 0x64){
       if(window.location.href.includes("?rinkeby")){
@@ -189,6 +196,7 @@ class App extends React.Component {
       web3: web3,
       itoken: itoken,
       rewards: rewards,
+      tokenLikes: tokenLikes,
       coinbase:coinbase,
       netId:netId,
       loading: false,
@@ -445,6 +453,7 @@ class App extends React.Component {
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
+                            tokenLikes={this.state.tokenLikes}
                           />
                         ):
                         (
