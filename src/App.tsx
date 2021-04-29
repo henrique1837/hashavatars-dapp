@@ -48,7 +48,7 @@ import Nav from './components/Nav';
 import MintPage from './pages/Mint';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
-
+import Collections from './pages/Collections';
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
@@ -490,6 +490,13 @@ class App extends React.Component {
                       )
                     }
                     </>
+                  )
+                }
+              }/>
+
+              <Route path={"/collections"} render={() => {
+                  return(
+                    <Collections/>
                   )
                 }
               }/>
