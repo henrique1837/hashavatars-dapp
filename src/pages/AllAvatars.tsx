@@ -32,9 +32,11 @@ import {
   PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
-  Select
+  Select,
+  Avatar as Av
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+import makeBlockie from 'ethereum-blockies-base64';
 
 import Avatar from 'avataaars';
 
@@ -70,6 +72,7 @@ class OwnedAvatars extends React.Component {
       promises.push(this.handleEvents(null,res));
     }
     await Promise.all(promises);
+    await this.forceUpdate();
     const itoken = this.props.itoken;
     const tokenLikes = this.props.tokenLikes;
     /*
@@ -111,12 +114,14 @@ class OwnedAvatars extends React.Component {
       console.log(uri)
       console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
+      const creator = await this.props.itoken.methods.creators(res.returnValues._id).call();
 
 
       console.log(metadata)
       const obj = {
         returnValues: res.returnValues,
-        metadata: metadata
+        metadata: metadata,
+        creator: creator
       }
       if (!this.state.savedBlobs.includes(JSON.stringify(obj))) {
         this.state.savedBlobs.push(JSON.stringify(obj));
@@ -125,7 +130,6 @@ class OwnedAvatars extends React.Component {
                                                   likes: likes,
                                                   liked: liked
                                                 };
-      await this.forceUpdate();
 
     } catch (err) {
       console.log(err);
@@ -133,7 +137,9 @@ class OwnedAvatars extends React.Component {
   }
 
   handleLikes = async (err,res) => {
-
+    if(!res){
+      return
+    }
     let likes = 0;
     let liked;
     if(this.props.tokenLikes){
@@ -206,6 +212,8 @@ class OwnedAvatars extends React.Component {
       }
     }
     await Promise.all(promises);
+    await this.forceUpdate();
+
 
   }
 
@@ -282,6 +290,15 @@ class OwnedAvatars extends React.Component {
                         <PopoverHeader>{blob.metadata.name}</PopoverHeader>
                         <PopoverBody>
                         <p><small>Token ID: {blob.returnValues._id}</small></p>
+                        <p style={{
+                          whiteSpace: "nowrap",
+                          width: "100%",                   /* IE6 needs any width */
+                          overflow: "hidden",              /* "overflow" value must be different from  visible"*/
+                          oTextOverflow: "ellipsis",    /* Opera < 11*/
+                          textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
+                        }}>
+                          <small>Creator: <Link href={`https://blockscout.com/poa/xdai/address/${blob.creator}`} isExternal><Av src={makeBlockie(blob.creator)} size='sm' alt="" />{' '}{blob.creator}</Link></small>
+                        </p>
                         <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
                         <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
                         </PopoverBody>

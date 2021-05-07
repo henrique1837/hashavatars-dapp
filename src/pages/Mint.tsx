@@ -98,6 +98,7 @@ class MintPage extends React.Component {
 
       itoken.events.TransferSingle({
         filter: {
+          from: '0x0000000000000000000000000000000000000'
         },
         fromBlock: 'latest'
       }, this.handleEvents);
@@ -172,6 +173,9 @@ class MintPage extends React.Component {
         });
         return;
       }
+      this.setState({
+        mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
+      });
       const results = await this.props.checkTokens();
       const metadatas = []
       for(let res of results){
@@ -201,6 +205,9 @@ class MintPage extends React.Component {
         alert("HashAvatar with same image (DNA) was already claimed.");
         return;
       }
+      this.setState({
+        mintingMsg: <p><small>Storing image and metadata at IPFS ... </small></p>
+      });
       const ipfs = this.props.ipfs;
       const imgres = await ipfs.add(this.state.svg);
       console.log(imgres[0].hash)
@@ -260,15 +267,19 @@ class MintPage extends React.Component {
             },
           ]
       }
-      console.log(metadata)
       const res = await ipfs.add(JSON.stringify(metadata));
       //const uri = res[0].hash;
       const uri = res[0].hash;
       console.log(uri);
-
+      this.setState({
+        mintingMsg: <p><small>Approve transaction ... </small></p>
+      });
       const id = Number(await this.props.itoken.methods.totalSupply().call()) + 1;
       console.log(id)
-      const fees = [];
+      const fees = [{
+        recipient: this.props.coinbase,
+        value: 500
+      }];
       let supply = this.state.supply;
       if(typeof(supply !== Number)){
         supply = 1
@@ -277,6 +288,10 @@ class MintPage extends React.Component {
         from: this.props.coinbase,
         value: 10 ** 18,
         gasPrice: 1000000000
+      }).once('transactionHash',(hash) => {
+        this.setState({
+          mintingMsg: <p><small>Transaction <a href={`https://blockscout.com/xdai/mainnet/tx/${hash}`} target="_blank" >{hash}</a> sent, wait confirmation ...</small></p>
+        });
       });
       this.setState({
         minting: false
@@ -313,20 +328,19 @@ class MintPage extends React.Component {
       const creator = await this.props.itoken.methods.creators(res.returnValues._id).call();
       if(creator.toLowerCase() === this.props.coinbase.toLowerCase() && !this.state.savedBlobs.includes(JSON.stringify(obj))){
         this.state.savedBlobs.push(JSON.stringify(obj));
-        await this.forceUpdate();
       }
       if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
         this.state.allHashAvatars.push(JSON.stringify(obj));
-        await this.forceUpdate();
       }
       console.log(this.state.allHashAvatars);
       if(this.props.rewards){
         const claim = await this.props.checkClaimed(res.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
-          await this.forceUpdate();
         }
+
       }
+      this.forceUpdate()
     } catch (err) {
       console.log(err);
     }
@@ -406,10 +420,6 @@ class MintPage extends React.Component {
         name: e.target.value.trim(),
         dna: dna
       }
-
-      console.log(<Avatar {...avatar} />)
-      console.log(ReactDOMServer.renderToString(<Avatar {...avatar} />))
-
 
       const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />)
 
@@ -502,7 +512,10 @@ class MintPage extends React.Component {
                         <Button onClick={this.mint}>Claim</Button>
                       ) :
                       (
+                        <>
                         <Spinner size="xl" />
+                        {this.state.mintingMsg}
+                        </>
                       )
                     ) :
                     (

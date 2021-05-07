@@ -72,7 +72,13 @@ class App extends React.Component {
   componentDidMount = async () => {
     const hasLogged = localStorage.getItem('logged');
     if(hasLogged){
-      await this.connectWeb3();
+      if(window.ethereum?.isMetaMask){
+        if(! await window.ethereum._metamask.isUnlocked()){
+          await this.initWeb3();
+          return
+        }
+        await this.connectWeb3();
+      }
     } else {
       await this.initWeb3();
     }
@@ -141,13 +147,14 @@ class App extends React.Component {
       loading: true
     });
     let provider;
-    if(window.ethereum?.isMetamask){
+    if(window.ethereum?.isMetaMask){
       provider = await detectEthereumProvider();
-      if(!provider._metamask.isUnlocked()){
+      if(! await provider._metamask.isUnlocked()){
         alert("Please unlock your metamask first");
         this.setState({
           loading: false
         });
+        await this.initWeb3();
         return
       }
     } else {
