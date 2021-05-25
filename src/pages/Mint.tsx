@@ -177,12 +177,12 @@ class MintPage extends React.Component {
         mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
       });
       const results = await this.props.checkTokens();
-      const metadatas = []
+      const metaPromises = []
       for(let res of results){
-        const uriToken = await this.props.itoken.methods.uri(res.returnValues._id).call();
-        const metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
-        metadatas.push(metadataToken)
+        const metadataToken = this.props.getMetadata(res.returnValues._id);
+        metaPromises.push(metadataToken)
       }
+      const metadatas = await Promise.all(metaPromises);
       let cont = true;
       let dnaNotUsed = true;
       metadatas.map(obj => {

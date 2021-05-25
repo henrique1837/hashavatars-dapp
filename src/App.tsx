@@ -67,6 +67,8 @@ class App extends React.Component {
     this.checkClaimed = this.checkClaimed.bind(this);
     this.claim = this.claim.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
+    this.getMetadata = this.getMetadata.bind(this);
+
     this.addNetwork = this.addNetwork.bind(this);
   }
   componentDidMount = async () => {
@@ -216,7 +218,11 @@ class App extends React.Component {
 
   }
 
-
+  getMetadata = async(id) => {
+    const uriToken = await this.state.itoken.methods.uri(id).call();
+    const metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
+    return(metadataToken)
+  }
   checkTokens = async () => {
     const itoken = this.state.itoken;
     const lastId = await itoken.methods.totalSupply().call();
@@ -341,6 +347,7 @@ class App extends React.Component {
                               itoken={this.state.itoken}
                               rewards={this.state.rewards}
                               checkClaimed={this.checkClaimed}
+                              getMetadata={this.getMetadata}
                               claim={this.claim}
                               web3={this.state.web3}
                               connectWeb3={this.connectWeb3}
