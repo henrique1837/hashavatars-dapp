@@ -41,6 +41,8 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import makeBlockie from 'ethereum-blockies-base64';
 
+import Box3 from '3box';
+
 class FeedBackPage extends React.Component {
 
   state = {
@@ -48,56 +50,68 @@ class FeedBackPage extends React.Component {
   }
   constructor(props){
     super(props)
-    this.loadDB = this.loadDB.bind(this);
+    this.connectBox = this.connectBox.bind(this);
   }
   componentDidMount = async () => {
-    const options = {
-      // Give write access to everyone
-      accessController: {
-        write: ['*'],
-        read: ['*']
-      }
+    const hasLoggedBox = localStorage.getItem('loggedBox');
+    if(hasLoggedBox){
+      await this.connectBox();
+    } else {
+      const posts = await Box3.getThread("hashavatars-dapp", "feedbacks","0xe3D00715710B227C73A1412552EF34EE67994fC9",false);
+      this.setState({
+        posts:posts,
+        loading: false
+      })
     }
-    const db = await this.props.orbitdb.feed("/orbitdb/zdpuAyoANpG6HTbzt24Zs4hpSrJtzHc7SGBP22Sbn1q4H9aug/dapp-feedbacks",options);
-    console.log(db)
-
-    this.setState({
-      db: db
-    });
-    await this.loadDB();
-
-
-    db.events.on('peer', (peer) => console.log(peer) );
-    db.events.on('write', (address, entry, heads) => {
-      this.loadDB();
-    }
-   );
-
-    // Listen for updates from peers
-    db.events.on("replicated", address => {
-      this.loadDB();
-    });
   }
-  loadDB = async () => {
-    const db = this.state.db;
-    await db.load();
-    const feeds = db.iterator({ limit: -1 })
-    .collect()
-    .map((e) => e.payload.value);
+
+  connectBox = async () => {
     this.setState({
-      feeds: feeds.reverse(),
-      loading: false
-    });
-    console.log(feeds)
-  }
-  post = async () => {
-    const db = this.state.db;
-    const hash = await db.add({
-      from: this.props.coinbase,
-      message: this.state.msg,
-      timestamp: Date.now()
+      connecting: true
     })
-    await this.loadDB();
+    if(!this.props.coinbase){
+      await this.props.initWeb3();
+    }
+    if(this.props.coinbase == undefined){
+      alert("Install metamask or use brave browser");
+      this.setState({
+        connecting: false
+      })
+      return
+    }
+    const box = await Box3.create(window.ethereum)
+    const spaces = ['hashavatars-dapp']
+    await box.auth(spaces, {address: this.props.coinbase});
+    await box.syncDone
+    const space = await box.openSpace('hashavatars-dapp')
+    await space.syncDone;
+    const thread = await space.joinThread('feedbacks', {
+      firstModerator: "0xe3D00715710B227C73A1412552EF34EE67994fC9",
+      members: false
+    });
+    const posts = await thread.getPosts();
+    this.setState({
+      space: space,
+      thread: thread,
+      posts: posts,
+      connecting: false,
+      loading: false
+    })
+    thread.onUpdate(async () => {
+      const posts = await this.state.thread.getPosts();
+      this.setState({
+        posts: posts
+      });
+    })
+    localStorage.setItem('loggedBox',true);
+
+  }
+
+  post = async () => {
+    await this.state.thread.post({
+      from: this.props.coinbase,
+      message: this.state.msg
+    })
   }
 
   handleOnChange = (e) => {
@@ -115,8 +129,26 @@ class FeedBackPage extends React.Component {
               <small>Suggestions? Some idea? Partnership? Make a joke? Feel free to give your feedback!</small>
             </Box>
             <Box>
-              <Input placeholder="Message" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
-              <Button onClick={this.post}>Post</Button>
+              {
+                (
+                  this.state.space && !this.state.connecting ?
+                  (
+                    <>
+                    <Input placeholder="Message" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
+                    <Button onClick={this.post}>Post</Button>
+                    </>
+                  ) :
+                  (
+                    this.state.connecting ?
+                    (
+                      <Spinner size="xl" />
+                    ) :
+                    (
+                      <Button onClick={this.connectBox}>Connect 3box</Button>
+                    )
+                  )
+                )
+              }
             </Box>
             <Box>
             {
@@ -139,8 +171,7 @@ class FeedBackPage extends React.Component {
                 (
                   <>
                   {
-                    this.state.feeds?.map(item => {
-                      console.log(item)
+                    this.state.posts?.map(item => {
                       return(
                         <Box style={{paddingBottom: '60px'}}>
                           <Box style={{
@@ -151,11 +182,11 @@ class FeedBackPage extends React.Component {
                             textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                           }}
                             >
-                            <Avatar src={makeBlockie(item.from? (item.from):("anonymous"))} size='sm' alt="" />
+                            <Avatar src={makeBlockie(item.message.from? (item.message.from):("anonymous"))} size='sm' alt="" />
                           </Box>
                           <Center>
                           <Box maxWidth={"80%"}>
-                            <p>{item.message}</p>
+                            <p>{item.message.message}</p>
                           </Box>
                           </Center>
                           <Box>
