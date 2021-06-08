@@ -39,23 +39,11 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 
-import IPFS from 'ipfs-http-client-lite';
 import Avatar from 'avataaars';
-
-
-/*
-const ipfs = new IPFS({
-  host: "ipfs.infura.io",
-  port: 5001,
-  protocol: "https",
-});
-*/
-
+import IPFS from 'ipfs-http-client-lite';
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
-
-
 class MintPage extends React.Component {
 
   state = {
@@ -113,7 +101,7 @@ class MintPage extends React.Component {
             claimed.push(this.props.checkClaimed(res.returnValues._id));
           }
           await Promise.all(promises)
-          if(this.props.rewards){
+          if(this.props.rewards != null){
             let toClaim = await Promise.all(claimed);
 
             console.log(toClaim)
@@ -208,7 +196,7 @@ class MintPage extends React.Component {
       this.setState({
         mintingMsg: <p><small>Storing image and metadata at IPFS ... </small></p>
       });
-      const ipfs = this.props.ipfs;
+      //const ipfs = this.props.ipfs;
       const imgres = await ipfs.add(this.state.svg);
       console.log(imgres[0].hash)
       let metadata = {
@@ -268,8 +256,8 @@ class MintPage extends React.Component {
           ]
       }
       const res = await ipfs.add(JSON.stringify(metadata));
-      //const uri = res[0].hash;
       const uri = res[0].hash;
+      //const uri = res.path;
       console.log(uri);
       this.setState({
         mintingMsg: <p><small>Approve transaction ... </small></p>
@@ -333,7 +321,7 @@ class MintPage extends React.Component {
         this.state.allHashAvatars.push(JSON.stringify(obj));
       }
       console.log(this.state.allHashAvatars);
-      if(this.props.rewards){
+      if(this.props.rewards != null){
         const claim = await this.props.checkClaimed(res.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
@@ -533,7 +521,14 @@ class MintPage extends React.Component {
               </Text>
             </Box>
             <Box>
-            <Heading>HashAvatars Created by you</Heading>
+            {
+              (
+                this.state.savedBlobs?.length > 0 &&
+                (
+                  <Heading>HashAvatars Created by you</Heading>
+                )
+              )
+            }
             </Box>
             <Box>
             <SimpleGrid

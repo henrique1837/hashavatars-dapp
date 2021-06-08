@@ -38,7 +38,7 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider'
 
-import IPFS from 'ipfs-http-client-lite';
+import IPFS from 'ipfs';
 
 import ERC1155 from './contracts/ItemsERC1155.json'
 import ERC20Rewards from './contracts/ERC20Rewards.json'
@@ -46,14 +46,18 @@ import ERC1155Likes from './contracts/ERC1155Likes.json'
 
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
+import FeedBackPage from './pages/Feedback';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Collections from './pages/Collections';
 
+const OrbitDB = require('orbit-db')
+
+/*
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
-
+*/
 
 class App extends React.Component {
 
@@ -70,8 +74,11 @@ class App extends React.Component {
     this.getMetadata = this.getMetadata.bind(this);
 
     this.addNetwork = this.addNetwork.bind(this);
+    this.initOrbitDB = this.initOrbitDB.bind(this);
+
   }
   componentDidMount = async () => {
+    await this.initOrbitDB();
     const hasLogged = localStorage.getItem('logged');
     if(hasLogged){
       if(window.ethereum?.isMetaMask){
@@ -127,6 +134,7 @@ class App extends React.Component {
         img = profile.image
       }
       */
+
       this.setState({
         web3: web3,
         itoken: itoken,
@@ -142,7 +150,39 @@ class App extends React.Component {
       console.log(err)
     }
   }
-
+  initOrbitDB = async () => {
+    const ipfs = await IPFS.create({
+        EXPERIMENTAL: {
+          pubsub: true
+        },
+        config: {
+          Addresses: {
+            Swarm: [
+              // Use IPFS dev signal server
+              // Prefer websocket over webrtc
+              //
+              // Websocket:
+              // '/dns4/ws-star-signal-2.servep2p.com/tcp/443//wss/p2p-websocket-star',
+              '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+              '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+              '/dns4/webrtc-star.discovery.libp2p.io/tcp/443/wss/p2p-webrtc-star/',
+              // Local signal server
+              //'/ip4/127.0.0.1/tcp/4711/ws/p2p-websocket-star'
+              //
+              // WebRTC:
+              //'/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star',
+              // Local signal server
+              // '/ip4/127.0.0.1/tcp/1337/ws/p2p-webrtc-star'
+            ]
+          }
+        }
+    });
+    const orbitdb = await OrbitDB.createInstance(ipfs);
+    this.setState({
+      orbitdb: orbitdb,
+      ipfs: ipfs
+    });
+  }
   connectWeb3 = async () => {
 
     this.setState({
@@ -191,7 +231,6 @@ class App extends React.Component {
       tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
     } else if(netId === 0x64){
       itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
-      rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.xdai);
       tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
     }
     if(netId !== 4 && netId !== 0x64){
@@ -238,16 +277,20 @@ class App extends React.Component {
     return(results)
   }
   checkClaimed = async (id) => {
-    if(id > 1500) {
-      return
+    try{
+      if(id > 1500) {
+        return
+      }
+      const creator = await this.state.itoken.methods.creators(id).call();
+      const hasClaimed = await this.state.rewards.methods.claimed(creator,id).call();
+      return({
+        id: id,
+        creator: creator,
+        hasClaimed: hasClaimed
+      });
+    } catch(err){
+      console.log(err)
     }
-    const creator = await this.state.itoken.methods.creators(id).call();
-    const hasClaimed = await this.state.rewards.methods.claimed(creator,id).call();
-    return({
-      id: id,
-      creator: creator,
-      hasClaimed: hasClaimed
-    });
   }
   claim = async (ids) => {
     try{
@@ -353,7 +396,7 @@ class App extends React.Component {
                               connectWeb3={this.connectWeb3}
                               checkTokens={this.checkTokens}
                               coinbase={this.state.coinbase}
-                              ipfs={ipfs}
+                              ipfs={this.state.ipfs}
                               provider={this.state.provider}
                               loading={this.state.loading}
                             />
@@ -384,7 +427,7 @@ class App extends React.Component {
                                     'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
                                   }
                                 />
-                                <p>Please connect to xDai network</p>
+                                <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
                                 </VStack>
                               </Center>
                             )
@@ -442,7 +485,7 @@ class App extends React.Component {
                                   'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
                                 }
                               />
-                              <p>Please connect to xDai network</p>
+                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
                               </VStack>
                             </Center>
                           )
@@ -496,7 +539,57 @@ class App extends React.Component {
                                   'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
                                 }
                               />
-                              <p>Please connect to xDai network</p>
+                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
+                              </VStack>
+                            </Center>
+                          )
+                        )
+                      )
+                    }
+                    </>
+                  )
+                }
+              }/>
+
+              <Route path={"/feedbacks"} render={() => {
+                  return(
+                    <>
+                    {
+                      (
+                        this.state.itoken ?
+                        (
+                          <FeedBackPage
+                            orbitdb={this.state.orbitdb}
+                            coinbase={this.state.coinbase}
+                          />
+                        ):
+                        (
+                          (this.state.netId === 4 || this.state.netId === 0x64) ?
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
+                          ) :
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>WRONG NETWORK</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
                               </VStack>
                             </Center>
                           )
