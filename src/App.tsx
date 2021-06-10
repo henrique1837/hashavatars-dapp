@@ -51,6 +51,7 @@ import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Collections from './pages/Collections';
 
+import Box3 from '3box';
 
 /*
 const ipfs = IPFS({
@@ -71,7 +72,7 @@ class App extends React.Component {
     this.claim = this.claim.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
     this.getMetadata = this.getMetadata.bind(this);
-
+    this.connectBox = this.connectBox.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
 
   }
@@ -172,9 +173,9 @@ class App extends React.Component {
         await provider.request({ method: 'eth_requestAccounts' });
       } catch(err){
         console.log(err);
-        this.setState({
-          loading: false,
-        });
+        localStorage.setItem('logged',false);
+        localStorage.setItem('loggedBox',false);
+        await this.initWeb3();
         return;
       }
     } else {
@@ -285,6 +286,40 @@ class App extends React.Component {
     } catch(err){
 
     }
+  }
+  connectBox = async () => {
+    if(!this.state.provider){
+      alert("Install metamask or use brave browser");
+      this.setState({
+        connecting: false
+      })
+      return
+    }
+    if(this.state.coinbase == undefined){
+      await this.connectWeb3();
+    }
+
+    if(this.state.coinbase == undefined){
+      localStorage.setItem('loggedBox',false);
+      localStorage.setItem('logged',false);
+      return;
+    }
+    console.log('Connecting 3box');
+    const box = await Box3.create(this.state.provider)
+    const spaces = ['hashavatars-dapp']
+    await box.auth(spaces, {address: this.state.coinbase});
+    await box.syncDone
+    console.log('Open space');
+
+    const space = await box.openSpace('hashavatars-dapp')
+    await space.syncDone;
+    console.log('Sync done');
+
+    this.setState({
+      space: space
+    })
+    localStorage.setItem('loggedBox',true);
+    return(space);
   }
 
   render(){
@@ -526,7 +561,9 @@ class App extends React.Component {
                             orbitdb={this.state.orbitdb}
                             ipfs={this.state.ipfs}
                             coinbase={this.state.coinbase}
-                            initWeb3={this.initWeb3}
+                            connectWeb3={this.connectWeb3}
+                            connectBox={this.connectBox}
+                            space={this.state.space}
                           />
                         ):
                         (
