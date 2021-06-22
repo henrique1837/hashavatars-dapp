@@ -97,6 +97,18 @@ const NavLink = (props) => (
     to={`/feedbacks`}>
     Feedbacks
   </Link>
+  <Link
+    px={2}
+    py={1}
+    rounded={'md'}
+    _hover={{
+      textDecoration: 'none',
+      bg: useColorModeValue('gray.200', 'gray.700'),
+    }}
+    href={`/game`}
+    to={`/game`}>
+    Game
+  </Link>
   </>
 );
 
@@ -151,7 +163,7 @@ export default function Simple(props) {
                         href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`}
                         target="_blank"
                         >
-                        Governance BETA {' '}<ExternalLinkIcon mx="2px" />
+                        GovBETA {' '}<ExternalLinkIcon mx="2px" />
                       </a>
                     )
                   )

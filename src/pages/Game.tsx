@@ -38,9 +38,13 @@ import {
   PopoverCloseButton,
   Avatar
 } from "@chakra-ui/react"
+import { ExternalLinkIcon } from '@chakra-ui/icons'
+
+
 
 let metadata;
 let gameover = false;
+let cursors;
 class MainScene extends Phaser.Scene {
   private helloWorld!: Phaser.GameObjects.Text
   private player: Phaser.GameObjects.Sprite
@@ -50,7 +54,6 @@ class MainScene extends Phaser.Scene {
   private totalMp: Phaser.GameObjects.Sprite;
 
   private bombs: Phaser.GameObjects.Sprite
-  public cursors;
 
 
 
@@ -60,28 +63,29 @@ class MainScene extends Phaser.Scene {
   preload() {
 
 
-      this.load.baseURL = 'http://examples.phaser.io/assets/';
-      this.load.crossOrigin = 'anonymous';
+      //this.load.baseURL = 'http://examples.phaser.io/assets/';
 
       this.load.image('player', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
       this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
-      this.load.image('musk',metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-      this.load.image('platform', 'sprites/platform.png');
+      this.load.image('clone',metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
+      this.load.image('platform', 'https://ipfs.io/ipfs/QmdwU65egQPGZiwdWX7Bkjt442n99xd1imA1gKtCQXjXNd');
 
   }
   create () {
     this.totalMp = 0;
-    this.cursors = this.input.keyboard.createCursorKeys();
+    cursors = this.input.keyboard.createCursorKeys();
     this.player = this.physics.add.sprite(100, 100, 'player');
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.player.body.setGravityY(300)
     this.player.scale = 0.25
     this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(400, 568, 'platform').setScale(3).refreshBody();
+    this.platforms.create(400, 568, 'platform').setScale(4).refreshBody();
 
-    this.platforms.create(600, 400, 'platform');
-    this.platforms.create(50, 250, 'platform');
+    this.platforms.create(1000, 130, 'platform').setScale(0.25).refreshBody();
+    this.platforms.create(1200, 280, 'platform').setScale(0.25).refreshBody();
+
+    this.platforms.create(50, 300, 'platform');
     this.platforms.create(750, 220, 'platform');
 
 
@@ -105,6 +109,7 @@ class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.bombs, this.platforms);
     this.physics.add.collider(this.bombs, this.mplatform);
     this.physics.add.collider(this.player, this.mplatform);
+    this.physics.add.collider(this.bombs, this.bombs);
     this.physics.add.collider(this.platforms, this.mplatform);
 
     this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
@@ -126,10 +131,10 @@ class MainScene extends Phaser.Scene {
     bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
   }
 
-  generateMusk(){
+  generateClone(){
     const x = Phaser.Math.Between(0, 500)
 
-    const bomb = this.mplatform.create(x, 12, 'musk');
+    const bomb = this.mplatform.create(x, 12, 'clone');
     bomb.setBounce(1);
     bomb.scale = 0.15
     bomb.setCollideWorldBounds(true);
@@ -138,25 +143,25 @@ class MainScene extends Phaser.Scene {
   }
   update () {
     this.helloWorld.angle += 1;
-    this.mplatform.angle += 1;
-    if (this.cursors.left.isDown){
+    if (cursors.left.isDown){
       this.player.x -= 3.2;
     }
 
-    if (this.cursors.right.isDown){
+    if (cursors.right.isDown){
       this.player.x += 3.2;
     }
-    if (this.cursors.up.isDown && this.player.body.touching.down){
+    if (cursors.up.isDown && this.player.body.touching.down){
       this.player.setVelocityY(-480);
     }
     if(Date.now() % 213 == 0){
       if(this.totalMp < 5){
-        this.generateMusk();
+        this.generateClone();
       }
     }
     if(Date.now() % 211 == 0){
       this.generateBomb();
     }
+
 
   }
 }
@@ -312,6 +317,9 @@ class GamePage extends Component {
                 <VStack spacing={12}>
                   <Box>
                   <Heading>Select a HashAvatar</Heading>
+                  <p>HashAtack game - avoid being touched by HashAvatars icon, use your clones to help!</p>
+                  <p><small><Link href="https://phaser.io/" isExternal>Done with phaser <ExternalLinkIcon /></Link></small></p>
+                  <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" isExternal>Based on First Game Phaser3 tutorial <ExternalLinkIcon /></Link></small></p>
                   </Box>
 
                   <Box>
@@ -337,7 +345,9 @@ class GamePage extends Component {
                         (
                           <Center>
                            <VStack spacing={4}>
-                            <p>Connect your wallet</p>
+                            <p>Connect your wallet to play HashAtack</p>
+                            <p><small><Link href="https://phaser.io/" isExternal>A game done with phaser <ExternalLinkIcon /></Link></small></p>
+                            <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" isExternal>Based on First Game Phaser3 tutorial <ExternalLinkIcon /></Link></small></p>
                             <Avatar
                               size={'xl'}
                               src={
@@ -353,7 +363,7 @@ class GamePage extends Component {
                           (
                             <Center>
                              <VStack spacing={4}>
-                              <p>No HashAvatars here</p>
+                              <p>No HashAvatars here to play HashAtack</p>
                               <Avatar
                                 size={'xl'}
                                 src={
