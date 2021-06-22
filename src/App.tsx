@@ -46,12 +46,13 @@ import ERC1155Likes from './contracts/ERC1155Likes.json'
 
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
-import FeedBackPage from './pages/Feedback';
+import FeedBackPage from './pages/Feedback0';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
+import Game from './pages/Game';
+
 import Collections from './pages/Collections';
 
-import Box3 from '3box';
 
 /*
 const ipfs = IPFS({
@@ -72,7 +73,6 @@ class App extends React.Component {
     this.claim = this.claim.bind(this);
     this.checkTokens = this.checkTokens.bind(this);
     this.getMetadata = this.getMetadata.bind(this);
-    this.connectBox = this.connectBox.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
 
   }
@@ -287,41 +287,6 @@ class App extends React.Component {
 
     }
   }
-  connectBox = async () => {
-    if(!this.state.provider){
-      alert("Install metamask or use brave browser");
-      this.setState({
-        connecting: false
-      })
-      return
-    }
-    if(this.state.coinbase == undefined){
-      await this.connectWeb3();
-    }
-
-    if(this.state.coinbase == undefined){
-      localStorage.setItem('loggedBox',false);
-      localStorage.setItem('logged',false);
-      return;
-    }
-    console.log('Connecting 3box');
-    const box = await Box3.create(this.state.provider)
-    const spaces = ['hashavatars-dapp']
-    await box.auth(spaces, {address: this.state.coinbase});
-    await box.syncDone
-    console.log('Open space');
-
-    const space = await box.openSpace('hashavatars-dapp')
-    await space.syncDone;
-    console.log('Sync done');
-
-    this.setState({
-      space: space
-    })
-    localStorage.setItem('loggedBox',true);
-    return(space);
-  }
-
   render(){
     return(
 
@@ -549,7 +514,59 @@ class App extends React.Component {
                   )
                 }
               }/>
-
+              <Route path={"/game"} render={() => {
+                  return(
+                    <>
+                    {
+                      (
+                        this.state.itoken ?
+                        (
+                          <Game
+                            itoken={this.state.itoken}
+                            web3={this.state.web3}
+                            getMetadata={this.getMetadata}
+                            initWeb3={this.initWeb3}
+                            checkTokens={this.checkTokens}
+                            coinbase={this.state.coinbase}
+                          />
+                        ):
+                        (
+                          (this.state.netId === 4 || this.state.netId === 0x64) ?
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
+                          ) :
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>WRONG NETWORK</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
+                              </VStack>
+                            </Center>
+                          )
+                        )
+                      )
+                    }
+                    </>
+                  )
+                }
+              }/>
               <Route path={"/feedbacks"} render={() => {
                   return(
                     <>

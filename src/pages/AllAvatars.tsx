@@ -333,7 +333,7 @@ class OwnedAvatars extends React.Component {
                                   oTextOverflow: "ellipsis",    /* Opera < 11*/
                                   textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                                 }}>
-                                  <small>Creator: <Link href={`https://blockscout.com/poa/xdai/address/${blob.creator}`} isExternal><Av src={makeBlockie(blob.creator)} size='sm' alt="" />{' '}{blob.creator}</Link></small>
+                                  <small>Creator: <Link href={`https://3box.io/${blob.creator}`} isExternal><Av src={makeBlockie(blob.creator)} size='sm' alt="" />{' '}{blob.creator}</Link></small>
                                 </p>
                                 <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
                                 <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>

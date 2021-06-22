@@ -42,7 +42,18 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 import makeBlockie from 'ethereum-blockies-base64';
 
 import Box3 from '3box';
+import {
+  ChatMessage,
+  Direction,
+  Environment,
+  getStatusFleetNodes,
+  Protocol,
+  StoreCodec,
+  Waku,
+  WakuMessage,
+} from 'js-waku';
 
+console.log(StoreCodec)
 class FeedBackPage extends React.Component {
 
   state = {
@@ -51,59 +62,67 @@ class FeedBackPage extends React.Component {
     super(props)
   }
   componentDidMount = async () => {
-    const hasLoggedBox = localStorage.getItem('loggedBox');
-    const hasLogged = localStorage.getItem('logged');
-    const posts = await Box3.getThread("hashavatars-dapp", "feedbacks","0xe3D00715710B227C73A1412552EF34EE67994fC9",false);
-    this.setState({
-      posts: posts.reverse()
-    })
-    if(hasLoggedBox && hasLogged){
-      this.setState({
-        connecting: true
+    const waku = await Waku.create({
+        libp2p: {
+          config: {
+            pubsub: {
+              enabled: true,
+              emitSelf: true,
+            },
+          },
+        },
+    });
+    const nodes = await getStatusFleetNodes();
+    await Promise.all(
+      nodes.map((addr) => {
+        return waku.dial(addr);
       })
-      let space = this.props.space;
-      if(!space){
-        space = await this.props.connectBox();
-        if(space == undefined){
-          const posts = await Box3.getThread("hashavatars-dapp", "feedbacks","0xe3D00715710B227C73A1412552EF34EE67994fC9",false);
-          this.setState({
-            posts: posts.reverse(),
-            connecting: false
+    );
+
+    waku.relay.addObserver(async (msg) => {
+      console.log("Message received:", msg.payloadAsUtf8)
+      this.state.posts.unshift(msg)
+      await this.forceUpdate();
+      console.log(this.state.posts)
+    }, ["/test-hashavatars-feedback/proto"]);
+    this.setState({
+      waku: waku,
+      posts: []
+    })
+    waku.libp2p.peerStore.once(
+      'change:protocols',
+      async ({ peerId, protocols }) => {
+        if (protocols.includes(StoreCodec)) {
+          console.log(
+            `Retrieving archived messages from ${peerId.toB58String()}`
+          );
+          const messages = await waku.store.queryHistory({
+            peerId,
+            contentTopics: ["/test-hashavatars-feedback/proto"]
           });
-          return;
+          messages?.map(async (msg) => {
+            this.state.posts.unshift(msg)
+            await this.forceUpdate();
+            console.log(this.state.posts)
+          });
         }
       }
-      const thread = await space.joinThread('feedbacks', {
-        firstModerator: "0xe3D00715710B227C73A1412552EF34EE67994fC9",
-        members: false
-      });
-      const posts = await thread.getPosts();
-      this.setState({
-        space: space,
-        thread: thread,
-        posts: posts.reverse(),
-        connecting: false
-      })
-      thread.onUpdate(async () => {
-        const posts = await this.state.thread.getPosts();
-        this.setState({
-          posts: posts.reverse()
-        });
-      })
-    }
+    );
+
   }
 
   post = async () => {
-    await this.state.thread.post({
-      from: this.props.coinbase,
-      message: this.state.msg
-    })
+    const msg = WakuMessage.fromUtf8String(JSON.stringify({
+      message: this.state.msg,
+      from: this.props.coinbase
+    }), "/test-hashavatars-feedback/proto");
+    await this.state.waku.relay.send(msg);
   }
 
   handleOnChange = (e) => {
     this.setState({
       msg: e.target.value
-    })
+    });
   }
 
   render(){
@@ -117,9 +136,9 @@ class FeedBackPage extends React.Component {
             <Box>
               {
                 (
-                  this.state.posts &&
+                  this.state.waku &&
                   (
-                    this.state.space && !this.state.connecting ?
+                    !this.state.connecting ?
                     (
                       <>
                       <Input placeholder="Message" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
@@ -131,11 +150,11 @@ class FeedBackPage extends React.Component {
                       (
                         <>
                         <Spinner size="xl" />
-                        <p><small>Connecting 3box</small></p>
+                        <p><small>Connecting</small></p>
                         </>
                       ) :
                       (
-                        <Button onClick={this.props.connectBox}>Connect 3box</Button>
+                        <Button onClick={this.props.connectBox}>Connect</Button>
                       )
                     )
                   )
@@ -165,6 +184,7 @@ class FeedBackPage extends React.Component {
             <Box>
             {
               this.state.posts?.map(item => {
+                const message = JSON.parse(item.payloadAsUtf8);
                 return(
                   <Box style={{paddingBottom: '60px'}}>
                     <Box style={{
@@ -175,15 +195,15 @@ class FeedBackPage extends React.Component {
                       textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                     }}
                       >
-                      <Avatar src={makeBlockie(item.message.from? (item.message.from):("anonymous"))} size='sm' alt="" />
+                      <Avatar src={makeBlockie(message.from? (message.from):("anonymous"))} size='sm' alt="" />
                     </Box>
                     <Center>
                     <Box maxWidth={"80%"}>
-                      <p>{item.message.message}</p>
+                      <p>{message.message}</p>
                     </Box>
                     </Center>
                     <Box>
-                      <small>{new Date(item.timestamp*1000).toUTCString()}</small>
+                      <small>{new Date(item.timestamp).toUTCString()}</small>
                     </Box>
                   </Box>
                 )
