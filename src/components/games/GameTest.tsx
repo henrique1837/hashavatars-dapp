@@ -39,157 +39,143 @@ import {
   Avatar
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+import {
+  ChatMessage,
+  Direction,
+  Environment,
+  getStatusFleetNodes,
+  Protocol,
+  StoreCodec,
+  Waku,
+  WakuMessage,
+} from 'js-waku';
 
 
-
+let waku;
 let metadata;
-let gameover = false;
-let cursors;
+let players = {};
+
 class MainScene extends Phaser.Scene {
-  private helloWorld!: Phaser.GameObjects.Text
-  private player: Phaser.GameObjects.Sprite
-
-  private platforms: Phaser.GameObjects.Sprite;
-  private mplatform: Phaser.GameObjects.Sprite;
-  private totalMp: Phaser.GameObjects.Sprite;
-
-  private bombs: Phaser.GameObjects.Sprite
-
-
-
+  constructor (){
+      super();
+  }
   init () {
     this.cameras.main.setBackgroundColor('#24252A')
   }
-  preload() {
-
-
-      //this.load.baseURL = 'http://examples.phaser.io/assets/';
-
-      this.load.image('player', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
-      this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
-      this.load.image('clone',metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-      this.load.image('platform', 'https://ipfs.io/ipfs/QmdwU65egQPGZiwdWX7Bkjt442n99xd1imA1gKtCQXjXNd');
+  preload(){
+    this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
 
   }
   create () {
-    this.totalMp = 0;
-    cursors = this.input.keyboard.createCursorKeys();
-    this.player = this.physics.add.sprite(100, 100, 'player');
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
-    this.player.body.setGravityY(300)
-    this.player.scale = 0.25
-    this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(400, 568, 'platform').setScale(4).refreshBody();
+    this.matter.world.setBounds(0, 0, 32000, 600);
+    this.cameras.main.setBounds(0, 0, 32000, 600);
+    this.createLandscape();
 
-    this.platforms.create(1000, 130, 'platform').setScale(0.25).refreshBody();
-    this.platforms.create(1200, 280, 'platform').setScale(0.25).refreshBody();
+        //  Add a player ship and camera follow
+    this.player = this.matter.add.sprite(1600, 200, 'ship')
+        .setFixedRotation()
+        .setFrictionAir(1.5)
+        .setMass(30)
+        .setScale(0.25);
+    this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
 
-    this.platforms.create(50, 300, 'platform');
-    this.platforms.create(750, 220, 'platform');
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+  createLandscape (){
+    //  Draw a random 'landscape'
+    const landscape = this.add.graphics();
 
+    landscape.fillStyle(0x008800, 1);
+    landscape.lineStyle(2, 0x00ff00, 1);
 
-    this.mplatform = this.physics.add.group();
+    landscape.beginPath();
 
+    const maxY = 550;
+    const minY = 400;
 
-    this.physics.add.collider(this.player, this.platforms);
+    let x = 0;
+    let y = maxY;
+    let range = 0;
 
-    this.helloWorld = this.add.text(
-      this.cameras.main.centerX,
-      this.cameras.main.centerY,
-      "HashAvatars", {
-        font: "40px Arial",
-        color: "#ffffff"
-      }
-    );
-    this.helloWorld.setOrigin(0.5);
+    let up = true;
 
-    this.bombs = this.physics.add.group();
+    landscape.moveTo(0, 600);
+    landscape.lineTo(0, 550);
 
-    this.physics.add.collider(this.bombs, this.platforms);
-    this.physics.add.collider(this.bombs, this.mplatform);
-    this.physics.add.collider(this.player, this.mplatform);
-    this.physics.add.collider(this.bombs, this.bombs);
-    this.physics.add.collider(this.platforms, this.mplatform);
+    do
+    {
+        //  How large is this 'side' of the mountain?
+        range = Phaser.Math.Between(20, 100);
 
-    this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
+        if (up)
+        {
+            y = Phaser.Math.Between(y, minY);
+            up = false;
+        }
+        else
+        {
+            y = Phaser.Math.Between(y, maxY);
+            up = true;
+        }
+
+        landscape.lineTo(x + range, y);
+
+        x += range;
+
+    } while (x < 31000);
+
+    landscape.lineTo(32000, maxY);
+    landscape.lineTo(32000, 600);
+    landscape.closePath();
+
+    landscape.strokePath();
+    landscape.fillPath();
   }
 
-  hitBomb (player, bomb){
-      this.physics.pause();
 
-      this.player.setTint(0xff0000);
-      this.scene.restart();
-  }
-  generateBomb(){
-    const x = (this.player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-
-    const bomb = this.bombs.create(x, 16, 'bomb');
-    bomb.scale = 0.15
-    bomb.setBounce(1);
-    bomb.setCollideWorldBounds(true);
-    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-  }
-
-  generateClone(){
-    const x = Phaser.Math.Between(0, 500)
-
-    const bomb = this.mplatform.create(x, 12, 'clone');
-    bomb.setBounce(1);
-    bomb.scale = 0.15
-    bomb.setCollideWorldBounds(true);
-    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-    this.totalMp += 1;
-  }
   update () {
-    this.helloWorld.angle += 1;
-    if (cursors.left.isDown){
-      this.player.x -= 3.2;
+    if (this.cursors.left.isDown)
+    {
+        this.player.thrustBack(0.1);
+        this.player.setAngularVelocity(-0.1);
+        this.player.flipX = true;
+    }
+    else if (this.cursors.right.isDown)
+    {
+        this.player.thrust(0.1);
+        this.player.setAngularVelocity(0.1);
+        this.player.flipX = false;
     }
 
-    if (cursors.right.isDown){
-      this.player.x += 3.2;
+    if (this.cursors.up.isDown)
+    {
+        this.player.thrustLeft(0.1);
     }
-    if (cursors.up.isDown && this.player.body.touching.down){
-      this.player.setVelocityY(-480);
+    else if (this.cursors.down.isDown)
+    {
+        this.player.thrustRight(0.1);
     }
-    if(Date.now() % 213 == 0){
-      if(this.totalMp < 5){
-        this.generateClone();
-      }
-    }
-    if(Date.now() % 211 == 0){
-      this.generateBomb();
-    }
-
-
   }
 }
 
-const gameConfig: GameInstance = {
-  width: "100%",
-  height: "100%",
-  type: Phaser.AUTO,
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: '100%',
-    height: '100%'
-  },
-  render: {
-    antialias: false,
-    pixelArt: true,
-    roundPixels: true
-  },
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { y: 100 },
-      debug: true
-    }
-  },
-  scene: MainScene
+const gameConfig = {
+    type: Phaser.AUTO,
+    width: "100%",
+    height: "100%",
+    physics: {
+        default: 'matter',
+        matter: {
+            gravity: {
+                x: 0,
+                y: 0
+            },
+            enableSleeping: true
+        }
+    },
+    scene: [ MainScene ]
 };
+
+
 
 function Game () {
   const gameRef = useRef<HTMLIonPhaserElement>(null)
@@ -242,6 +228,8 @@ class GamePage extends Component {
   }
   componentDidMount = async () => {
     //await this.props.initWeb3();
+    await this.initWaku();
+
     const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
@@ -249,6 +237,7 @@ class GamePage extends Component {
     }
     await Promise.all(promises)
     let hasNotConnected = true;
+
     setInterval(async () => {
       if(this.props.provider && hasNotConnected){
         const promises = [];
@@ -303,6 +292,59 @@ class GamePage extends Component {
       metadata: mt
     })
     metadata = mt;
+  }
+
+  initWaku = async () => {
+    waku = await Waku.create({
+        libp2p: {
+          config: {
+            pubsub: {
+              enabled: true,
+              emitSelf: true,
+            }
+          }
+        },
+    });
+    const nodes = await getStatusFleetNodes();
+    await Promise.all(
+      nodes.map((addr) => {
+        return waku.dial(addr);
+      })
+    );
+
+    this.setState({
+      waku: waku,
+      posts: []
+    })
+    console.log(waku)
+    waku.relay.addObserver(async (msg) => {
+      console.log("Message received:", msg.payloadAsUtf8)
+      this.state.posts.unshift(msg)
+      await this.forceUpdate();
+      console.log(this.state.posts)
+    }, ["/test-game-v0/proto"]);
+
+    waku.libp2p.peerStore.once(
+      'change:protocols',
+      async ({ peerId, protocols }) => {
+        if (protocols.includes(StoreCodec)) {
+          console.log(
+            `Retrieving archived messages from ${peerId.toB58String()}`
+          );
+          const messages = await waku.store.queryHistory({
+            peerId,
+            contentTopics: ["/test-game-v0/proto"]
+          });
+          messages?.map(async (msg) => {
+            this.state.posts.unshift(msg)
+            await this.forceUpdate();
+            console.log(this.state.posts)
+          });
+        }
+      }
+    );
+    console.log('PeerId: ', waku.libp2p.peerId.toB58String());
+    console.log('Listening on ');
   }
   render(){
     return(

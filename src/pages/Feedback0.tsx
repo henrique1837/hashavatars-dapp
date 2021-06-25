@@ -41,7 +41,6 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import makeBlockie from 'ethereum-blockies-base64';
 
-import Box3 from '3box';
 import {
   ChatMessage,
   Direction,
@@ -101,9 +100,13 @@ class FeedBackPage extends React.Component {
             contentTopics: ["/test-hashavatars-feedback/proto"]
           });
           messages?.map(async (msg) => {
-            this.state.posts.unshift(msg)
-            await this.forceUpdate();
-            console.log(this.state.posts)
+            try{
+              this.state.posts.unshift(msg)
+              await this.forceUpdate();
+              console.log(this.state.posts)
+            } catch(err){
+              console.log(err)
+            }
           });
         }
       }

@@ -49,7 +49,7 @@ import MintPage from './pages/Mint';
 import FeedBackPage from './pages/Feedback0';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
-import Game from './pages/Game';
+import Games from './pages/Games';
 
 import Collections from './pages/Collections';
 
@@ -521,7 +521,7 @@ class App extends React.Component {
                       (
                         this.state.itoken ?
                         (
-                          <Game
+                          <Games
                             itoken={this.state.itoken}
                             web3={this.state.web3}
                             getMetadata={this.getMetadata}
