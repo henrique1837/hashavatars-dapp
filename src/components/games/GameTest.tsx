@@ -3,39 +3,18 @@ import React, { Component, useState, useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import { IonPhaser, GameInstance } from '@ion-phaser/react'
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
-  Button,
-  theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
   Divider,
   Link,
   Center,
-  Alert,
-  AlertIcon,
   Spinner,
   Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
   Avatar
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
@@ -49,13 +28,22 @@ import {
   Waku,
   WakuMessage,
 } from 'js-waku';
+import Websockets from 'libp2p-websockets'
+import WebRTCStar from 'libp2p-webrtc-star'
+import { NOISE } from 'libp2p-noise'
+import Mplex from 'libp2p-mplex'
+import Bootstrap from 'libp2p-bootstrap'
 
 
 let waku;
 let metadata;
-let players = {};
+let metadatas = [];
+let players = [];
+let loaded = [];
+let coinbase;
 
 class MainScene extends Phaser.Scene {
+
   constructor (){
       super();
   }
@@ -64,21 +52,60 @@ class MainScene extends Phaser.Scene {
   }
   preload(){
     this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+    for(let i = 0;i<metadatas.length;i++){
+      this.load.image(metadatas[i].metadata.name, metadatas[i].metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+    }
+  }
+  addOtherPlayers(playerInfo) {
+    const otherPlayer = this.physics.add.sprite(1600, 200,  playerInfo.metadata.name).setScale(0.25);
+    otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
+    this.otherPlayers.add(otherPlayer);
 
   }
   create () {
-    this.matter.world.setBounds(0, 0, 32000, 600);
+
+    this.waku = waku;
+    this.otherPlayers = this.physics.add.group();
+
+    this.waku.relay.addObserver(async (msg) => {
+      console.log("Message received:", msg.payloadAsUtf8)
+      this.addOtherPlayers(JSON.parse(msg.payloadAsUtf8));
+
+    }, ["/test-game-v0/proto"]);
+    this.waku.libp2p.peerStore.once(
+          'change:protocols',
+          async ({ peerId, protocols }) => {
+            if (protocols.includes(StoreCodec)) {
+              console.log(
+                `Retrieving archived messages from ${peerId.toB58String()}`
+              );
+              const messages = await waku.store.queryHistory({
+                peerId,
+                contentTopics: ["/test-game-v0/proto"]
+              });
+              messages?.map(async (msg) => {
+                try{
+                  this.addOtherPlayers(JSON.parse(msg.payloadAsUtf8));
+                } catch(err){
+                  console.log(err)
+                }
+              });
+            }
+          }
+        );
+
+    this.physics.world.setBounds(0, 0, 32000, 600);
     this.cameras.main.setBounds(0, 0, 32000, 600);
     this.createLandscape();
 
-        //  Add a player ship and camera follow
-    this.player = this.matter.add.sprite(1600, 200, 'ship')
-        .setFixedRotation()
-        .setFrictionAir(1.5)
-        .setMass(30)
+    //  Add a player ship and camera follow
+    this.player = this.physics.add.sprite(1600, 200, 'ship')
         .setScale(0.25);
-    this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
+    this.player.setBounce(0.2).setCollideWorldBounds(true);
 
+    this.physics.add.collider(this.player, this.otherPlayers);
+    this.physics.add.collider(this.otherPlayers, this.otherPlayers);
+    this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
     this.cursors = this.input.keyboard.createCursorKeys();
   }
   createLandscape (){
@@ -163,7 +190,7 @@ const gameConfig = {
     width: "100%",
     height: "100%",
     physics: {
-        default: 'matter',
+        default: 'arcade',
         matter: {
             gravity: {
                 x: 0,
@@ -220,7 +247,7 @@ function Game () {
 class GamePage extends Component {
   state = {
     savedBlobs: [],
-    loading: false
+    loading: true
   }
   constructor(props){
     super(props)
@@ -229,47 +256,38 @@ class GamePage extends Component {
   componentDidMount = async () => {
     //await this.props.initWeb3();
     await this.initWaku();
-
     const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
       promises.push(this.handleEvents(null,res));
     }
-    await Promise.all(promises)
+    await Promise.all(promises);
+    this.setState({loading:false});
+    coinbase = this.props.coinbase;
     let hasNotConnected = true;
 
     setInterval(async () => {
       if(this.props.provider && hasNotConnected){
         const promises = [];
-        const claimed = [];
         const results = await this.props.checkTokens();
         for(let res of results){
           promises.push(this.handleEvents(null,res));
         }
         await Promise.all(promises)
-        this.setState({hasNotConnected:false})
-
+        hasNotConnected = false;
       }
     },500);
-    this.setState({loading:false})
   }
 
   handleEvents = async (err, res) => {
     try {
-      const web3 = this.props.web3;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
-      console.log(uri)
       if(uri.includes("ipfs://ipfs/")){
-        uri = uri.replace("ipfs://ipfs/", "")
+        uri = uri.replace("ipfs://ipfs/", "https://ipfs.io/ipfs/")
       } else {
-        uri = uri.replace("ipfs://", "");
+        uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
       }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
-      const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
-
-
-      console.log(metadata)
+      const metadata = JSON.parse(await (await fetch(uri)).text());
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata
@@ -279,6 +297,8 @@ class GamePage extends Component {
         this.state.savedBlobs.push(JSON.stringify(obj));
         await this.forceUpdate();
       }
+      metadatas.push(obj)
+      this.setState({loading:false});
 
     } catch (err) {
       console.log(err);
@@ -287,6 +307,11 @@ class GamePage extends Component {
 
   selectToken = async (id) => {
     const mt = await this.props.getMetadata(id);
+    const msg = WakuMessage.fromUtf8String(JSON.stringify({
+      metadata: mt,
+      from: this.props.coinbase
+    }), "/test-game-v0/proto");
+    await this.state.waku.relay.send(msg);
     this.setState({
       gameInit: true,
       metadata: mt
@@ -295,6 +320,7 @@ class GamePage extends Component {
   }
 
   initWaku = async () => {
+
     waku = await Waku.create({
         libp2p: {
           config: {
@@ -303,9 +329,53 @@ class GamePage extends Component {
               emitSelf: true,
             }
           }
-        },
+        }
     });
+
+    /*
+    waku = await Waku.create({
+      libp2p: {
+        addresses: {
+          // Add the signaling server address, along with our PeerId to our multiaddrs list
+          // libp2p will automatically attempt to dial to the signaling server so that it can
+          // receive inbound connections from other peers
+          listen: [
+            '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+            '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+          ]
+        },
+        modules: {
+          transport: [Websockets, WebRTCStar],
+          connEncryption: [NOISE],
+          streamMuxer: [Mplex],
+          peerDiscovery: [Bootstrap]
+        },
+        config: {
+          peerDiscovery: {
+            // The `tag` property will be searched when creating the instance of your Peer Discovery service.
+            // The associated object, will be passed to the service when it is instantiated.
+            [Bootstrap.tag]: {
+              enabled: true,
+              list: [
+                '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+                '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+                '/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
+                '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+                '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt'
+              ]
+            }
+          },
+          pubsub: {
+            enabled: true,
+            emitSelf: true,
+          }
+        }
+      }
+
+    })
+    */
     const nodes = await getStatusFleetNodes();
+
     await Promise.all(
       nodes.map((addr) => {
         return waku.dial(addr);
@@ -317,34 +387,9 @@ class GamePage extends Component {
       posts: []
     })
     console.log(waku)
-    waku.relay.addObserver(async (msg) => {
-      console.log("Message received:", msg.payloadAsUtf8)
-      this.state.posts.unshift(msg)
-      await this.forceUpdate();
-      console.log(this.state.posts)
-    }, ["/test-game-v0/proto"]);
-
-    waku.libp2p.peerStore.once(
-      'change:protocols',
-      async ({ peerId, protocols }) => {
-        if (protocols.includes(StoreCodec)) {
-          console.log(
-            `Retrieving archived messages from ${peerId.toB58String()}`
-          );
-          const messages = await waku.store.queryHistory({
-            peerId,
-            contentTopics: ["/test-game-v0/proto"]
-          });
-          messages?.map(async (msg) => {
-            this.state.posts.unshift(msg)
-            await this.forceUpdate();
-            console.log(this.state.posts)
-          });
-        }
-      }
-    );
     console.log('PeerId: ', waku.libp2p.peerId.toB58String());
     console.log('Listening on ');
+
   }
   render(){
     return(
@@ -400,7 +445,7 @@ class GamePage extends Component {
                           </Center>
                         ) :
                         (
-                          this.state.savedBlobs.length == 0 ?
+                          this.state.savedBlobs.length === 0 ?
 
                           (
                             <Center>

@@ -98,7 +98,9 @@ class MintPage extends React.Component {
           const results = await this.props.checkTokens();
           for(let res of results){
             promises.push(this.handleEvents(null,res));
-            claimed.push(this.props.checkClaimed(res.returnValues._id));
+            if(this.props.coinbase){
+              claimed.push(this.props.checkClaimed(res.returnValues._id));
+            }
           }
           await Promise.all(promises)
           if(this.props.rewards != null){
@@ -164,6 +166,7 @@ class MintPage extends React.Component {
       this.setState({
         mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
       });
+      /*
       const results = await this.props.checkTokens();
       const metaPromises = []
       for(let res of results){
@@ -173,6 +176,7 @@ class MintPage extends React.Component {
       const metadatas = await Promise.all(metaPromises);
       let cont = true;
       let dnaNotUsed = true;
+
       metadatas.map(obj => {
         //const obj = JSON.parse(string);
         if(obj.name === this.state.avatar.name) {
@@ -193,6 +197,7 @@ class MintPage extends React.Component {
         alert("HashAvatar with same image (DNA) was already claimed.");
         return;
       }
+      */
       this.setState({
         mintingMsg: <p><small>Storing image and metadata at IPFS ... </small></p>
       });
@@ -302,9 +307,8 @@ class MintPage extends React.Component {
       } else {
         uri = uri.replace("ipfs://", "");
       }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
+      fetch(`https://ipfs.io/ipfs/${metadata.image.replace('ipfs://','')}`);
 
       const obj = {
         returnValues: res.returnValues,
@@ -314,19 +318,20 @@ class MintPage extends React.Component {
 
       const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,res.returnValues._id).call();
       const creator = await this.props.itoken.methods.creators(res.returnValues._id).call();
-      if(creator.toLowerCase() === this.props.coinbase.toLowerCase() && !this.state.savedBlobs.includes(JSON.stringify(obj))){
-        this.state.savedBlobs.push(JSON.stringify(obj));
-      }
       if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
         this.state.allHashAvatars.push(JSON.stringify(obj));
       }
-      console.log(this.state.allHashAvatars);
-      if(this.props.rewards != null){
+      if(this.props.coinbase){
+        if(creator.toLowerCase() === this.props.coinbase.toLowerCase() && !this.state.savedBlobs.includes(JSON.stringify(obj))){
+          this.state.savedBlobs.push(JSON.stringify(obj));
+        }
+      }
+
+      if(this.props.rewards !== undefined && this.props.coinbase){
         const claim = await this.props.checkClaimed(res.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
         }
-
       }
       this.forceUpdate()
     } catch (err) {
@@ -344,10 +349,8 @@ class MintPage extends React.Component {
     }
     try{
       const web3 = this.props.web3;
-      console.log(web3.utils.toBN(web3.utils.toHex(e.target.value.trim())).toString())
       const dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString().replace(".","").substring(0,21);
       let topIndex = (Number(dna.substring(0,1)) % 35 + 1).toFixed(0);
-      console.log(topIndex)
       if(topIndex > this.state.top.length - 1){
         topIndex = topIndex - (this.state.top.length - 1)*(topIndex/(this.state.top.length - 1));
       }
@@ -391,7 +394,6 @@ class MintPage extends React.Component {
       if(skinTypeIndex > this.state.skin.length - 1){
         skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
       }
-      console.log(e.target.value.trim())
       const avatar = {
         avatarStyle: 'Circle',
         topType: this.state.top[topIndex],
@@ -442,7 +444,6 @@ class MintPage extends React.Component {
                     <Alert status="info">
                       <AlertIcon />You have rewards to claim!{' '}
                       <Button onClick={async () => {
-                        console.log(this.state.toClaim);
                         const ids = this.state.toClaim.map(item => {
                           return(item.id);
                         });

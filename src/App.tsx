@@ -1,5 +1,4 @@
 import * as React from "react";
-import ReactDOMServer from 'react-dom/server';
 import {
   HashRouter as Router,
   Route,
@@ -15,18 +14,8 @@ import {
   VStack,
   Stack,
   Grid,
-  Button,
   theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  LinkBox,
-  LinkOverlay,
   SimpleGrid,
-  Divider,
   Link,
   Image,
   Center,
@@ -36,9 +25,9 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import Web3 from 'web3';
-import detectEthereumProvider from '@metamask/detect-provider'
+import Web3Modal from "web3modal";
+import Torus from "@toruslabs/torus-embed";
 
-import IPFS from 'ipfs';
 
 import ERC1155 from './contracts/ItemsERC1155.json'
 import ERC20Rewards from './contracts/ERC20Rewards.json'
@@ -50,15 +39,29 @@ import FeedBackPage from './pages/Feedback0';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Games from './pages/Games';
+import GameTest from './components/games/GameTest';
 
 import Collections from './pages/Collections';
 
+const providerOptions = {
+  injected: {
+    package: null
+  },
+  torus: {
+  package: Torus, // required
+  options: {
+    networkParams: {
+      chainId: 0x64, // optional
+      networkId: 0x64 // optional
+    }
+  }
+}
+};
 
-/*
-const ipfs = IPFS({
-  apiUrl: 'https://ipfs.infura.io:5001'
-})
-*/
+const web3Modal = new Web3Modal({
+  cacheProvider: true, // optional
+  providerOptions // required
+});
 
 class App extends React.Component {
 
@@ -77,19 +80,11 @@ class App extends React.Component {
 
   }
   componentDidMount = async () => {
-    const hasLogged = localStorage.getItem('logged');
-    if(hasLogged){
-      if(window.ethereum?.isMetaMask){
-        if(! await window.ethereum._metamask.isUnlocked()){
-          await this.initWeb3();
-          return
-        }
-        await this.connectWeb3();
-      }
+    if (web3Modal.cachedProvider) {
+      await this.connectWeb3();
     } else {
       await this.initWeb3();
     }
-
   }
 
 
@@ -150,76 +145,46 @@ class App extends React.Component {
   }
 
   connectWeb3 = async () => {
-
     this.setState({
       loading: true
     });
-    let provider;
-    if(window.ethereum?.isMetaMask){
-      provider = await detectEthereumProvider();
-      if(! await provider._metamask.isUnlocked()){
-        alert("Please unlock your metamask first");
-        this.setState({
-          loading: false
-        });
-        await this.initWeb3();
-        return
+    try{
+      const provider =  await web3Modal.connect();;
+      const web3 = new Web3(provider);
+      const coinbase = await web3.eth.getCoinbase();
+      const netId = await web3.eth.net.getId();
+      let itoken;
+      let rewards;
+      let tokenLikes;
+      if(netId === 4){
+        itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
+        rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
+        tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
+      } else if(netId === 0x64){
+        itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
+        tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
       }
-    } else {
-      provider = window.ethereum;
-    }
-    if(provider){
-      try{
-        await provider.request({ method: 'eth_requestAccounts' });
-      } catch(err){
-        console.log(err);
-        localStorage.setItem('logged',false);
-        localStorage.setItem('loggedBox',false);
-        await this.initWeb3();
-        return;
-      }
-    } else {
-      alert('Web3 provider not detected, please install metamask');
       this.setState({
+        web3: web3,
+        itoken: itoken,
+        rewards: rewards,
+        tokenLikes: tokenLikes,
+        coinbase:coinbase,
+        netId:netId,
         loading: false,
+        provider: provider
       });
-      return;
+      provider.on('accountsChanged', accounts => window.location.reload(true));
+      provider.on('chainChanged', chainId => window.location.reload(true));
+      // Subscribe to provider disconnection
+      provider.on("disconnect", async (error: { code: number; message: string }) => {
+        await web3Modal.clearCachedProvider();
+        window.location.reload(true);
+      });
+    } catch(err){
+      web3Modal.clearCachedProvider();
+      this.initWeb3();
     }
-    let web3 = new Web3(provider);
-    const coinbase = await web3.eth.getCoinbase();
-    const netId = await web3.eth.net.getId();
-    let itoken;
-    let rewards;
-    let tokenLikes;
-    if(netId === 4){
-      itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
-      rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
-      tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
-    } else if(netId === 0x64){
-      itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
-      tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
-    }
-    if(netId !== 4 && netId !== 0x64){
-      if(window.location.href.includes("?rinkeby")){
-        web3 = new Web3("wss://rinkeby.infura.io/ws/v3/e105600f6f0a444e946443f00d02b8a9");
-      } else {
-        web3 = new Web3("https://rpc.xdaichain.com/")
-      }
-    }
-    this.setState({
-      web3: web3,
-      itoken: itoken,
-      rewards: rewards,
-      tokenLikes: tokenLikes,
-      coinbase:coinbase,
-      netId:netId,
-      loading: false,
-      provider: provider
-    });
-    localStorage.setItem('logged',true);
-    provider.on('accountsChanged', accounts => window.location.reload(true));
-    provider.on('chainChanged', chainId => window.location.reload(true));
-
 
   }
 
@@ -522,6 +487,59 @@ class App extends React.Component {
                         this.state.itoken ?
                         (
                           <Games
+                            itoken={this.state.itoken}
+                            web3={this.state.web3}
+                            getMetadata={this.getMetadata}
+                            initWeb3={this.initWeb3}
+                            checkTokens={this.checkTokens}
+                            coinbase={this.state.coinbase}
+                          />
+                        ):
+                        (
+                          (this.state.netId === 4 || this.state.netId === 0x64) ?
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>Loading ...</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <Spinner size="xl" />
+                              </VStack>
+                            </Center>
+                          ) :
+                          (
+                            <Center>
+                             <VStack spacing={4}>
+                              <Heading>WRONG NETWORK</Heading>
+                              <Avatar
+                                size={'xl'}
+                                src={
+                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                                }
+                              />
+                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
+                              </VStack>
+                            </Center>
+                          )
+                        )
+                      )
+                    }
+                    </>
+                  )
+                }
+              }/>
+              <Route path={"/gametest"} render={() => {
+                  return(
+                    <>
+                    {
+                      (
+                        this.state.itoken ?
+                        (
+                          <GameTest
                             itoken={this.state.itoken}
                             web3={this.state.web3}
                             getMetadata={this.getMetadata}
