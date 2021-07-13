@@ -41,8 +41,10 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 
-
+let web3;
 let metadata;
+let itoken;
+let coinbase;
 let gameover = false;
 let cursors;
 class MainScene extends Phaser.Scene {
@@ -56,7 +58,6 @@ class MainScene extends Phaser.Scene {
   private bombs: Phaser.GameObjects.Sprite
 
 
-
   init () {
     this.cameras.main.setBackgroundColor('#24252A')
   }
@@ -64,7 +65,6 @@ class MainScene extends Phaser.Scene {
 
 
       //this.load.baseURL = 'http://examples.phaser.io/assets/';
-
       this.load.image('player', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
       this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
       this.load.image('clone',metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
@@ -189,36 +189,37 @@ class MainScene extends Phaser.Scene {
   }
 }
 
-const gameConfig: GameInstance = {
-  width: "100%",
-  height: "100%",
-  type: Phaser.AUTO,
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: '100%',
-    height: '100%'
-  },
-  render: {
-    antialias: false,
-    pixelArt: true,
-    roundPixels: true
-  },
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { y: 200,x:0 },
-      debug: false
-    }
-  },
-  scene: MainScene
-};
+
+
 
 function Game () {
   const gameRef = useRef<HTMLIonPhaserElement>(null)
   const [game, setGame] = useState<GameInstance>()
   const [initialize, setInitialize] = useState(true)
-
+  const gameConfig: GameInstance = {
+    width: "100%",
+    height: "100%",
+    type: Phaser.AUTO,
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: '100%',
+      height: '100%'
+    },
+    render: {
+      antialias: false,
+      pixelArt: true,
+      roundPixels: true
+    },
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 200,x:0 },
+        debug: false
+      }
+    },
+    scene: MainScene
+  };
   const destroy = () => {
     gameRef.current?.destroy()
     setInitialize(false)
@@ -265,6 +266,9 @@ class GamePage extends Component {
   }
   componentDidMount = async () => {
     //await this.props.initWeb3();
+    web3 = this.props.web3;
+    itoken = this.props.itoken;
+    coinbase = this.props.coinbase;
     const promises = [];
     const results = await this.props.checkTokens();
     for(let res of results){
@@ -275,7 +279,6 @@ class GamePage extends Component {
     setInterval(async () => {
       if(this.props.provider && hasNotConnected){
         const promises = [];
-        const claimed = [];
         const results = await this.props.checkTokens();
         for(let res of results){
           promises.push(this.handleEvents(null,res));

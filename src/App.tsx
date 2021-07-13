@@ -24,6 +24,7 @@ import {
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
+
 import Web3 from 'web3';
 import Web3Modal from "web3modal";
 import Torus from "@toruslabs/torus-embed";
@@ -35,13 +36,15 @@ import ERC1155Likes from './contracts/ERC1155Likes.json'
 
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
-import FeedBackPage from './pages/Feedback0';
+import FeedBackPage from './pages/Feedback';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Games from './pages/Games';
-import GameTest from './components/games/GameTest';
+import HashAssault from './components/games/HashAssault';
 
 import Collections from './pages/Collections';
+
+
 
 const providerOptions = {
   injected: {
@@ -66,7 +69,8 @@ const web3Modal = new Web3Modal({
 class App extends React.Component {
 
   state = {
-    netId: 0x64
+    netId: 0x64,
+    loading: true
   }
   constructor(props){
     super(props)
@@ -190,6 +194,9 @@ class App extends React.Component {
 
   getMetadata = async(id) => {
     const uriToken = await this.state.itoken.methods.uri(id).call();
+    if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
+      return({});
+    }
     const metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
     return(metadataToken)
   }
@@ -252,6 +259,7 @@ class App extends React.Component {
 
     }
   }
+
   render(){
     return(
 
@@ -532,14 +540,14 @@ class App extends React.Component {
                   )
                 }
               }/>
-              <Route path={"/gametest"} render={() => {
+              <Route path={"/gameTest"} render={() => {
                   return(
                     <>
                     {
                       (
                         this.state.itoken ?
                         (
-                          <GameTest
+                          <HashAssault
                             itoken={this.state.itoken}
                             web3={this.state.web3}
                             getMetadata={this.getMetadata}
@@ -585,6 +593,7 @@ class App extends React.Component {
                   )
                 }
               }/>
+
               <Route path={"/feedbacks"} render={() => {
                   return(
                     <>

@@ -40,6 +40,7 @@ import makeBlockie from 'ethereum-blockies-base64';
 
 import HashAtack from '../components/games/HashAtack';
 import HashVille from '../components/games/HashVilleUnderHashAtack';
+import HashOperation from '../components/games/HashOperation';
 
 
 class GamesPage extends React.Component {
@@ -69,6 +70,18 @@ class GamesPage extends React.Component {
         name: "HashVille under HashAtack",
         description: "Protect yourself! HashVille is under atack!",
         image: "https://ipfs.io/ipfs/QmUs9rX2FsYUML9PCWMExJZfgcTPiXGV3FpArrTxd1Yf8i"
+      },
+      {
+        component: <HashOperation itoken={this.props.itoken}
+                              web3={this.props.web3}
+                              getMetadata={this.props.getMetadata}
+                              initWeb3={this.props.initWeb3}
+                              checkTokens={this.props.checkTokens}
+                              coinbase={this.props.coinbase}
+                    />,
+        name: "HashOperation",
+        description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
+        image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
       }
     ],
     play: null

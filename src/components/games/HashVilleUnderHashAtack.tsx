@@ -46,6 +46,10 @@ let metadata;
 let metadatas;
 let gameover = false;
 let cursors;
+let web3;
+let coinbase;
+let isMetamaskOpen = false;
+
 class MainScene extends Phaser.Scene {
   private helloWorld!: Phaser.GameObjects.Text
   private player: Phaser.GameObjects.Sprite
@@ -55,8 +59,9 @@ class MainScene extends Phaser.Scene {
   private totalMp: Phaser.GameObjects.Sprite;
 
   private bombs: Phaser.GameObjects.Sprite
-
-
+  private bullets: Phaser.GameObjects.Sprite
+  private totalBullets: Integer;
+  private enemiesKilled: Integer;
 
   init () {
     //this.cameras.main.setBackgroundColor('#24252A')
@@ -69,12 +74,17 @@ class MainScene extends Phaser.Scene {
       this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/QmeSesTyeikbLnVjQnsgvhfxJrQz6taYLZxkDsbve7ntej");
       this.load.image("player", metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
       this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
+      this.load.image('bullet', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+
       for(let i = 0;i<metadatas.length;i++){
         this.load.image('ha'+i, JSON.parse(metadatas[i]).metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
       }
 
   }
   create () {
+
+    this.totalBullets = 0;
+    this.enemiesKilled = 0;
 
     const map = this.make.tilemap({ key: "map" });
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -110,10 +120,20 @@ class MainScene extends Phaser.Scene {
     cursors = this.input.keyboard.createCursorKeys();
     this.bombs = this.physics.add.group();
     this.ha = this.physics.add.group();
+    this.bullets = this.physics.add.group();
+
+
     this.physics.add.collider(this.bombs,worldLayer);
     this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
+    this.physics.add.collider(this.bullets, this.bombs, this.destroyBomb, null, this);
+
     this.physics.add.collider(this.bombs,this.bombs);
     this.physics.add.collider(this.ha, worldLayer);
+    this.physics.add.collider(this.bullets, worldLayer,this.destroyBullet, null, this);
+    this.physics.add.collider(this.ha,this.bullets);
+    this.physics.add.collider(this.player,this.bullets);
+    this.physics.add.collider(this.bullets, this.bullets);
+
     this.physics.add.collider(this.bombs,this.ha);
     this.physics.add.collider(this.player,this.ha);
     this.physics.add.collider(this.ha,this.ha);
@@ -141,7 +161,7 @@ class MainScene extends Phaser.Scene {
     bomb.scale = 0.15
     bomb.setBounce(1);
     bomb.setCollideWorldBounds(true);
-    bomb.setVelocity(Phaser.Math.Between(-400, 400), Phaser.Math.Between(-400, 400));
+    bomb.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
   }
   hitBomb (player, bomb){
       this.physics.pause();
@@ -149,6 +169,42 @@ class MainScene extends Phaser.Scene {
       this.player.setTint(0xff0000);
       this.scene.restart();
   }
+
+  destroyBomb (bullet, bomb){
+      bullet.disableBody(true,true);
+      bomb.disableBody(true,true);
+      this.totalBullets -= 1;
+      this.enemiesKilled += 1;
+  }
+  destroyBullet (bullet){
+      bullet.disableBody(true,true);
+      this.totalBullets -= 1;
+  }
+
+  fire() {
+    if(this.totalBullets >= 10){
+      return;
+    }
+    console.log(this.player)
+    const bullet = this.bullets.create(this.player.x,this.player.y,"bullet");
+    bullet.setCollideWorldBounds(true);
+    bullet.setBounce(1);
+    bullet.setScale(0.05);
+    bullet.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
+    this.totalBullets += 1;
+
+  }
+
+  specialFire() {
+    for(let i = 0;i<200;i++){
+      const bullet = this.bullets.create(this.player.x,this.player.y,"bullet");
+      bullet.setCollideWorldBounds(true);
+      bullet.setBounce(1);
+      bullet.setScale(0.05);
+      bullet.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
+    }
+  }
+
   update () {
     this.player.setVelocity(0);
     if (cursors.left.isDown){
@@ -164,11 +220,42 @@ class MainScene extends Phaser.Scene {
     if (cursors.down.isDown){
       this.player.setVelocityY(280);
     }
+    if (cursors.space.isDown){
+      this.fire();
+    }
+    console.log(this.input)
+
+
+    /*
+    if (cursors.shift.isDown){
+      if(!isMetamaskOpen){
+        isMetamaskOpen = true;
+        for(let i=0;i<10;i++){
+          this.fire();
+        }
+        web3.eth.sendTransaction({
+          from: coinbase,
+          to: coinbase,
+          value: 0,
+          gasPrice: 1000000000
+        }).once('transactionHash', (hash) => {
+          isMetamaskOpen = false;
+          this.specialFire();
+        }).once('error',err => {
+          isMetamaskOpen = false;
+        }).once('confirmation', function(confirmationNumber, receipt){
+          this.specialFire();
+        })
+
+      }
+    }
+    */
     if(Date.now() % 213 == 0){
       this.generateBomb();
     }
 
   }
+
 }
 
 const gameConfig: GameInstance = {
@@ -272,7 +359,8 @@ class GamePage extends Component {
 
   handleEvents = async (err, res) => {
     try {
-      const web3 = this.props.web3;
+      web3 = this.props.web3;
+      coinbase = this.props.coinbase;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
       console.log(uri)
       if(uri.includes("ipfs://ipfs/")){

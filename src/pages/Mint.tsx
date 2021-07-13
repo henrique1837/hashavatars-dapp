@@ -166,7 +166,7 @@ class MintPage extends React.Component {
       this.setState({
         mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
       });
-      /*
+
       const results = await this.props.checkTokens();
       const metaPromises = []
       for(let res of results){
@@ -175,15 +175,11 @@ class MintPage extends React.Component {
       }
       const metadatas = await Promise.all(metaPromises);
       let cont = true;
-      let dnaNotUsed = true;
 
       metadatas.map(obj => {
         //const obj = JSON.parse(string);
         if(obj.name === this.state.avatar.name) {
           cont = false
-        }
-        if(obj.attributes[11].value === this.state.avatar.dna) {
-          dnaNotUsed = false
         }
       });
       if(!cont){
@@ -193,11 +189,7 @@ class MintPage extends React.Component {
         });
         return;
       }
-      if(!dnaNotUsed){
-        alert("HashAvatar with same image (DNA) was already claimed.");
-        return;
-      }
-      */
+
       this.setState({
         mintingMsg: <p><small>Storing image and metadata at IPFS ... </small></p>
       });

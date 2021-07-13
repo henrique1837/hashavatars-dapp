@@ -105,6 +105,9 @@ class OwnedAvatars extends React.Component {
       } else {
         uri = uri.replace("ipfs://", "");
       }
+      if(uri.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
+        return
+      }
       let likes = 0;
       let liked;
       if(this.props.tokenLikes){
