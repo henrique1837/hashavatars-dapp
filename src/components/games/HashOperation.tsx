@@ -17,7 +17,9 @@ import {
   Popover,
   Avatar,
   Input,
-  Button
+  Button,
+  Image,
+  HStack
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -284,7 +286,8 @@ class GamePage extends Component {
   state = {
     savedBlobs: [],
     msgs: [],
-    loading: true
+    loading: true,
+    totalPlayers: 0
   }
   constructor(props){
     super(props)
@@ -293,7 +296,7 @@ class GamePage extends Component {
   componentDidMount = async () => {
     //await this.props.initWeb3();
     try {
-      await this.initLibp2p();
+      await this.initRoom();
       const promises = [];
       const results = await this.props.checkTokens();
       for(let res of results){
@@ -320,7 +323,6 @@ class GamePage extends Component {
       this.setState({
         loading:false
       });
-
     }
   }
 
@@ -351,64 +353,13 @@ class GamePage extends Component {
   }
 
 
-  initLibp2p = async () => {
+  initRoom = async () => {
 
-    libp2p = await Libp2p.create({
-      addresses: {
-        // Add the signaling server address, along with our PeerId to our multiaddrs list
-        // libp2p will automatically attempt to dial to the signaling server so that it can
-        // receive inbound connections from other peers
-
-        listen: [
-          '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-          '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-        ]
-      },
-      modules: {
-        transport: [Websockets, WebRTCStar],
-        connEncryption: [NOISE],
-        streamMuxer: [Mplex],
-        peerDiscovery: [Bootstrap],
-        pubsub: Gossipsub
-      },
-      config: {
-        peerDiscovery: {
-          // The `tag` property will be searched when creating the instance of your Peer Discovery service.
-          // The associated object, will be passed to the service when it is instantiated.
-          [Bootstrap.tag]: {
-            enabled: true,
-            list: [
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt'
-            ]
-          }
-        },
-        pubsub: {
-          enabled: true,
-          emitSelf: true,
-          canRelayMessage: true
-        }
-      }
-    });
-    // Listen for new peers
-    libp2p.on('peer:discovery', (peerId) => {
-      //console.log(`Found peer ${peerId.toB58String()}`)
-    })
-
-    // Listen for new connections to peers
-    libp2p.connectionManager.on('peer:connect', (connection) => {
-      //console.log(`Connected to ${connection.remotePeer.toB58String()}`)
-    })
-
-    // Listen for peers disconnecting
-    libp2p.connectionManager.on('peer:disconnect', (connection) => {
-      //console.log(`Disconnected from ${connection.remotePeer.toB58String()}`)
-    })
-
-    await libp2p.start()
+    if(!this.props.libp2p){
+      libp2p = await this.props.initLibp2p();
+    } else {
+      libp2p = this.props.libp2p;
+    }
     room = new Room(libp2p, 'hashavatars-dapp-hashoperation-game-'+this.props.itoken.options.address)
 
 
@@ -426,7 +377,26 @@ class GamePage extends Component {
         await this.forceUpdate();
       }
     })
+    room.on('peer joined', (cid) => {
+      console.log(`Joined ${cid}`)
+      this.setState({
+        totalPlayers: this.state.totalPlayers + 1
+      })
+    })
 
+    room.on('peer left', (cid) => {
+      console.log(`Left ${cid}`)
+      this.setState({
+        totalPlayers: this.state.totalPlayers - 1
+      })
+    })
+
+    room.once('subscribed',() => {
+      console.log(`Subscribed`)
+      this.setState({
+        totalPlayers: this.state.totalPlayers + 1
+      })
+    })
 
 
   }
@@ -437,7 +407,8 @@ class GamePage extends Component {
       message: this.state.msg,
       from: this.props.coinbase,
       timestamp: (new Date()).getTime(),
-      metadata: this.state.metadata
+      metadata: this.state.metadata,
+      type: "message"
     });
     await this.state.room.broadcast(msg);
 
@@ -450,6 +421,25 @@ class GamePage extends Component {
       metadata: mt
     })
     metadata = mt;
+    const inputMessage = document.getElementById('input_message');
+    window.addEventListener('keydown', event => {
+      if (event.which === 13) {
+        this.post();
+        inputMessage.value = '';
+        inputMessage.innerText = '';
+        this.setState({
+          msg: ''
+        });
+      }
+      if (event.which === 32) {
+        if (document.activeElement === inputMessage) {
+          inputMessage.value = inputMessage.value + ' ';
+          this.setState({
+            msg: inputMessage.value
+          });
+        }
+      }
+    });
   }
 
   handleOnChange = (e) => {
@@ -467,16 +457,25 @@ class GamePage extends Component {
             (
               this.state.gameInit ?
               (
+                <>
+                <HStack
+                  spacing="10px"
+                  fontSize="sm"
+                  flexDirection={{ base: 'column-reverse', lg: 'row' }}
+                >
+                  <Image boxSize="20px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABfElEQVRIie2VOU4DQRBFn0diSMFEOOMADlhugAVYJIhVgsiJgZD1GGa7BBbXMCDMAbDBiFWCCDKQjMQQzG8NjNrjGRCZK2n9X69cVnd1D3TiDzH8TywOsA98ArkYfE7sjmrbxgHgAR9AIQZfEOupSWTMCWwCY/JSEbzJTajGA6Zbwd3Ag6BNeRngGMha+KxyGekt1d4Brq3BkoCa/pkLnMs7tPBl5apiU0Bd3oKtwZGSa9Kr0ldA2sKngYaYFXkb0mVbgxslB6VPpWekJ4FH/G3My5sVcyI9JH1ta/CuZI/0a0ib8/GAe3m90i8h/WZ+NM7cRk1R2/je4FnrgNaa1lGtRYItKsozF/EiVPtka2YOeV3aHHID+yH34e+1ByzLM4dsmzoWlawTjGk1osCM6ZlYB7iUN29r4OIfnod/acC/RBVaX7QK0C+9rdpboMvWAIKxawLj8uI8FXmC92gqggdgj98/dqUYPA6wS/LnukTCkR5JwCb64HTiR3wBnYJtcaM+zzsAAAAASUVORK5CYII="/><small>{this.state.totalPlayers} players connected</small>
+                </HStack>
                 <SimpleGrid columns={{ sm: 1, md: 3 }}>
                 <Box colSpan={1}>
                   <Box>
-                  {
-                    /*
-                    <input  placeholder="Message" onChange={this.handleOnChange} />
+
+
+                    <input  placeholder="Message" id='input_message' onChange={this.handleOnChange} />
                     <Button onClick={this.post}>Send Message</Button>
-                    */
-                  }
+
+
                   </Box>
+
                 {
                   this.state.msgs?.map((string) => {
                     const obj = JSON.parse(string);
@@ -505,6 +504,7 @@ class GamePage extends Component {
                   </Box>
 
                 </SimpleGrid>
+                </>
               ) :
               (
                 <VStack spacing={12}>

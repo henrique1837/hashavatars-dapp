@@ -1,42 +1,17 @@
 import * as React from "react";
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
-  Button,
-  theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
   Divider,
   Link,
-  Image,
   Center,
-  Spinner,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
-  Select,
   Avatar
 } from "@chakra-ui/react"
-import { ExternalLinkIcon } from '@chakra-ui/icons'
-import makeBlockie from 'ethereum-blockies-base64';
 
 import HashAtack from '../components/games/HashAtack';
 import HashVille from '../components/games/HashVilleUnderHashAtack';
@@ -78,6 +53,8 @@ class GamesPage extends React.Component {
                               initWeb3={this.props.initWeb3}
                               checkTokens={this.props.checkTokens}
                               coinbase={this.props.coinbase}
+                              libp2p={this.props.libp2p}
+                              initLibp2p={this.props.initLibp2p}
                     />,
         name: "HashOperation",
         description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
@@ -86,9 +63,7 @@ class GamesPage extends React.Component {
     ],
     play: null
   }
-  constructor(props){
-    super(props);
-  }
+  
   componentDidMount = async () => {
 
   }

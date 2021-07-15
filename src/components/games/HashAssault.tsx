@@ -3,39 +3,19 @@ import React, { Component, useState, useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import { IonPhaser, GameInstance } from '@ion-phaser/react'
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
-  Button,
   theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
   Divider,
   Link,
   Center,
-  Alert,
-  AlertIcon,
   Spinner,
   Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
   Avatar
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
@@ -47,7 +27,6 @@ let metadatas;
 let cursors;
 let web3;
 let coinbase;
-let isMetamaskOpen = false;
 
 class MainScene extends Phaser.Scene {
   private helloWorld!: Phaser.GameObjects.Text
@@ -207,7 +186,7 @@ class MainScene extends Phaser.Scene {
       }
     }
     */
-    if(Date.now() % 113 == 0){
+    if(Date.now() % 113 === 0){
       this.generateBomb();
     }
 

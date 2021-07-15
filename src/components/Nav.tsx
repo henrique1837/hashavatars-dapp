@@ -10,9 +10,10 @@ import {
   useDisclosure,
   useColorModeValue,
   Stack,
+  Tooltip
 } from '@chakra-ui/react';
 import {Link} from 'react-router-dom';
-import { HamburgerIcon, CloseIcon,ExternalLinkIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
 import { ColorModeSwitcher } from "../ColorModeSwitcher"
 
 import makeBlockie from 'ethereum-blockies-base64';
@@ -76,18 +77,6 @@ const NavLink = (props) => (
       textDecoration: 'none',
       bg: useColorModeValue('gray.200', 'gray.700'),
     }}
-    href={`/collections`}
-    to={`/collections`}>
-    Collections
-  </Link>
-  <Link
-    px={2}
-    py={1}
-    rounded={'md'}
-    _hover={{
-      textDecoration: 'none',
-      bg: useColorModeValue('gray.200', 'gray.700'),
-    }}
     href={`/feedbacks`}
     to={`/feedbacks`}>
     Feedbacks
@@ -102,7 +91,19 @@ const NavLink = (props) => (
     }}
     href={`/game`}
     to={`/game`}>
-    Game
+    Games
+  </Link>
+  <Link
+    px={2}
+    py={1}
+    rounded={'md'}
+    _hover={{
+      textDecoration: 'none',
+      bg: useColorModeValue('gray.200', 'gray.700'),
+    }}
+    href={`/collections`}
+    to={`/collections`}>
+    Collections
   </Link>
   </>
 );
@@ -144,26 +145,6 @@ export default function Simple(props) {
                 spacing={4}
                 display={{ base: 'none', md: 'flex' }}>
                 <NavLink props={props} />
-                {
-                  (
-                    props.netId === 4 &&
-                    (
-                      <a
-                        px={2}
-                        py={1}
-                        rounded={'md'}
-                        _hover={{
-                          textDecoration: 'none',
-                        }}
-                        href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`}
-                        target="_blank"
-                        rel="noreferrer"
-                        >
-                        GovBETA {' '}<ExternalLinkIcon mx="2px" />
-                      </a>
-                    )
-                  )
-                }
                 <a
                   px={2}
                   py={1}
@@ -225,7 +206,21 @@ export default function Simple(props) {
                          </Button>
                        ) :
                        (
-                         <>{' '}<Avatar src={img} size='sm' alt="" />{' '}</>
+                         <>
+                         {' '}
+                         <Tooltip label={props.profile?.name ? (props.profile.name) : (props.coinbase)} aria-label={props.coinbase}>
+                           <Avatar src={
+                                    props.profile?.image ?
+                                    (
+                                      props.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")
+                                    ) :
+                                    (
+                                      img
+                                    )
+                             } size='sm' alt="" />
+                         </Tooltip>
+                         {' '}
+                         </>
                        )
                     ) :
                     (
@@ -278,7 +273,21 @@ export default function Simple(props) {
                        </Button>
                      ) :
                      (
-                       <>{' '}<Avatar src={img} size='sm' alt="" />{' '}</>
+                       <>
+                        {' '}
+                        <Tooltip label={props.profile?.name ? (props.profile.name) : (props.coinbase)} aria-label={props.coinbase}>
+                          <Avatar src={
+                                   props.profile?.image ?
+                                   (
+                                     props.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")
+                                   ) :
+                                   (
+                                     img
+                                   )
+                            } size='sm' alt="" />
+                        </Tooltip>
+                        {' '}
+                      </>
                      )
                   ) :
                   (

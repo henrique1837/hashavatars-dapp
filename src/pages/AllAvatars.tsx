@@ -1,21 +1,10 @@
 import * as React from "react";
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
   Button,
-  theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
@@ -29,14 +18,17 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverBody,
-  PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
   Select,
+  Tooltip,
   Avatar as Av
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 import makeBlockie from 'ethereum-blockies-base64';
+
+import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
+
 
 import Avatar from 'avataaars';
 
@@ -74,7 +66,6 @@ class OwnedAvatars extends React.Component {
     }
     await Promise.all(promises);
     await this.forceUpdate();
-    const itoken = this.props.itoken;
     const tokenLikes = this.props.tokenLikes;
     /*
     itoken.events.TransferSingle({
@@ -97,7 +88,6 @@ class OwnedAvatars extends React.Component {
 
   handleEvents = async (err, res) => {
     try {
-      const web3 = this.props.web3;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
       console.log(uri)
       if(uri.includes("ipfs://ipfs/")){
@@ -116,17 +106,14 @@ class OwnedAvatars extends React.Component {
           liked = await this.props.tokenLikes.methods.liked(this.props.coinbase,res.returnValues._id).call();
         }
       }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
       const creator = await this.props.itoken.methods.creators(res.returnValues._id).call();
-
-
-      console.log(metadata)
+      const profile = await getLegacy3BoxProfileAsBasicProfile(creator);
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata,
-        creator: creator
+        creator: creator,
+        profile: profile
       }
       if (!this.state.savedBlobs.includes(JSON.stringify(obj))) {
         this.state.savedBlobs.push(JSON.stringify(obj));
@@ -261,7 +248,7 @@ class OwnedAvatars extends React.Component {
                   </Center>
                 ) :
                 (
-                  this.state.savedBlobs.length == 0 ?
+                  this.state.savedBlobs.length === 0 ?
                   (
                     <Center>
                      <VStack spacing={4}>
@@ -336,7 +323,22 @@ class OwnedAvatars extends React.Component {
                                   oTextOverflow: "ellipsis",    /* Opera < 11*/
                                   textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                                 }}>
-                                  <small>Creator: <Link href={`https://3box.io/${blob.creator}`} isExternal><Av src={makeBlockie(blob.creator)} size='sm' alt="" />{' '}{blob.creator}</Link></small>
+                                  <small>
+                                    Creator:
+                                    <Tooltip label={blob.profile?.description ? (blob.profile.description) : (blob.creator)} aria-label={blob.creator}>
+                                      <Link href={`https://3box.io/${blob.creator}`} isExternal>
+                                        <Av src={
+                                            blob.profile?.image ?
+                                            (
+                                              blob.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")
+                                            ) :
+                                            (
+                                              makeBlockie(blob.creator)
+                                            )
+                                        } size='sm' alt="" />{' '}{blob.profile?.name ? (blob.profile.name) : (blob.creator)}
+                                      </Link>
+                                    </Tooltip>
+                                  </small>
                                 </p>
                                 <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
                                 <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>

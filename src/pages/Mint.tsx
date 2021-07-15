@@ -1,28 +1,17 @@
 import * as React from "react";
 import ReactDOMServer from 'react-dom/server';
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
   Button,
-  theme,
   Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
   Divider,
   Link,
-  Image,
   Center,
   Spinner,
   Alert,
@@ -32,7 +21,6 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverBody,
-  PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
 } from "@chakra-ui/react"
@@ -275,7 +263,7 @@ class MintPage extends React.Component {
         gasPrice: 1000000000
       }).once('transactionHash',(hash) => {
         this.setState({
-          mintingMsg: <p><small>Transaction <a href={`https://blockscout.com/xdai/mainnet/tx/${hash}`} target="_blank" >{hash}</a> sent, wait confirmation ...</small></p>
+          mintingMsg: <p><small>Transaction <Link href={`https://blockscout.com/xdai/mainnet/tx/${hash}`} isExternal >{hash}</Link> sent, wait confirmation ...</small></p>
         });
       });
       this.setState({
@@ -292,7 +280,6 @@ class MintPage extends React.Component {
 
   handleEvents = async (err, res) => {
     try {
-      const web3 = this.props.web3;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
       if(uri.includes("ipfs://ipfs/")){
         uri = uri.replace("ipfs://ipfs/", "")
@@ -577,8 +564,8 @@ class MintPage extends React.Component {
                         <PopoverHeader>{blob.metadata.name}</PopoverHeader>
                         <PopoverBody>
                         <p><small>Token ID: {blob.returnValues._id}</small></p>
-                        <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
-                        <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
+                        <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} isExternal >View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
+                        <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} isExternal >View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
                         </PopoverBody>
                       </PopoverContent>
                     </Popover>

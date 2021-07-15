@@ -1,34 +1,16 @@
 import * as React from "react";
 import {
-  ChakraProvider,
   Box,
   Heading,
-  Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
-  Button,
-  theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
-  LinkOverlay,
   SimpleGrid,
-  Divider,
   Link,
   List,
-  ListIcon,
   ListItem,
   Avatar,
-  Center,
-  Spinner
-} from "@chakra-ui/react"
-import { ExternalLinkIcon } from '@chakra-ui/icons'
+  Center
+} from "@chakra-ui/react";
 
 
 
@@ -37,9 +19,7 @@ class Collections extends React.Component {
   state = {
 
   }
-  constructor(props){
-    super(props)
-  }
+  
   render(){
     return(
         <Box>

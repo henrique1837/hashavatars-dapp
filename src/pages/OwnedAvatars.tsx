@@ -1,36 +1,21 @@
 import * as React from "react";
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
-  Button,
-  theme,
-  Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
   Divider,
   Link,
   Center,
-  Alert,
-  AlertIcon,
   Spinner,
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverHeader,
   PopoverBody,
-  PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
   Avatar
@@ -85,16 +70,15 @@ class AllAvatars extends React.Component {
 
   handleEvents = async (err, res) => {
     try {
-      const web3 = this.props.web3;
       let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
-      console.log(uri)
       if(uri.includes("ipfs://ipfs/")){
         uri = uri.replace("ipfs://ipfs/", "")
       } else {
         uri = uri.replace("ipfs://", "");
       }
-      console.log(uri)
-      console.log(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text())
+      if(uri.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
+        return
+      }
       const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
 
 
@@ -154,7 +138,7 @@ class AllAvatars extends React.Component {
                     </Center>
                   ) :
                   (
-                    this.state.savedBlobs.length == 0 ?
+                    this.state.savedBlobs.length === 0 ?
 
                     (
                       <Center>

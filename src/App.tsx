@@ -21,6 +21,7 @@ import {
   Center,
   Spinner,
   Avatar,
+  Tooltip
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -28,6 +29,7 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 import Web3 from 'web3';
 import Web3Modal from "web3modal";
 import Torus from "@toruslabs/torus-embed";
+import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
 
 
 import ERC1155 from './contracts/ItemsERC1155.json'
@@ -44,7 +46,14 @@ import HashAssault from './components/games/HashAssault';
 
 import Collections from './pages/Collections';
 
-
+import Libp2p from 'libp2p'
+import Websockets from 'libp2p-websockets'
+import WebRTCStar from 'libp2p-webrtc-star'
+import { NOISE } from 'libp2p-noise'
+import Mplex from 'libp2p-mplex'
+import Bootstrap from 'libp2p-bootstrap'
+import Room from 'ipfs-pubsub-room';
+import Gossipsub from 'libp2p-gossipsub'
 
 const providerOptions = {
   injected: {
@@ -58,7 +67,7 @@ const providerOptions = {
       networkId: 0x64 // optional
     }
   }
-}
+ }
 };
 
 const web3Modal = new Web3Modal({
@@ -70,7 +79,8 @@ class App extends React.Component {
 
   state = {
     netId: 0x64,
-    loading: true
+    loading: true,
+    peersOnline: 0
   }
   constructor(props){
     super(props)
@@ -81,13 +91,20 @@ class App extends React.Component {
     this.checkTokens = this.checkTokens.bind(this);
     this.getMetadata = this.getMetadata.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
+    this.initLibp2p = this.initLibp2p.bind(this);
 
   }
   componentDidMount = async () => {
+
     if (web3Modal.cachedProvider) {
       await this.connectWeb3();
     } else {
       await this.initWeb3();
+    }
+    try{
+      await this.initLibp2p();
+    } catch(err){
+      console.log(err)
     }
   }
 
@@ -168,12 +185,14 @@ class App extends React.Component {
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
       }
+      const profile = await getLegacy3BoxProfileAsBasicProfile(coinbase);
       this.setState({
         web3: web3,
         itoken: itoken,
         rewards: rewards,
         tokenLikes: tokenLikes,
         coinbase:coinbase,
+        profile:profile,
         netId:netId,
         loading: false,
         provider: provider
@@ -259,7 +278,96 @@ class App extends React.Component {
 
     }
   }
+  initLibp2p = async () => {
 
+    const libp2p = await Libp2p.create({
+      addresses: {
+        // Add the signaling server address, along with our PeerId to our multiaddrs list
+        // libp2p will automatically attempt to dial to the signaling server so that it can
+        // receive inbound connections from other peers
+
+        listen: [
+          '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
+          '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
+        ]
+      },
+      modules: {
+        transport: [Websockets, WebRTCStar],
+        connEncryption: [NOISE],
+        streamMuxer: [Mplex],
+        peerDiscovery: [Bootstrap],
+        pubsub: Gossipsub
+      },
+      config: {
+        peerDiscovery: {
+          // The `tag` property will be searched when creating the instance of your Peer Discovery service.
+          // The associated object, will be passed to the service when it is instantiated.
+          [Bootstrap.tag]: {
+            enabled: true,
+            list: [
+              '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+              '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+              '/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
+              '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+              '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt'
+            ]
+          }
+        },
+        pubsub: {
+          enabled: true,
+          emitSelf: true,
+          canRelayMessage: true
+        }
+      }
+    });
+    // Listen for new peers
+    libp2p.on('peer:discovery', (peerId) => {
+      //console.log(`Found peer ${peerId.toB58String()}`)
+    })
+
+    // Listen for new connections to peers
+    libp2p.connectionManager.on('peer:connect', (connection) => {
+      //console.log(`Connected to ${connection.remotePeer.toB58String()}`)
+    })
+
+    // Listen for peers disconnecting
+    libp2p.connectionManager.on('peer:disconnect', (connection) => {
+      //console.log(`Disconnected from ${connection.remotePeer.toB58String()}`)
+    })
+
+    await libp2p.start();
+    const room = new Room(libp2p, 'hashavatars-dapp-peers-online')
+
+    room.on('peer joined', (cid) => {
+      console.log(`Joined ${cid}`)
+
+      this.setState({
+        peersOnline: this.state.peersOnline + 1
+      })
+    })
+
+    room.on('peer left', (cid) => {
+      console.log(`Left ${cid}`)
+      this.setState({
+        peersOnline: this.state.peersOnline -1
+      })
+    })
+
+    room.once('subscribed',() => {
+      console.log(`Subscribed`)
+      this.setState({
+        peersOnline: this.state.peersOnline + 1
+      })
+    })
+
+    this.setState({
+      libp2p: libp2p,
+      room: room
+    })
+    return(libp2p);
+
+
+  }
   render(){
     return(
 
@@ -272,6 +380,7 @@ class App extends React.Component {
             coinbase={this.state.coinbase}
             rewards={this.state.rewards}
             netId={this.state.netId}
+            profile={this.state.profile}
           />
         </Box>
         <Box textAlign="center" fontSize="xl">
@@ -501,6 +610,8 @@ class App extends React.Component {
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
+                            libp2p={this.state.libp2p}
+                            initLibp2p={this.initLibp2p}
                           />
                         ):
                         (
@@ -670,10 +781,31 @@ class App extends React.Component {
               fontSize="sm"
               flexDirection={{ base: 'column-reverse', lg: 'row' }}
             >
-            <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
-            <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
-            <Link href="https://github.com/henrique1837/hashavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
+              <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
+              <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
+              <Link href="https://github.com/henrique1837/hashavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
+              {
+                (
+                  this.state.netId === 4 &&
+                  (
+                    <Link  href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`} isExternal>GovBETA {' '}<ExternalLinkIcon mx="2px" /></Link>
+                  )
+                )
+              }
+              {
+                (
+                  this.state.room &&
+                  (
+                    <>
+                      <Tooltip label="Peers connected to you" aria-label="peers">
+                        <Image boxSize="20px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABfElEQVRIie2VOU4DQRBFn0diSMFEOOMADlhugAVYJIhVgsiJgZD1GGa7BBbXMCDMAbDBiFWCCDKQjMQQzG8NjNrjGRCZK2n9X69cVnd1D3TiDzH8TywOsA98ArkYfE7sjmrbxgHgAR9AIQZfEOupSWTMCWwCY/JSEbzJTajGA6Zbwd3Ag6BNeRngGMha+KxyGekt1d4Brq3BkoCa/pkLnMs7tPBl5apiU0Bd3oKtwZGSa9Kr0ldA2sKngYaYFXkb0mVbgxslB6VPpWekJ4FH/G3My5sVcyI9JH1ta/CuZI/0a0ib8/GAe3m90i8h/WZ+NM7cRk1R2/je4FnrgNaa1lGtRYItKsozF/EiVPtka2YOeV3aHHID+yH34e+1ByzLM4dsmzoWlawTjGk1osCM6ZlYB7iUN29r4OIfnod/acC/RBVaX7QK0C+9rdpboMvWAIKxawLj8uI8FXmC92gqggdgj98/dqUYPA6wS/LnukTCkR5JwCb64HTiR3wBnYJtcaM+zzsAAAAASUVORK5CYII="/>
+                      </Tooltip>
+                      <small>{this.state.peersOnline} peers</small>
 
+                    </>
+                  )
+                )
+              }
             </HStack>
           </Center>
         </Box>

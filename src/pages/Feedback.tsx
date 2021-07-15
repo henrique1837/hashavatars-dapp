@@ -1,65 +1,33 @@
 import * as React from "react";
-import ReactDOMServer from 'react-dom/server';
 import {
-  ChakraProvider,
   Box,
   Heading,
   Text,
-  HStack,
   VStack,
-  Stack,
-  Grid,
   Button,
-  theme,
   Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  LinkBox,
-  LinkOverlay,
-  SimpleGrid,
-  Divider,
   Link,
-  Image,
   Center,
   Spinner,
-  Alert,
-  AlertIcon,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
-  Avatar
+  Avatar,
+  Tooltip
 } from "@chakra-ui/react"
-import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import makeBlockie from 'ethereum-blockies-base64';
+import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
 
 import {
-  ChatMessage,
-  Direction,
-  Environment,
   getStatusFleetNodes,
-  Protocol,
   StoreCodec,
   Waku,
   WakuMessage,
 } from 'js-waku';
 
-console.log(StoreCodec)
 class FeedBackPage extends React.Component {
 
   state = {
   }
-  constructor(props){
-    super(props)
-  }
+  
   componentDidMount = async () => {
     const waku = await Waku.create({
         libp2p: {
@@ -79,8 +47,15 @@ class FeedBackPage extends React.Component {
     );
 
     waku.relay.addObserver(async (msg) => {
-      console.log("Message received:", msg.payloadAsUtf8)
-      this.state.posts.unshift(msg)
+      const obj = JSON.parse(msg.payloadAsUtf8);
+      if(obj.from !== null){
+        obj.profile = await getLegacy3BoxProfileAsBasicProfile(obj.from);
+      }
+      const treatedMsg = {
+        payloadAsUtf8: JSON.stringify(obj),
+        timestamp: msg.timestamp
+      };
+      this.state.posts.unshift(treatedMsg)
       await this.forceUpdate();
       console.log(this.state.posts)
     }, ["/test-hashavatars-feedback/proto"]);
@@ -101,7 +76,18 @@ class FeedBackPage extends React.Component {
           });
           messages?.map(async (msg) => {
             try{
-              this.state.posts.unshift(msg)
+              const obj = JSON.parse(msg.payloadAsUtf8);
+              if(obj.from !== null){
+                obj.profile = await getLegacy3BoxProfileAsBasicProfile(obj.from);
+              }
+              const treatedMsg = {
+                payloadAsUtf8: JSON.stringify(obj),
+                timestamp: msg.timestamp
+              };
+              this.state.posts.unshift(treatedMsg);
+              this.state.posts.sort(function(x, y){
+                  return y.timestamp - x.timestamp;
+              });
               await this.forceUpdate();
               console.log(this.state.posts)
             } catch(err){
@@ -115,10 +101,11 @@ class FeedBackPage extends React.Component {
   }
 
   post = async () => {
-    const msg = WakuMessage.fromUtf8String(JSON.stringify({
+    const str = JSON.stringify({
       message: this.state.msg,
       from: this.props.coinbase
-    }), "/test-hashavatars-feedback/proto");
+    });
+    const msg = WakuMessage.fromUtf8String(str, "/test-hashavatars-feedback/proto");
     await this.state.waku.relay.send(msg);
   }
 
@@ -127,6 +114,7 @@ class FeedBackPage extends React.Component {
       msg: e.target.value
     });
   }
+
 
   render(){
     return(
@@ -198,15 +186,27 @@ class FeedBackPage extends React.Component {
                       textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                     }}
                       >
-                      <Avatar src={makeBlockie(message.from? (message.from):("anonymous"))} size='sm' alt="" />
+                      <Tooltip label={message.profile?.name ? (message.profile.name) : (message.from)} aria-label={message.from}>
+                        <Link href={`https://3box.io/${message.from}`} isExternal>
+                          <Avatar src={
+                              message.profile?.image ?
+                              (
+                                message.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")
+                              ) :
+                              (
+                                makeBlockie(message.from ? (message.from):("anonymous"))
+                              )
+                          } size='sm' alt="" />
+                        </Link>
+                      </Tooltip>
                     </Box>
                     <Center>
                     <Box maxWidth={"80%"}>
-                      <p>{message.message}</p>
+                      <Text>{message.message}</Text>
                     </Box>
                     </Center>
                     <Box>
-                      <small>{new Date(item.timestamp).toUTCString()}</small>
+                      <Text><small>{new Date(item.timestamp).toUTCString()}</small></Text>
                     </Box>
                   </Box>
                 )
