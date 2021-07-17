@@ -27,75 +27,37 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 class AllAvatars extends React.Component {
 
   state = {
-    savedBlobs: [],
+    myHashAvatars: [],
     loading: true
   }
   constructor(props){
-    super(props)
-    this.handleEvents = this.handleEvents.bind(this);
-    this.checkTokens = this.props.checkTokens;
+    super(props);
+    this.checkEvents = this.checkEvents.bind(this);
   }
   componentDidMount = async () => {
-    //await this.props.initWeb3();
-    const promises = [];
-    const results = await this.props.checkTokens();
-    for(let res of results){
-      promises.push(this.handleEvents(null,res));
-    }
-    await Promise.all(promises)
-    const itoken = this.props.itoken;
-    itoken.events.TransferSingle({
-      filter: {
-      },
-      fromBlock: 'latest'
-    }, this.handleEvents);
 
-    let hasNotConnected = true;
     setInterval(async () => {
-      if(this.props.provider && hasNotConnected){
-        const promises = [];
-        const claimed = [];
-        const results = await this.props.checkTokens();
-        for(let res of results){
-          promises.push(this.handleEvents(null,res));
-          claimed.push(this.props.checkClaimed(res.returnValues._id));
-        }
-        await Promise.all(promises)
-        this.setState({hasNotConnected:false})
-
+      if(this.state.myHashAvatars !== this.props.savedBlobs){
+        await this.checkEvents();
       }
-    },500);
-    this.setState({loading:false})
+    },1000)
+
   }
 
-  handleEvents = async (err, res) => {
-    try {
-      let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
-      if(uri.includes("ipfs://ipfs/")){
-        uri = uri.replace("ipfs://ipfs/", "")
-      } else {
-        uri = uri.replace("ipfs://", "");
-      }
-      if(uri.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-        return
-      }
-      const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
+  checkEvents = async () => {
 
+      this.props.savedBlobs.map(async str => {
+        const obj = JSON.parse(str);
+        if(this.props.coinbase){
+          const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,obj.returnValues._id).call();
+          if(balance > 0 && !this.state.myHashAvatars.includes(JSON.stringify(obj))){
+            this.state.myHashAvatars.push(JSON.stringify(obj));
+          }
+        }
+      });
+      this.state.loading = false;
+      this.forceUpdate();
 
-      console.log(metadata)
-      const obj = {
-        returnValues: res.returnValues,
-        metadata: metadata
-      }
-      const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,res.returnValues._id).call();
-      if(balance > 0 && !this.state.savedBlobs.includes(JSON.stringify(obj))){
-        this.state.savedBlobs.push(JSON.stringify(obj));
-        await this.forceUpdate();
-      }
-
-    } catch (err) {
-      console.log(err);
-    }
   }
   render(){
     return(
@@ -106,125 +68,113 @@ class AllAvatars extends React.Component {
             </Box>
             <Box>
             {
+              this.props.loadingAvatars &&
               (
-                this.state.loading ?
+                <>
+                <Spinner size="xl" />
+                <p><small>Loading all HashAvatars</small></p>
+                </>
+              )
+            }
+            {
+
+              !this.props.coinbase ?
+              (
+                <Center>
+                 <VStack spacing={4}>
+                  <p>Connect your wallet</p>
+                  <Avatar
+                    size={'xl'}
+                    src={
+                      'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                    }
+                  />
+                  </VStack>
+                </Center>
+              ) :
+              (
+                this.state.myHashAvatars.length === 0 && !this.props.loadingAvatars ?
+
                 (
                   <Center>
                    <VStack spacing={4}>
-                    <p>Loading ...</p>
+                    <p>No HashAvatars here</p>
                     <Avatar
                       size={'xl'}
                       src={
                         'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
                       }
                     />
-                    <Spinner size="xl" />
                     </VStack>
                   </Center>
                 ) :
                 (
-                  this.state.hasNotConnected ?
-                  (
-                    <Center>
-                     <VStack spacing={4}>
-                      <p>Connect your wallet</p>
-                      <Avatar
-                        size={'xl'}
-                        src={
-                          'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                        }
-                      />
-                      </VStack>
-                    </Center>
-                  ) :
-                  (
-                    this.state.savedBlobs.length === 0 ?
-
-                    (
-                      <Center>
-                       <VStack spacing={4}>
-                        <p>No HashAvatars here</p>
-                        <Avatar
-                          size={'xl'}
-                          src={
-                            'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                          }
-                        />
-                        </VStack>
-                      </Center>
-                    ) :
-                    (
-                      <SimpleGrid
-                        columns={{ sm: 1, md: 5 }}
-                        spacing="40px"
-                        mb="20"
-                        justifyContent="center"
-                      >
-                      {
-                        this.state.savedBlobs?.map((string) => {
-                          const blob = JSON.parse(string);
-                          return(
-                            <Box
-                              rounded="2xl"
-                              p="5"
-                              borderWidth="1px"
-                              _hover={{ boxShadow: '2xl', background: this.state.cardHoverBg }}
+                  <SimpleGrid
+                    columns={{ sm: 1, md: 6 }}
+                    spacing="40px"
+                    mb="20"
+                    justifyContent="center"
+                  >
+                  {
+                    this.state.myHashAvatars?.map((string) => {
+                      const blob = JSON.parse(string);
+                      return(
+                        <Box
+                          rounded="2xl"
+                          p="5"
+                          borderWidth="1px"
+                          _hover={{ boxShadow: '2xl', background: this.state.cardHoverBg }}
+                        >
+                          <Popover>
+                            <PopoverTrigger>
+                            <LinkBox
+                              // h="200"
+                              role="group"
+                              as={Link}
                             >
-                              <Popover>
-                                <PopoverTrigger>
-                                <LinkBox
-                                  // h="200"
-                                  role="group"
-                                  as={Link}
+                              <Text
+                                fontSize="sm"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="space-between"
+                              >
+                                <LinkOverlay
+                                  style={{fontWeight: 600 }}
+                                  href={blob.url}
                                 >
-                                  <Text
-                                    fontSize="sm"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                  >
-                                    <LinkOverlay
-                                      style={{fontWeight: 600 }}
-                                      href={blob.url}
-                                    >
-                                      {blob.metadata.name}
-                                    </LinkOverlay>
-                                  </Text>
-                                  <Divider mt="4" />
-                                  <Center>
-                                    <object type="text/html"
-                                    data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                                    width="196px"
-                                    style={{borderRadius: "100px"}}>
-                                    </object>
-                                  </Center>
+                                  {blob.metadata.name}
+                                </LinkOverlay>
+                              </Text>
+                              <Divider mt="4" />
+                              <Center>
+                                <Avatar src={blob.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="2xl"/>
+                              </Center>
 
-                                </LinkBox>
-                                </PopoverTrigger>
-                                <PopoverContent>
-                                  <PopoverArrow />
-                                  <PopoverCloseButton />
-                                  <PopoverHeader>{blob.metadata.name}</PopoverHeader>
-                                  <PopoverBody>
-                                  <p><small>Token ID: {blob.returnValues._id}</small></p>
-                                  <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
-                                  <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
-                                  </PopoverBody>
-                                </PopoverContent>
-                              </Popover>
-                            </Box>
-                          )
-                        })
-                      }
-                      </SimpleGrid>
-                    )
-
-
-
-
-                  )
+                            </LinkBox>
+                            </PopoverTrigger>
+                            <PopoverContent>
+                              <PopoverArrow />
+                              <PopoverCloseButton />
+                              <PopoverHeader>{blob.metadata.name}</PopoverHeader>
+                              <PopoverBody>
+                              <p><small>Token ID: {blob.returnValues._id}</small></p>
+                              <p><small><Link href={`https://epor.io/tokens/${this.props.itoken.options.address}/${blob.returnValues._id}`} target="_blank">View on Epor.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
+                              <p><small><Link href={`https://unifty.io/xdai/collectible.html?collection=${this.props.itoken.options.address}&id=${blob.returnValues._id}`} target="_blank">View on Unifty.io{' '}<ExternalLinkIcon fontSize="18px" /></Link></small></p>
+                              </PopoverBody>
+                            </PopoverContent>
+                          </Popover>
+                        </Box>
+                      )
+                    })
+                  }
+                  </SimpleGrid>
                 )
-              )
+
+
+
+
+              )  
+
             }
 
             </Box>

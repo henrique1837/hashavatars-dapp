@@ -23,39 +23,19 @@ class GamesPage extends React.Component {
   state = {
     games: [
       {
-        component: <HashAtack itoken={this.props.itoken}
-                              web3={this.props.web3}
-                              getMetadata={this.props.getMetadata}
-                              initWeb3={this.props.initWeb3}
-                              checkTokens={this.props.checkTokens}
-                              coinbase={this.props.coinbase}
-                    />,
+        component: <HashAtack {...this.props} />,
         name: "HashAtack",
         description: "Avoid being touched by HashAvatars icon!",
         image: "https://ipfs.io/ipfs/QmbKJ5wbYhio5h8NdGD6nyXmpJ7NFJqyqMAEbq8YwF8Kkk"
       },
       {
-        component: <HashVille itoken={this.props.itoken}
-                              web3={this.props.web3}
-                              getMetadata={this.props.getMetadata}
-                              initWeb3={this.props.initWeb3}
-                              checkTokens={this.props.checkTokens}
-                              coinbase={this.props.coinbase}
-                    />,
+        component: <HashVille {...this.props} />,
         name: "HashVille under HashAtack",
         description: "Protect yourself! HashVille is under atack!",
         image: "https://ipfs.io/ipfs/QmUs9rX2FsYUML9PCWMExJZfgcTPiXGV3FpArrTxd1Yf8i"
       },
       {
-        component: <HashOperation itoken={this.props.itoken}
-                              web3={this.props.web3}
-                              getMetadata={this.props.getMetadata}
-                              initWeb3={this.props.initWeb3}
-                              checkTokens={this.props.checkTokens}
-                              coinbase={this.props.coinbase}
-                              libp2p={this.props.libp2p}
-                              initLibp2p={this.props.initLibp2p}
-                    />,
+        component: <HashOperation {...this.props} />,
         name: "HashOperation",
         description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
         image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
@@ -63,7 +43,7 @@ class GamesPage extends React.Component {
     ],
     play: null
   }
-  
+
   componentDidMount = async () => {
 
   }

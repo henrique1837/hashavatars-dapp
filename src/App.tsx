@@ -80,7 +80,11 @@ class App extends React.Component {
   state = {
     netId: 0x64,
     loading: true,
-    peersOnline: 0
+    loadingAvatars: true,
+    peersOnline: 0,
+    savedBlobs: [],
+    creators: [],
+    likes: [],
   }
   constructor(props){
     super(props)
@@ -92,7 +96,8 @@ class App extends React.Component {
     this.getMetadata = this.getMetadata.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
     this.initLibp2p = this.initLibp2p.bind(this);
-
+    this.handleEvents = this.handleEvents.bind(this);
+    this.handleLikes = this.handleLikes.bind(this);
   }
   componentDidMount = async () => {
 
@@ -101,12 +106,17 @@ class App extends React.Component {
     } else {
       await this.initWeb3();
     }
+    this.setState({
+      loading: false
+    });
+    await this.initiateContracts();
     try{
       await this.initLibp2p();
     } catch(err){
       console.log(err)
     }
   }
+
 
 
   initWeb3 = async () => {
@@ -119,6 +129,7 @@ class App extends React.Component {
         web3 = new Web3("https://rpc.xdaichain.com/")
       }
       const netId = await web3.eth.net.getId();
+
       let itoken;
       let tokenLikes;
       if(netId === 4){
@@ -128,9 +139,6 @@ class App extends React.Component {
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
       }
-      this.setState({
-        netId: netId
-      })
       let address = window.location.search.split('?address=')[1];
       if(address?.includes('&rinkeby')){
         address = address.split("&rinkeby")[0];
@@ -138,27 +146,16 @@ class App extends React.Component {
       if(!address && coinbase){
         address = coinbase;
       }
-      console.log(address)
-      /*
-      const profile = await getProfile(address);
-      const blockie = new Image();
-      blockie.src = makeBlockie(address);
-      let img = blockie.src;
-      if(profile.image){
-        img = profile.image
-      }
-      */
 
       this.setState({
         web3: web3,
         itoken: itoken,
-        //profile: profile,
         address:address,
         coinbase: coinbase,
         tokenLikes: tokenLikes,
-        //img: img,
-        loading:false
+        netId: netId
       });
+
 
     }catch(err){
       console.log(err)
@@ -166,9 +163,6 @@ class App extends React.Component {
   }
 
   connectWeb3 = async () => {
-    this.setState({
-      loading: true
-    });
     try{
       const provider =  await web3Modal.connect();;
       const web3 = new Web3(provider);
@@ -186,6 +180,10 @@ class App extends React.Component {
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
       }
       const profile = await getLegacy3BoxProfileAsBasicProfile(coinbase);
+      let initiateContracts = false;
+      if(this.state.netId !== netId){
+        initiateContracts = true;
+      }
       this.setState({
         web3: web3,
         itoken: itoken,
@@ -194,7 +192,6 @@ class App extends React.Component {
         coinbase:coinbase,
         profile:profile,
         netId:netId,
-        loading: false,
         provider: provider
       });
       provider.on('accountsChanged', accounts => window.location.reload(true));
@@ -204,6 +201,9 @@ class App extends React.Component {
         await web3Modal.clearCachedProvider();
         window.location.reload(true);
       });
+      if(initiateContracts){
+        this.initiateContracts();
+      }
     } catch(err){
       web3Modal.clearCachedProvider();
       this.initWeb3();
@@ -211,12 +211,52 @@ class App extends React.Component {
 
   }
 
+  initiateContracts = async () => {
+    this.setState({
+      likes: [],
+      creators: [],
+      savedBlobs: [],
+      loadingAvatars: true
+    })
+    let promises = [];
+    const results = await this.checkTokens();
+
+    for(let res of results){
+      promises.push(this.handleEvents(null,res));
+
+      this.handleLikes(null,res);
+    }
+    await Promise.all(promises);
+    this.setState({
+      loadingAvatars: false,
+      savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
+                      const x = JSON.parse(xstr)
+                      const y = JSON.parse(ystr)
+                      return y.returnValues._id - x.returnValues._id;
+                  })
+    });
+    this.state.itoken.events.TransferSingle({
+      filter: {
+        from: '0x0000000000000000000000000000000000000'
+      },
+      fromBlock: 'latest'
+    }, this.handleEvents);
+    this.state.tokenLikes.events.LikeOrUnlike({
+      filter:{
+
+      },
+      fromBlock: 'latest'
+    },this.handleLikes);
+  }
+
   getMetadata = async(id) => {
     const uriToken = await this.state.itoken.methods.uri(id).call();
     if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-      return({});
+      throw('Err')
     }
-    const metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
+    let metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
+    const svgImage = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text();
+    fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))
     return(metadataToken)
   }
   checkTokens = async () => {
@@ -368,6 +408,63 @@ class App extends React.Component {
 
 
   }
+
+  handleEvents = async (err, res) => {
+    try {
+      const metadata = await this.getMetadata(res.returnValues._id);
+      const creator = await this.state.itoken.methods.creators(res.returnValues._id).call();
+      let profile;
+      try{
+        profile = await getLegacy3BoxProfileAsBasicProfile(creator);
+      } catch(err){
+
+      }
+      const creatorProfile = {
+        address: creator,
+        profile: profile
+      }
+      if(!this.state.creators.includes(JSON.stringify(creatorProfile))){
+        this.state.creators.unshift(JSON.stringify(creatorProfile));
+        this.forceUpdate();
+      }
+
+      const obj = {
+        returnValues: res.returnValues,
+        metadata: metadata,
+        creator: creator,
+        profile: profile,
+      }
+      if(!this.state.savedBlobs.includes(JSON.stringify(obj))){
+        this.state.savedBlobs.unshift(JSON.stringify(obj));
+        this.forceUpdate();
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  handleLikes = async (err,res) => {
+    try{
+
+        let likes = 0;
+        let liked;
+        likes = await this.state.tokenLikes.methods.likes(res.returnValues._id).call();
+        if(this.state.coinbase){
+          liked = await this.state.tokenLikes.methods.liked(this.state.coinbase,res.returnValues._id).call();
+        }
+
+        this.state.likes[res.returnValues._id] =  {
+                                                    likes: likes,
+                                                    liked: liked
+                                                  };
+
+        this.forceUpdate();
+
+    } catch(err){
+
+    }
+  }
+
   render(){
     return(
 
@@ -376,15 +473,12 @@ class App extends React.Component {
         <Box>
           <Nav
             connectWeb3={this.connectWeb3}
-            loading={this.state.loading}
-            coinbase={this.state.coinbase}
-            rewards={this.state.rewards}
-            netId={this.state.netId}
-            profile={this.state.profile}
+            {...this.state}
           />
         </Box>
         <Box textAlign="center" fontSize="xl">
           <Grid minH="100vh" p={3}>
+
             <Switch>
               <Route path={"/home"} render={() => {
                 return(
@@ -424,7 +518,6 @@ class App extends React.Component {
                 }
               }/>
 
-
               <Route path={"/created-avatars"} render={() => {
 
                     return(
@@ -434,19 +527,14 @@ class App extends React.Component {
                           this.state.itoken ?
                           (
                             <MintPage
-                              itoken={this.state.itoken}
-                              rewards={this.state.rewards}
                               checkClaimed={this.checkClaimed}
                               getMetadata={this.getMetadata}
                               claim={this.claim}
-                              web3={this.state.web3}
                               connectWeb3={this.connectWeb3}
                               checkTokens={this.checkTokens}
-                              coinbase={this.state.coinbase}
-                              provider={this.state.provider}
-                              loading={this.state.loading}
+                              {...this.state}
                             />
-                          ):
+                          ) :
                           (
                             (this.state.netId === 4 || this.state.netId === 0x64) ?
                             (
@@ -494,17 +582,13 @@ class App extends React.Component {
                         this.state.itoken ?
                         (
                           <OwnedAvatars
-                            itoken={this.state.itoken}
-                            rewards={this.state.rewards}
                             checkClaimed={this.checkClaimed}
                             claim={this.claim}
-                            web3={this.state.web3}
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
-                            coinbase={this.state.coinbase}
-                            provider={this.state.provider}
+                            {...this.state}
                           />
-                        ):
+                        ) :
                         (
                           (this.state.netId === 4 || this.state.netId === 0x64) ?
                           (
@@ -551,14 +635,12 @@ class App extends React.Component {
                         this.state.itoken ?
                         (
                           <AllAvatars
-                            itoken={this.state.itoken}
-                            web3={this.state.web3}
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
-                            coinbase={this.state.coinbase}
-                            tokenLikes={this.state.tokenLikes}
+                            {...this.state}
+
                           />
-                        ):
+                        ) :
                         (
                           (this.state.netId === 4 || this.state.netId === 0x64) ?
                           (
@@ -604,14 +686,11 @@ class App extends React.Component {
                         this.state.itoken ?
                         (
                           <Games
-                            itoken={this.state.itoken}
-                            web3={this.state.web3}
                             getMetadata={this.getMetadata}
                             initWeb3={this.initWeb3}
                             checkTokens={this.checkTokens}
-                            coinbase={this.state.coinbase}
-                            libp2p={this.state.libp2p}
                             initLibp2p={this.initLibp2p}
+                            {...this.state}
                           />
                         ):
                         (
@@ -666,7 +745,7 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
                           />
-                        ):
+                        ) :
                         (
                           (this.state.netId === 4 || this.state.netId === 0x64) ?
                           (
@@ -713,14 +792,11 @@ class App extends React.Component {
                         this.state.itoken ?
                         (
                           <FeedBackPage
-                            orbitdb={this.state.orbitdb}
-                            ipfs={this.state.ipfs}
-                            coinbase={this.state.coinbase}
                             connectWeb3={this.connectWeb3}
                             connectBox={this.connectBox}
-                            space={this.state.space}
+                            {...this.state}
                           />
-                        ):
+                        ) :
                         (
                           (this.state.netId === 4 || this.state.netId === 0x64) ?
                           (
@@ -758,6 +834,7 @@ class App extends React.Component {
                   )
                 }
               }/>
+
 
               <Route path={"/collections"} render={() => {
                   return(

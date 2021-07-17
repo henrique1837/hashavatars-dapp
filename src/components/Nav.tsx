@@ -45,18 +45,19 @@ const NavLink = (props) => (
     to={`/created-avatars`}>
     <b>Generate Avatar</b>
   </Link>
-  <Link
-    px={2}
-    py={1}
-    rounded={'md'}
-    _hover={{
-      textDecoration: 'none',
-      bg: useColorModeValue('gray.200', 'gray.700'),
-    }}
-    href={`/owned-avatars`}
-    to={`/owned-avatars`}>
-    Avatars Owned
-  </Link>
+  {
+    props.coinbase &&
+    (
+      <Link
+        px={2}
+        py={1}
+        rounded={'md'}
+        href={`/owned-avatars`}
+        to={`/owned-avatars`}>
+        Avatars Owned
+      </Link>
+    )
+  }
   <Link
     px={2}
     py={1}
@@ -135,16 +136,34 @@ export default function Simple(props) {
                 as={Link}
                 to="/home"
               />
-              {'  '} <Link to="/home">The HashAvatars</Link>
             </Box>
+            <Box>
+              <Link to="/home">The HashAvatars</Link>
+            </Box>
+            {
+              (
+                props.room &&
+                (
+                  <HStack spacing={0.5} alignItems={'center'}>
+
+                    <Tooltip label="Peers connected to you" aria-label="peers">
+                      <Image boxSize="20px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABfElEQVRIie2VOU4DQRBFn0diSMFEOOMADlhugAVYJIhVgsiJgZD1GGa7BBbXMCDMAbDBiFWCCDKQjMQQzG8NjNrjGRCZK2n9X69cVnd1D3TiDzH8TywOsA98ArkYfE7sjmrbxgHgAR9AIQZfEOupSWTMCWwCY/JSEbzJTajGA6Zbwd3Ag6BNeRngGMha+KxyGekt1d4Brq3BkoCa/pkLnMs7tPBl5apiU0Bd3oKtwZGSa9Kr0ldA2sKngYaYFXkb0mVbgxslB6VPpWekJ4FH/G3My5sVcyI9JH1ta/CuZI/0a0ib8/GAe3m90i8h/WZ+NM7cRk1R2/je4FnrgNaa1lGtRYItKsozF/EiVPtka2YOeV3aHHID+yH34e+1ByzLM4dsmzoWlawTjGk1osCM6ZlYB7iUN29r4OIfnod/acC/RBVaX7QK0C+9rdpboMvWAIKxawLj8uI8FXmC92gqggdgj98/dqUYPA6wS/LnukTCkR5JwCb64HTiR3wBnYJtcaM+zzsAAAAASUVORK5CYII="/>
+                    </Tooltip>
+                    <small>{props.peersOnline}</small>
+
+                  </HStack>
+                )
+              )
+            }
           </HStack>
+
           <Flex alignItems={'center'}>
             <Menu>
               <HStack
                 as={'nav'}
                 spacing={4}
                 display={{ base: 'none', md: 'flex' }}>
-                <NavLink props={props} />
+                <NavLink {...props} />
                 <a
                   px={2}
                   py={1}
@@ -224,7 +243,7 @@ export default function Simple(props) {
                        )
                     ) :
                     (
-                      <>{' '}<small>Connecting ...</small>{' '}</>
+                      <>{' '}<small>Loading ...</small>{' '}</>
                     )
                   )
                 }
@@ -291,7 +310,7 @@ export default function Simple(props) {
                      )
                   ) :
                   (
-                    <>{' '}<small>Connecting ...</small>{' '}</>
+                    <>{' '}<small>Loading ...</small>{' '}</>
                   )
                 )
               }

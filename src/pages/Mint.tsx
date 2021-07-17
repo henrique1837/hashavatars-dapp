@@ -23,6 +23,8 @@ import {
   PopoverBody,
   PopoverArrow,
   PopoverCloseButton,
+  Image,
+  Avatar as Av
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
@@ -49,52 +51,33 @@ class MintPage extends React.Component {
     savedBlobs: [],
     allHashAvatars: [],
     supply: 1,
-    minting: false,
-    toClaim: []
+    minting: true,
+    mintingMsg: <p><small>Loading all HashAvatars ...</small></p>,
+    toClaim: [],
+    canMint: true
   }
   constructor(props){
     super(props)
     this.randomize = this.randomize.bind(this);
-    this.handleEvents = this.handleEvents.bind(this);
     this.mint = this.mint.bind(this);
   }
   componentDidMount = async () => {
     try{
-      //await this.props.initWeb3();
+
       document.getElementById("input_name").focus();
       document.getElementById("input_name").select();
       this.randomize();
-      const promises = [];
-      const results = await this.props.checkTokens();
-      for(let res of results){
-        promises.push(this.handleEvents(null,res));
-      }
-      await Promise.all(promises)
-      const itoken = this.props.itoken;
-
-      itoken.events.TransferSingle({
-        filter: {
-          from: '0x0000000000000000000000000000000000000'
-        },
-        fromBlock: 'latest'
-      }, this.handleEvents);
+      await this.checkEvents();
       let hasNotConnected = !this.props.coinbase;
       setInterval(async () => {
+        if(this.props.savedBlobs.length !== this.state.allHashAvatars){
+          this.checkEvents();
+        }
         if(this.props.provider && hasNotConnected){
           const promises = [];
           const claimed = [];
-          const results = await this.props.checkTokens();
-          for(let res of results){
-            promises.push(this.handleEvents(null,res));
-            if(this.props.coinbase){
-              claimed.push(this.props.checkClaimed(res.returnValues._id));
-            }
-          }
-          await Promise.all(promises)
           if(this.props.rewards != null){
             let toClaim = await Promise.all(claimed);
-
-            console.log(toClaim)
             toClaim = toClaim.filter(item => {
               if(item.hasClaimed === false && this.props.coinbase.toLowerCase() === item.creator?.toLowerCase()){
                 return(item);
@@ -109,7 +92,15 @@ class MintPage extends React.Component {
           hasNotConnected = false;
 
         }
+        if(!this.props.loadingAvatars){
+          this.setState({
+            minting: false,
+            mintingMsg: ''
+          })
+        }
       },500);
+
+
 
     } catch(err){
 
@@ -155,13 +146,10 @@ class MintPage extends React.Component {
         mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
       });
 
-      const results = await this.props.checkTokens();
-      const metaPromises = []
-      for(let res of results){
-        const metadataToken = this.props.getMetadata(res.returnValues._id);
-        metaPromises.push(metadataToken)
-      }
-      const metadatas = await Promise.all(metaPromises);
+      const metadatas = this.props.savedBlobs.map(str => {
+        const obj = JSON.parse(str);
+        return(obj.metadata);
+      });
       let cont = true;
 
       metadatas.map(obj => {
@@ -277,119 +265,125 @@ class MintPage extends React.Component {
     }
   }
 
-
-  handleEvents = async (err, res) => {
-    try {
-      let uri = await this.props.itoken.methods.uri(res.returnValues._id).call();
-      if(uri.includes("ipfs://ipfs/")){
-        uri = uri.replace("ipfs://ipfs/", "")
-      } else {
-        uri = uri.replace("ipfs://", "");
-      }
-      const metadata = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text());
-      fetch(`https://ipfs.io/ipfs/${metadata.image.replace('ipfs://','')}`);
-
-      const obj = {
-        returnValues: res.returnValues,
-        metadata: metadata
-      }
-
-
-      const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,res.returnValues._id).call();
-      const creator = await this.props.itoken.methods.creators(res.returnValues._id).call();
-      if (!this.state.allHashAvatars.includes(JSON.stringify(obj))) {
-        this.state.allHashAvatars.push(JSON.stringify(obj));
-      }
+  checkEvents = async () => {
+    this.state.allHashAvatars = this.props.savedBlobs;
+    this.state.allHashAvatars.map(async str => {
+      const obj = JSON.parse(str);
       if(this.props.coinbase){
-        if(creator.toLowerCase() === this.props.coinbase.toLowerCase() && !this.state.savedBlobs.includes(JSON.stringify(obj))){
+        if(obj.creator.toLowerCase() === this.props.coinbase.toLowerCase() && !this.state.savedBlobs.includes(JSON.stringify(obj))){
           this.state.savedBlobs.push(JSON.stringify(obj));
         }
-      }
 
+      }
       if(this.props.rewards !== undefined && this.props.coinbase){
-        const claim = await this.props.checkClaimed(res.returnValues._id);
+        const claim = await this.props.checkClaimed(obj.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
         }
       }
-      this.forceUpdate()
-    } catch (err) {
-      console.log(err);
-    }
+    })
+    this.forceUpdate()
   }
 
   handleOnChange = (e) => {
-    e.preventDefault();
-    if(e.target.name === "supply"){
-      this.setState({
-        supply: e.target.value
-      });
-      return;
-    }
-    try{
-      const web3 = this.props.web3;
-      const dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString().replace(".","").substring(0,21);
-      let topIndex = (Number(dna.substring(0,1)) % 35 + 1).toFixed(0);
-      if(topIndex > this.state.top.length - 1){
-        topIndex = topIndex - (this.state.top.length - 1)*(topIndex/(this.state.top.length - 1));
+      e.preventDefault();
+      if(e.target.name === "supply"){
+        this.setState({
+          supply: e.target.value
+        });
+        return;
       }
-      let accessoriesIndex = (Number(dna.substring(2,3)) % 6 + 1).toFixed(0);
-      if(accessoriesIndex > this.state.accessories.length - 1){
-        accessoriesIndex = accessoriesIndex - (this.state.accessories.length - 1)*(accessoriesIndex/(this.state.accessories.length - 1));
-      }
-      let hairColorIndex = (Number(dna.substring(4,5)) % 9 + 1).toFixed(0);
-      if(hairColorIndex > this.state.hairColor.length - 1){
-        hairColorIndex = hairColorIndex - (this.state.hairColor.length - 1)*(hairColorIndex/(this.state.hairColor.length - 1));
-      }
-      let facialHairIndex = (Number(dna.substring(6,7)) % 6 + 1).toFixed(0);
-      if(facialHairIndex > this.state.facialHair.length - 1){
-        facialHairIndex = facialHairIndex - (this.state.facialHair.length - 1)*(facialHairIndex/(this.state.facialHair.length - 1));
-      }
-      let facialHairColorIndex = (Number(dna.substring(8,9)) % 7 + 1).toFixed(0);
-      if(facialHairColorIndex > this.state.facialHairColor.length - 1){
-        facialHairColorIndex = facialHairColorIndex - (this.state.facialHairColor.length - 1)*(facialHairColorIndex/(this.state.facialHairColor.length - 1));
-      }
-      let clotheIndex = (Number(dna.substring(10,11)) % 8 + 1).toFixed(0);
-      if(clotheIndex > this.state.clothes.length - 1){
-        clotheIndex = clotheIndex - (this.state.clothes.length - 1)*(clotheIndex/(this.state.clothes.length - 1));
-      }
-      let clotheColorIndex = (Number(dna.substring(12,13)) % 14 + 1).toFixed(0);
-      if(clotheColorIndex > this.state.clothesColor.length - 1){
-        clotheColorIndex = clotheColorIndex - (this.state.clothesColor.length - 1)*(clotheColorIndex/(this.state.clothesColor.length - 1));
-      }
-      let eyeTypeIndex = (Number(dna.substring(14,15)) % 14 + 1).toFixed(0);
-      if(eyeTypeIndex > this.state.eye.length - 1){
-        eyeTypeIndex = eyeTypeIndex - (this.state.eye.length - 1)*(eyeTypeIndex/(this.state.eye.length - 1));
-      }
-      let eyebrowIndex = (Number(dna.substring(16,17)) % 11 + 1).toFixed(0);
-      if(eyebrowIndex > this.state.eyebrown.length - 1){
-        eyebrowIndex = eyebrowIndex - (this.state.eyebrown.length - 1)*(eyebrowIndex/(this.state.eyebrown.length - 1));
-      }
-      let mounthTypeIndex = (Number(dna.substring(18,19)) % 11 + 1).toFixed(0);
-      if(mounthTypeIndex > this.state.mouth.length - 1){
-        mounthTypeIndex = mounthTypeIndex - (this.state.mouth.length - 1)*(mounthTypeIndex/(this.state.mouth.length - 1));
-      }
-      let skinTypeIndex = (Number(dna.substring(20,21)) % 6 + 1).toFixed(0);
-      if(skinTypeIndex > this.state.skin.length - 1){
-        skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
-      }
-      const avatar = {
-        avatarStyle: 'Circle',
-        topType: this.state.top[topIndex],
-        accessoriesType: this.state.accessories[accessoriesIndex],
-        hairColor: this.state.hairColor[hairColorIndex],
-        facialHairType: this.state.facialHair[facialHairIndex],
-        facialHairColor:  this.state.facialHairColor[facialHairColorIndex],
-        clotheType: this.state.clothes[clotheIndex],
-        clotheColor : this.state.clothesColor[clotheColorIndex],
-        eyeType: this.state.eye[eyeTypeIndex],
-        eyebrowType: this.state.eyebrown[eyebrowIndex],
-        mounthType: this.state.mouth[mounthTypeIndex],
-        skinColor: this.state.skin[skinTypeIndex],
-        name: e.target.value.trim(),
-        dna: dna
-      }
+      try{
+        const web3 = this.props.web3;
+        const dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString();
+        let topIndex = (Number(dna.substring(0,2)) % 35 + 1).toFixed(0);
+        if(topIndex > this.state.top.length - 1){
+          topIndex = topIndex - (this.state.top.length - 1)*(topIndex/(this.state.top.length - 1));
+        }
+        let accessoriesIndex = (Number(dna.substring(2,3)) % 6 + 1).toFixed(0);
+        if(accessoriesIndex > this.state.accessories.length - 1){
+          accessoriesIndex = accessoriesIndex - (this.state.accessories.length - 1)*(accessoriesIndex/(this.state.accessories.length - 1));
+        }
+        let hairColorIndex = (Number(dna.substring(4,5)) % 9 + 1).toFixed(0);
+        if(hairColorIndex > this.state.hairColor.length - 1){
+          hairColorIndex = hairColorIndex - (this.state.hairColor.length - 1)*(hairColorIndex/(this.state.hairColor.length - 1));
+        }
+        let facialHairIndex = (Number(dna.substring(6,7)) % 6 + 1).toFixed(0);
+        if(facialHairIndex > this.state.facialHair.length - 1){
+          facialHairIndex = facialHairIndex - (this.state.facialHair.length - 1)*(facialHairIndex/(this.state.facialHair.length - 1));
+        }
+        let facialHairColorIndex = (Number(dna.substring(8,9)) % 7 + 1).toFixed(0);
+        if(facialHairColorIndex > this.state.facialHairColor.length - 1){
+          facialHairColorIndex = facialHairColorIndex - (this.state.facialHairColor.length - 1)*(facialHairColorIndex/(this.state.facialHairColor.length - 1));
+        }
+        let clotheIndex = (Number(dna.substring(10,11)) % 8 + 1).toFixed(0);
+        if(clotheIndex > this.state.clothes.length - 1){
+          clotheIndex = clotheIndex - (this.state.clothes.length - 1)*(clotheIndex/(this.state.clothes.length - 1));
+        }
+        let clotheColorIndex = (Number(dna.substring(12,14)) % 14 + 1).toFixed(0);
+        if(clotheColorIndex > this.state.clothesColor.length - 1){
+          clotheColorIndex = clotheColorIndex - (this.state.clothesColor.length - 1)*(clotheColorIndex/(this.state.clothesColor.length - 1));
+        }
+        let eyeTypeIndex = (Number(dna.substring(14,16)) % 14 + 1).toFixed(0);
+        if(eyeTypeIndex > this.state.eye.length - 1){
+          eyeTypeIndex = eyeTypeIndex - (this.state.eye.length - 1)*(eyeTypeIndex/(this.state.eye.length - 1));
+        }
+        let eyebrowIndex = (Number(dna.substring(16,18)) % 11 + 1).toFixed(0);
+        if(eyebrowIndex > this.state.eyebrown.length - 1){
+          eyebrowIndex = eyebrowIndex - (this.state.eyebrown.length - 1)*(eyebrowIndex/(this.state.eyebrown.length - 1));
+        }
+        let mounthTypeIndex = (Number(dna.substring(18,20)) % 11 + 1).toFixed(0);
+        if(mounthTypeIndex > this.state.mouth.length - 1){
+          mounthTypeIndex = mounthTypeIndex - (this.state.mouth.length - 1)*(mounthTypeIndex/(this.state.mouth.length - 1));
+        }
+        let skinTypeIndex = (Number(dna.substring(20,21)) % 6 + 1).toFixed(0);
+        if(skinTypeIndex > this.state.skin.length - 1){
+          skinTypeIndex = skinTypeIndex - (this.state.skin.length - 1)*(skinTypeIndex/(this.state.skin.length - 1));
+        }
+        const avatar = {
+          avatarStyle: 'Circle',
+          topType: this.state.top[topIndex],
+          accessoriesType: this.state.accessories[accessoriesIndex],
+          hairColor: this.state.hairColor[hairColorIndex],
+          facialHairType: this.state.facialHair[facialHairIndex],
+          facialHairColor:  this.state.facialHairColor[facialHairColorIndex],
+          clotheType: this.state.clothes[clotheIndex],
+          clotheColor : this.state.clothesColor[clotheColorIndex],
+          eyeType: this.state.eye[eyeTypeIndex],
+          eyebrowType: this.state.eyebrown[eyebrowIndex],
+          mounthType: this.state.mouth[mounthTypeIndex],
+          skinColor: this.state.skin[skinTypeIndex],
+          name: e.target.value.trim(),
+          dna: dna
+        }
 
+      const metadatas = this.props.savedBlobs.map(str => {
+        const obj = JSON.parse(str);
+        return(obj.metadata);
+      });
+      let cont = true;
+
+      metadatas.map(obj => {
+        //const obj = JSON.parse(string);
+        if(obj.name === avatar.name) {
+          cont = false
+          const svg = <Image src={obj.image.replace("ipfs://","https://ipfs.io/ipfs/")}  />
+          console.log(svg)
+          this.setState({
+            avatar: null,
+            svg: svg
+          });
+        }
+      });
+      if(!cont){
+        this.setState({
+          canMint: false
+        });
+        return;
+      }
+      this.setState({
+        canMint: true
+      });
       const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />)
 
 
@@ -465,7 +459,15 @@ class MintPage extends React.Component {
               </Text>
             </Box>
             <Box align="center">
-              <Avatar {...this.state.avatar} />
+              {
+                this.state.avatar ?
+                (
+                  <Avatar {...this.state.avatar} />
+                ) :
+                (
+                  this.state.svg
+                )
+              }
               <Text>
                 <p>Select the name of your HashAvatar and claim it!</p>
                 <Input placeholder="Avatar's Name" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
@@ -477,7 +479,7 @@ class MintPage extends React.Component {
                     (
                       !this.state.minting ?
                       (
-                        <Button onClick={this.mint}>Claim</Button>
+                        this.state.canMint ? (<Button onClick={this.mint}>Claim</Button>) : ("HashAvatar with that name already claimed")
                       ) :
                       (
                         <>
@@ -512,7 +514,7 @@ class MintPage extends React.Component {
             </Box>
             <Box>
             <SimpleGrid
-              columns={{ sm: 1, md: 5 }}
+              columns={{ sm: 1, md: 6 }}
               spacing="40px"
               mb="20"
               justifyContent="center"
@@ -549,11 +551,7 @@ class MintPage extends React.Component {
                         </Text>
                         <Divider mt="4" />
                         <Center>
-                          <object type="text/html"
-                          data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
-                          width="196px"
-                          style={{borderRadius: "100px"}}>
-                          </object>
+                          <Av src={blob.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="2xl"/>
                         </Center>
 
                       </LinkBox>
