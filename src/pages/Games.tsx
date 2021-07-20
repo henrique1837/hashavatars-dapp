@@ -24,14 +24,14 @@ class GamesPage extends React.Component {
     games: [
       {
         component: <HashAtack {...this.props} />,
-        name: "HashAtack",
+        name: "HashAttack",
         description: "Avoid being touched by HashAvatars icon!",
         image: "https://ipfs.io/ipfs/QmbKJ5wbYhio5h8NdGD6nyXmpJ7NFJqyqMAEbq8YwF8Kkk"
       },
       {
         component: <HashVille {...this.props} />,
-        name: "HashVille under HashAtack",
-        description: "Protect yourself! HashVille is under atack!",
+        name: "HashVille under HashAttack",
+        description: "Protect yourself! HashVille is under attack!",
         image: "https://ipfs.io/ipfs/QmUs9rX2FsYUML9PCWMExJZfgcTPiXGV3FpArrTxd1Yf8i"
       },
       {

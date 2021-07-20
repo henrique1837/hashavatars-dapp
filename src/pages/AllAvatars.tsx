@@ -26,6 +26,7 @@ import {
   Avatar as Av
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+
 import makeBlockie from 'ethereum-blockies-base64';
 
 import Avatar from 'avataaars';
@@ -38,8 +39,9 @@ class OwnedAvatars extends React.Component {
     likes: [],
     loadingLikes: [],
     filterBy: null,
-    page: 1
+    page: 6
   }
+
 
   componentDidMount = () => {
     setInterval(async () => {
@@ -48,9 +50,19 @@ class OwnedAvatars extends React.Component {
           likes: this.props.likes
         })
       }
+      let page = this.state.page + 6
+      if(!this.props.loadingAvatars){
+        if(page > this.props.savedBlobs.length){
+          page = this.props.savedBlobs.length
+        }
+        this.setState({
+          page: page
+        })
+      }
+
+
     } ,1000)
   }
-
   like = async(id) => {
     try{
       this.state.loadingLikes[id] =  true
@@ -84,7 +96,8 @@ class OwnedAvatars extends React.Component {
   filter = (creator) => {
     if(creator === null){
       this.setState({
-        filterBy: null
+        filterBy: null,
+        page: 6
       })
       return;
     }
@@ -107,11 +120,12 @@ class OwnedAvatars extends React.Component {
           <VStack spacing={12}>
             <Box>
             {
-              !this.state.filterBy && !this.state.loading ?
+              !this.state.filterBy && !this.props.loadingAvatars ?
               (
                 <>
                 <VStack spacing={2}>
                 <Heading>Creators</Heading>
+                <p><small>Total of {this.props.creators.length} HashAvatars creators</small></p>
                 <Divider />
                 <HStack spacing={2} style={{overflowX: 'auto',maxWidth: document.body.clientWidth - document.body.clientWidth*0.2}} id='hstack_profiles'>
                 {
@@ -220,10 +234,17 @@ class OwnedAvatars extends React.Component {
                     mb="20"
                     justifyContent="center"
                   >
+
                   {
                     this.props.savedBlobs?.map((string) => {
                       const blob = JSON.parse(string);
                       if(this.state.filterBy && blob.creator !== this.state.filterBy.address){
+                        return
+                      }
+                      if(this.props.loadingAvatars && !this.state.filterBy){
+                        return
+                      }
+                      if(!this.state.filterBy && blob.returnValues._id <= this.props.savedBlobs.length - this.state.page){
                         return
                       }
                       /*
@@ -232,6 +253,7 @@ class OwnedAvatars extends React.Component {
                       }
                       */
                       return(
+
                         <Box
                           rounded="2xl"
                           p="5"
@@ -351,6 +373,7 @@ class OwnedAvatars extends React.Component {
                       )
                     })
                   }
+
                   </SimpleGrid>
                 )
               )

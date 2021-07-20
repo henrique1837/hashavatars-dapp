@@ -416,7 +416,7 @@ class GamePage extends Component {
                 <VStack spacing={12}>
                   <Box>
                   <Heading>Select a HashAvatar</Heading>
-                  <p>HashVille under HashAtack game -Protect yourself! HashVille is under atack!</p>
+                  <p>HashVille under HashAttack game -Protect yourself! HashVille is under attack!</p>
                   <p><small><Link href="https://phaser.io/" isExternal>Done with phaser <ExternalLinkIcon /></Link></small></p>
                   <p><small><Link href="https://medium.com/@michaelwesthadley/modular-game-worlds-in-phaser-3-tilemaps-1-958fc7e6bbd6" isExternal>Based on Modular Game Worlds in Phaser3 <ExternalLinkIcon /></Link></small></p>
                   </Box>
@@ -444,7 +444,7 @@ class GamePage extends Component {
                         (
                           <Center>
                            <VStack spacing={4}>
-                            <p>Connect your wallet to play HashVille under HashAtack</p>
+                            <p>Connect your wallet to play HashVille under HashAttack</p>
                             <p><small><Link href="https://phaser.io/" isExternal>A game done with phaser <ExternalLinkIcon /></Link></small></p>
                             <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" isExternal>Based on First Game Phaser3 tutorial <ExternalLinkIcon /></Link></small></p>
                             <Avatar
@@ -462,7 +462,7 @@ class GamePage extends Component {
                           (
                             <Center>
                              <VStack spacing={4}>
-                              <p>No HashAvatars here to play HashVille under HashAtack</p>
+                              <p>No HashAvatars here to play HashVille under HashAttack</p>
                               <Avatar
                                 size={'xl'}
                                 src={

@@ -323,7 +323,7 @@ class GamePage extends Component {
                 <VStack spacing={12}>
                   <Box>
                   <Heading>Select a HashAvatar</Heading>
-                  <p>HashAtack game - avoid being touched by HashAvatars icon, use your clones to help!</p>
+                  <p>HashAttack game - avoid being touched by HashAvatars icon, use your clones to help!</p>
                   <p><small><Link href="https://phaser.io/" isExternal>Done with phaser <ExternalLinkIcon /></Link></small></p>
                   <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" isExternal>Based on First Game Phaser3 tutorial <ExternalLinkIcon /></Link></small></p>
                   </Box>
@@ -351,7 +351,7 @@ class GamePage extends Component {
                         (
                           <Center>
                            <VStack spacing={4}>
-                            <p>Connect your wallet to play HashAtack</p>
+                            <p>Connect your wallet to play HashAttack</p>
                             <p><small><Link href="https://phaser.io/" isExternal>A game done with phaser <ExternalLinkIcon /></Link></small></p>
                             <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" isExternal>Based on First Game Phaser3 tutorial <ExternalLinkIcon /></Link></small></p>
                             <Avatar
@@ -369,7 +369,7 @@ class GamePage extends Component {
                           (
                             <Center>
                              <VStack spacing={4}>
-                              <p>No HashAvatars here to play HashAtack</p>
+                              <p>No HashAvatars here to play HashAttack</p>
                               <Avatar
                                 size={'xl'}
                                 src={

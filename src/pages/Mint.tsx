@@ -51,8 +51,8 @@ class MintPage extends React.Component {
     savedBlobs: [],
     allHashAvatars: [],
     supply: 1,
-    minting: true,
-    mintingMsg: <p><small>Loading all HashAvatars ...</small></p>,
+    minting: false,
+    mintingMsg: '',
     toClaim: [],
     canMint: true
   }
@@ -91,12 +91,6 @@ class MintPage extends React.Component {
 
           hasNotConnected = false;
 
-        }
-        if(!this.props.loadingAvatars){
-          this.setState({
-            minting: false,
-            mintingMsg: ''
-          })
         }
       },500);
 
@@ -145,11 +139,24 @@ class MintPage extends React.Component {
       this.setState({
         mintingMsg: <p><small>Checking all tokens already minted ... </small></p>
       });
+      const results = await this.props.checkTokens();
+      let metadatas = this.props.savedBlobs.map(string => {
+        const obj = JSON.parse(string)
+        return(obj.metadata)
+      })
 
-      const metadatas = this.props.savedBlobs.map(str => {
-        const obj = JSON.parse(str);
-        return(obj.metadata);
-      });
+      if(this.props.loadingAvatars){
+        const metaPromises = []
+        for(let res of results){
+          if(this.props.netId === 4 && res.returnValues._id === 32){
+            continue
+          }
+          const metadataToken = this.props.getMetadata(res.returnValues._id);
+          metaPromises.push(metadataToken)
+        }
+        metadatas = await Promise.all(metaPromises);
+      }
+
       let cont = true;
 
       metadatas.map(obj => {
@@ -255,13 +262,23 @@ class MintPage extends React.Component {
         });
       });
       this.setState({
-        minting: false
+        mintingMsg: <p><small>Transaction confirmed!</small></p>
       });
+      setTimeout(() => {
+        this.setState({
+          minting: false
+        });
+      },2000)
+
     } catch(err){
-      console.log(err);
       this.setState({
-        minting: false
+        mintingMsg: <p><small>{err.message}</small></p>
       });
+      setTimeout(() => {
+        this.setState({
+          minting: false
+        });
+      },2000)
     }
   }
 
@@ -501,6 +518,19 @@ class MintPage extends React.Component {
                 }
 
               </Text>
+            </Box>
+            <Box>
+            {
+              this.props.loadingAvatars &&
+              (
+                <Center>
+                 <VStack spacing={4}>
+                  <p>Loading all HashAvatars</p>
+                  <Spinner size="md" />
+                  </VStack>
+                </Center>
+              )
+            }
             </Box>
             <Box>
             {
