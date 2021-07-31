@@ -35,53 +35,18 @@ import {
   PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
-  Avatar
+  Avatar,
+  Tooltip
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
 import makeBlockie from 'ethereum-blockies-base64';
+import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
 
 
 class FeedBackPage extends React.Component {
 
   state = {
-  }
-  constructor(props){
-    super(props)
-  }
-  componentDidMount = async () => {
-
-
-
-    const options = {
-       // Give write access to everyone
-       accessController: {
-         write: ['*']
-       }
-     }
-
-    const db = await this.props.orbitdb.feed('/orbitdb/zdpuAqX6oSntSdJTLAHvZis3wpLUfa5PoQ5hnvqBYq2AKzCGj/feedbacks', options)
-    await db.load();
-    this.setState({
-      db: db
-    });
-    const posts = db.iterator({ limit: -1, reverse: true })
-      .collect()
-      .map((e) => e.payload.value);
-      this.setState({
-        posts: posts
-    });
-    db.events.on('peer', (peer) => {console.log(`Connected to ${peer}`)} )
-
-    db.events.on('replicated', (address) => {
-      const posts = db.iterator({ limit: -1, reverse: true })
-        .collect()
-        .map((e) => e.payload.value);
-        this.setState({
-          posts: posts
-        });
-    })
-
 
   }
 
@@ -92,13 +57,7 @@ class FeedBackPage extends React.Component {
       from: this.props.coinbase,
       timestamp: (new Date()).getTime()
     };
-    await this.state.db.add(msg);
-    const posts = this.state.db.iterator({ limit: -1, reverse: true })
-      .collect()
-      .map((e) => e.payload.value);
-      this.setState({
-        posts: posts
-      });
+    await this.props.postFeedbacks(msg);
 
   }
 
@@ -113,17 +72,17 @@ class FeedBackPage extends React.Component {
     return(
         <Box>
           <VStack spacing={4}>
-            <Box>
+            <Box style={{wordBreak: "break-word"}}>
               <Heading>Feedbacks</Heading>
               <p><small>Suggestions? Some idea? Partnership? Make a joke? Feel free to give your feedback!</small></p>
-              <p><small>OrbitDB address: {this.state.db?.address.toString()}</small></p>
+              <p><small>OrbitDB address: {this.props.db?.address.toString()}</small></p>
             </Box>
             <Box>
               {
                 (
-                  this.state.db &&
+                  this.props.db &&
                   (
-                    !this.state.connecting ?
+                    !this.props.connecting ?
                     (
                       <>
                       <Input placeholder="Message" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
@@ -131,7 +90,7 @@ class FeedBackPage extends React.Component {
                       </>
                     ) :
                     (
-                      this.state.connecting ?
+                      this.props.connecting ?
                       (
                         <>
                         <Spinner size="xl" />
@@ -149,7 +108,7 @@ class FeedBackPage extends React.Component {
             </Box>
             {
               (
-                !this.state.posts &&
+                !this.props.posts &&
                 (
                   <Center>
                    <VStack spacing={4}>
@@ -168,8 +127,8 @@ class FeedBackPage extends React.Component {
             }
             <Box>
             {
-              this.state.posts?.map(message => {
-                //const message = JSON.parse(item);
+              this.props.posts?.map(message => {
+
                 return(
                   <Box style={{paddingBottom: '60px'}}>
                     <Box style={{
@@ -180,7 +139,19 @@ class FeedBackPage extends React.Component {
                       textOverflow:   "ellipsis",    /* IE, Safari (WebKit), Opera >= 11, FF > 6 */
                     }}
                       >
-                      <Avatar src={makeBlockie(message.from? (message.from):("anonymous"))} size='sm' alt="" />
+                      <Tooltip label={message.profile?.name ? (message.profile.name) : (message.from)} aria-label={message.from}>
+                        <Link href={`https://3box.io/${message.from !== undefined ? message.from : ""}`} isExternal>
+                          <Avatar src={
+                              message.profile?.image ?
+                              (
+                                message.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")
+                              ) :
+                              (
+                                makeBlockie(message.from ? (message.from):("anonymous"))
+                              )
+                          } size='sm' alt="" />
+                        </Link>
+                      </Tooltip>
                     </Box>
                     <Center>
                     <Box maxWidth={"80%"}>

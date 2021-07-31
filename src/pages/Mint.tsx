@@ -27,9 +27,11 @@ import {
   Avatar as Av
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+import LazyLoad from 'react-lazyload';
 
 
 import Avatar from 'avataaars';
+
 import IPFS from 'ipfs-http-client-lite';
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
@@ -69,6 +71,7 @@ class MintPage extends React.Component {
       this.randomize();
       await this.checkEvents();
       let hasNotConnected = !this.props.coinbase;
+      const web3 = this.props.web3;
       setInterval(async () => {
         if(this.props.savedBlobs.length !== this.state.allHashAvatars){
           this.checkEvents();
@@ -178,7 +181,6 @@ class MintPage extends React.Component {
       });
       //const ipfs = this.props.ipfs;
       const imgres = await ipfs.add(this.state.svg);
-      console.log(imgres[0].hash)
       let metadata = {
           name: this.state.avatar.name,
           image: `ipfs://${imgres[0].hash}`,
@@ -237,8 +239,8 @@ class MintPage extends React.Component {
       }
       const res = await ipfs.add(JSON.stringify(metadata));
       const uri = res[0].hash;
+      console.log(uri)
       //const uri = res.path;
-      console.log(uri);
       this.setState({
         mintingMsg: <p><small>Approve transaction ... </small></p>
       });
@@ -268,7 +270,7 @@ class MintPage extends React.Component {
         this.setState({
           minting: false
         });
-      },2000)
+      },5000)
 
     } catch(err){
       this.setState({
@@ -292,12 +294,14 @@ class MintPage extends React.Component {
         }
 
       }
+      /*
       if(this.props.rewards !== undefined && this.props.coinbase){
         const claim = await this.props.checkClaimed(obj.returnValues._id);
         if(claim.hasClaimed === false && this.props.coinbase.toLowerCase() === claim.creator?.toLowerCase()){
           this.state.toClaim.push(claim);
         }
       }
+      */
     })
     this.forceUpdate()
   }
@@ -385,7 +389,6 @@ class MintPage extends React.Component {
         if(obj.name === avatar.name) {
           cont = false
           const svg = <Image src={obj.image.replace("ipfs://","https://ipfs.io/ipfs/")}  />
-          console.log(svg)
           this.setState({
             avatar: null,
             svg: svg
@@ -401,13 +404,11 @@ class MintPage extends React.Component {
       this.setState({
         canMint: true
       });
-      const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />)
-
-
+      const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />);
       if(this.state.avatar !== avatar) {
         this.setState({
           avatar: avatar,
-          svg: svg.replace(/id="(A-z)"/g, '')
+          svg: svg
         });
       }
 
@@ -494,15 +495,15 @@ class MintPage extends React.Component {
                   (
                     this.props.coinbase ?
                     (
-                      !this.state.minting ?
+                      !this.state.minting && !this.state.pendingTx ?
                       (
                         this.state.canMint ? (<Button onClick={this.mint}>Claim</Button>) : ("HashAvatar with that name already claimed")
                       ) :
                       (
-                        <>
+                        <Box style={{wordBreak: 'break-word'}}>
                         <Spinner size="xl" />
                         {this.state.mintingMsg}
-                        </>
+                        </Box>
                       )
                     ) :
                     (
@@ -553,6 +554,7 @@ class MintPage extends React.Component {
               this.state.savedBlobs?.map((string) => {
                 const blob = JSON.parse(string);
                 return(
+                  <LazyLoad>
                   <Box
                     rounded="2xl"
                     p="5"
@@ -598,6 +600,7 @@ class MintPage extends React.Component {
                       </PopoverContent>
                     </Popover>
                   </Box>
+                  </LazyLoad>
                 )
               })
             }

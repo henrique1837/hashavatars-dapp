@@ -25,7 +25,8 @@ import {
 } from "@chakra-ui/react"
 import { ExternalLinkIcon } from '@chakra-ui/icons'
 
-
+import OrbitDB from 'orbit-db';
+import IPFS from 'ipfs';
 import Web3 from 'web3';
 import Web3Modal from "web3modal";
 import Torus from "@toruslabs/torus-embed";
@@ -38,7 +39,7 @@ import ERC1155Likes from './contracts/ERC1155Likes.json'
 
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
-import FeedBackPage from './pages/Feedback';
+import FeedBackPage from './pages/Feedback_OrbitDB';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Games from './pages/Games';
@@ -46,14 +47,17 @@ import HashAssault from './components/games/HashAssault';
 
 import Collections from './pages/Collections';
 
+import Room from 'ipfs-pubsub-room';
+/*
 import Libp2p from 'libp2p'
 import Websockets from 'libp2p-websockets'
 import WebRTCStar from 'libp2p-webrtc-star'
 import { NOISE } from 'libp2p-noise'
 import Mplex from 'libp2p-mplex'
 import Bootstrap from 'libp2p-bootstrap'
-import Room from 'ipfs-pubsub-room';
+
 import Gossipsub from 'libp2p-gossipsub'
+*/
 
 const providerOptions = {
   injected: {
@@ -96,6 +100,8 @@ class App extends React.Component {
     this.getMetadata = this.getMetadata.bind(this);
     this.addNetwork = this.addNetwork.bind(this);
     this.initLibp2p = this.initLibp2p.bind(this);
+    this.initOrbitDB = this.initOrbitDB.bind(this);
+
     this.handleEvents = this.handleEvents.bind(this);
     this.handleLikes = this.handleLikes.bind(this);
   }
@@ -106,14 +112,16 @@ class App extends React.Component {
     } else {
       await this.initWeb3();
     }
+
     this.setState({
       loading: false
     });
-    await this.initiateContracts();
+    this.initiateContracts();
     try{
+      await this.initOrbitDB();
       await this.initLibp2p();
     } catch(err){
-      console.log(err)
+      console.log(err);
     }
   }
 
@@ -132,7 +140,9 @@ class App extends React.Component {
 
       let itoken;
       let tokenLikes;
-      if(netId === 4){
+      if(netId === 1){
+        itoken = new web3.eth.Contract(ERC111.abi,ERC1155.mainnet_bridged);
+      } else if(netId === 4){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
       } else if(netId === 0x64){
@@ -171,7 +181,9 @@ class App extends React.Component {
       let itoken;
       let rewards;
       let tokenLikes;
-      if(netId === 4){
+      if(netId === 1){
+        itoken = new web3.eth.Contract(ERC111.abi,ERC1155.mainnet_bridged);
+      } else if(netId === 4){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
         rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
@@ -226,15 +238,17 @@ class App extends React.Component {
 
       this.handleLikes(null,res);
     }
-    await Promise.all(promises);
-    this.setState({
-      loadingAvatars: false,
-      savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
-                      const x = JSON.parse(xstr)
-                      const y = JSON.parse(ystr)
-                      return y.returnValues._id - x.returnValues._id;
-                  })
+    Promise.all(promises).then(() => {
+      this.setState({
+        loadingAvatars: false,
+        savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
+                        const x = JSON.parse(xstr)
+                        const y = JSON.parse(ystr)
+                        return y.returnValues._id - x.returnValues._id;
+                    })
+      });
     });
+
     this.state.itoken.events.TransferSingle({
       filter: {
         from: '0x0000000000000000000000000000000000000'
@@ -319,7 +333,7 @@ class App extends React.Component {
     }
   }
   initLibp2p = async () => {
-
+    /*
     const libp2p = await Libp2p.create({
       addresses: {
         // Add the signaling server address, along with our PeerId to our multiaddrs list
@@ -360,22 +374,9 @@ class App extends React.Component {
         }
       }
     });
-    // Listen for new peers
-    libp2p.on('peer:discovery', (peerId) => {
-      //console.log(`Found peer ${peerId.toB58String()}`)
-    })
-
-    // Listen for new connections to peers
-    libp2p.connectionManager.on('peer:connect', (connection) => {
-      //console.log(`Connected to ${connection.remotePeer.toB58String()}`)
-    })
-
-    // Listen for peers disconnecting
-    libp2p.connectionManager.on('peer:disconnect', (connection) => {
-      //console.log(`Disconnected from ${connection.remotePeer.toB58String()}`)
-    })
-
     await libp2p.start();
+    */
+    const libp2p = this.state.ipfs;
     const room = new Room(libp2p, 'hashavatars-dapp-peers-online')
 
     room.on('peer joined', (cid) => {
@@ -406,6 +407,131 @@ class App extends React.Component {
     })
     return(libp2p);
 
+
+  }
+  initOrbitDB = async () => {
+
+    const ipfs = await IPFS.create({
+        EXPERIMENTAL: {
+          pubsub: true
+        },
+        config: {
+          Addresses: {
+            Swarm: [
+              // Use IPFS dev signal server
+              // Prefer websocket over webrtc
+              //
+              // Websocket:
+              // '/dns4/ws-star-signal-2.servep2p.com/tcp/443//wss/p2p-websocket-star',
+              '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+              '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+              '/dns4/webrtc-star.discovery.libp2p.io/tcp/443/wss/p2p-webrtc-star/',
+              // Local signal server
+              //'/ip4/127.0.0.1/tcp/4711/ws/p2p-websocket-star'
+              //
+              // WebRTC:
+              //'/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star',
+              // Local signal server
+              // '/ip4/127.0.0.1/tcp/1337/ws/p2p-webrtc-star'
+            ]
+          }
+        }
+
+    });
+
+    //const ipfs = await IPFS.create({ repo: "./ipfs" })
+    const orbitdb = await OrbitDB.createInstance(ipfs);
+    const options = {
+       // Give write access to everyone
+       accessController: {
+         write: ['*']
+       }
+     }
+
+    const db = await orbitdb.feed('/orbitdb/zdpuAqX6oSntSdJTLAHvZis3wpLUfa5PoQ5hnvqBYq2AKzCGj/feedbacks', options)
+    await db.load();
+    this.setState({
+      ipfs: ipfs,
+      orbitdb: orbitdb,
+      db: db
+    });
+    const posts = db.iterator({ limit: -1, reverse: true })
+      .collect()
+      .map((e) => {
+        return(
+          new Promise(async (resolve,reject) => {
+            if(e.payload.value.from !== null){
+              e.payload.value.profile = await getLegacy3BoxProfileAsBasicProfile(e.payload.value.from);
+            }
+            resolve(e.payload.value);
+          }
+        )
+      )
+    });
+
+
+    this.setState({
+        posts: (await Promise.all(posts))
+                .sort(function(x, y){
+                  return y.timestamp - x.timestamp;
+                })
+    });
+    db.events.on('peer', (peer) => {console.log(`Connected to ${peer}`)} )
+
+    db.events.on('replicated', async (address) => {
+      const posts = db.iterator({ limit: -1, reverse: true })
+        .collect()
+        .map((e) => {
+          return(
+            new Promise(async (resolve,reject) => {
+              if(e.payload.value.from !== null){
+                e.payload.value.profile = await getLegacy3BoxProfileAsBasicProfile(e.payload.value.from);
+              }
+              resolve(e.payload.value);
+            }
+          )
+        )
+      })
+
+
+      this.setState({
+          posts: (await Promise.all(posts))
+                  .sort(function(x, y){
+                    return y.timestamp - x.timestamp;
+                  })
+      });
+    })
+
+    console.log("OrbitDB initiated");
+
+    return;
+  }
+
+  postFeedbacks = async (msg) => {
+
+    const db = this.state.db;
+    await db.add(msg);
+    const posts = db.iterator({ limit: -1, reverse: true })
+      .collect()
+      .map((e) => {
+        return(
+          new Promise(async (resolve,reject) => {
+            if(e.payload.value.from !== null){
+              e.payload.value.profile = await getLegacy3BoxProfileAsBasicProfile(e.payload.value.from);
+            }
+            resolve(e.payload.value);
+          }
+        )
+      )
+    });
+
+
+    this.setState({
+        posts: (await Promise.all(posts))
+                .sort(function(x, y){
+                  return y.timestamp - x.timestamp;
+                })
+    });
 
   }
 
@@ -508,7 +634,7 @@ class App extends React.Component {
                             <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <ExternalLinkIcon mx="2px" /></Link> and can be copied / modified by anyone.</p>
                           </Text>
                           <Center>
-                            <Image boxSize="250px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
+                            <Image boxSize="200px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
                           </Center>
                         </SimpleGrid>
                       </Stack>
@@ -632,7 +758,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken ?
+                        this.state.itoken &&
                         (
                           <AllAvatars
                             initWeb3={this.initWeb3}
@@ -640,37 +766,6 @@ class App extends React.Component {
                             {...this.state}
 
                           />
-                        ) :
-                        (
-                          (this.state.netId === 4 || this.state.netId === 0x64) ?
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
-                          ) :
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>WRONG NETWORK</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                              </VStack>
-                            </Center>
-                          )
                         )
                       )
                     }
@@ -789,11 +884,12 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken ?
+                        this.state.itoken && this.state.orbitdb ?
                         (
                           <FeedBackPage
                             connectWeb3={this.connectWeb3}
                             connectBox={this.connectBox}
+                            postFeedbacks={this.postFeedbacks}
                             {...this.state}
                           />
                         ) :

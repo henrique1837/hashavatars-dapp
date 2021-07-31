@@ -30,6 +30,7 @@ import { ExternalLinkIcon } from '@chakra-ui/icons'
 import makeBlockie from 'ethereum-blockies-base64';
 
 import Avatar from 'avataaars';
+import LazyLoad from 'react-lazyload';
 
 
 class OwnedAvatars extends React.Component {
@@ -50,14 +51,22 @@ class OwnedAvatars extends React.Component {
           likes: this.props.likes
         })
       }
-      let page = this.state.page + 6
-      if(!this.props.loadingAvatars){
-        if(page > this.props.savedBlobs.length){
-          page = this.props.savedBlobs.length
-        }
+      if(document.body.scrollHeight <= window.scrollY + 800 ){
+        let page = this.state.page + 6
         this.setState({
-          page: page
+          loadingHashAvatarsMsg: <Spinner size="xl" />
         })
+        if(!this.props.loadingAvatars){
+          if(page > this.props.savedBlobs.length){
+            page = this.props.savedBlobs.length
+            this.setState({
+              loadingHashAvatarsMsg: ''
+            })
+          }
+          this.setState({
+            page: page
+          })
+        }
       }
 
 
@@ -110,7 +119,8 @@ class OwnedAvatars extends React.Component {
       })
     )
     this.setState({
-      filterBy: creatorProfile
+      filterBy: creatorProfile,
+      loadingSnowflakesMsg: ''
     })
   }
 
@@ -120,7 +130,7 @@ class OwnedAvatars extends React.Component {
           <VStack spacing={12}>
             <Box>
             {
-              !this.state.filterBy && !this.props.loadingAvatars ?
+              !this.state.filterBy ?
               (
                 <>
                 <VStack spacing={2}>
@@ -132,6 +142,7 @@ class OwnedAvatars extends React.Component {
                   this.props.creators?.map((string) => {
                     const obj = JSON.parse(string);
                     return(
+                      <LazyLoad>
                       <Box>
                         <Tooltip label={obj.profile?.description ? (obj.profile.description) : (obj.address)} aria-label={obj.creator}>
                           <LinkBox as={Link} onClick={() => {this.filter(obj.address)}}>
@@ -156,6 +167,7 @@ class OwnedAvatars extends React.Component {
                           </LinkBox>
                         </Tooltip>
                       </Box>
+                      </LazyLoad>
                     )
                   })
                 }
@@ -200,6 +212,7 @@ class OwnedAvatars extends React.Component {
             </Box>
             <Box>
               <Heading>All HashAvatars generated</Heading>
+              <p><small>Total of {this.props.savedBlobs.length} HashAvatars</small></p>
             </Box>
             <Box>
             {
@@ -241,9 +254,11 @@ class OwnedAvatars extends React.Component {
                       if(this.state.filterBy && blob.creator !== this.state.filterBy.address){
                         return
                       }
+                      /*
                       if(this.props.loadingAvatars && !this.state.filterBy){
                         return
                       }
+                      /*
                       if(!this.state.filterBy && blob.returnValues._id <= this.props.savedBlobs.length - this.state.page){
                         return
                       }
@@ -253,12 +268,13 @@ class OwnedAvatars extends React.Component {
                       }
                       */
                       return(
-
+                        <LazyLoad>
                         <Box
                           rounded="2xl"
                           p="5"
                           borderWidth="1px"
                           _hover={{ boxShadow: '2xl', background: this.state.cardHoverBg }}
+                          style={{wordBreak: 'break-word'}}
                         >
                           <Popover>
                             <PopoverTrigger>
@@ -370,6 +386,7 @@ class OwnedAvatars extends React.Component {
                           }
                           </Center>
                         </Box>
+                        </LazyLoad>
                       )
                     })
                   }
@@ -378,7 +395,6 @@ class OwnedAvatars extends React.Component {
                 )
               )
             }
-
             </Box>
           </VStack>
         </Box>

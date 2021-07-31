@@ -40,12 +40,94 @@ class MainScene extends Phaser.Scene {
   private enemiesKilled: Integer;
 
   init () {
-    this.cameras.main.setBackgroundColor('#24252A')
+    //this.cameras.main.setBackgroundColor('#24252A')
   }
-  async preload() {
-      const tokenId = await gameSC.methods.players(coinbase).call().tokenId;
-      const imageHash = await itoken.methods.uri(tokenId).call();
-      this.load.image("player", metadata.image.replace("ipfs://",`https://ipfs.io/ipfs/${imageHash}`));
+  preload() {
+
+
+      //this.load.baseURL = 'http://examples.phaser.io/assets/';
+      this.load.image("tiles", "https://ipfs.io/ipfs/QmVpCeH52ya9gWdGnsa1u6z7kDLTPosUoPxhuYkwfqgKqi");
+      this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/QmeyExGexr5gEik2weMmisawzg7Lhoq5CHWC22RSvAiea9");
+      this.load.image("player", metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+      this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
+      for(let i = 0;i<metadatas.length;i++){
+        this.load.image('ha'+i, JSON.parse(metadatas[i]).metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+      }
+
+  }
+  create () {
+
+    this.enemiesKilled = 0;
+
+    const map = this.make.tilemap({ key: "map" });
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    // Parameters are the name you gave the tileset in Tiled and then the key of the tileset image in
+    // Phaser's cache (i.e. the name you used in preload)
+    const tileset = map.addTilesetImage("AllAssetsPreview", "tiles");
+    // Parameters: layer name (or index) from Tiled, tileset, x, y
+    const bellowLayer = map.createStaticLayer("Ground", tileset, 0, 0);
+    const worldLayer = map.createStaticLayer("World", tileset, 0, 0);
+    const aboveLayer = map.createStaticLayer("Above", tileset, 0, 0);
+    worldLayer.setCollisionByProperty({ collides: true });
+    // By default, everything gets depth sorted on the screen in the order we created things. Here, we
+    // want the "Above Player" layer to sit on top of the player, so we explicitly give it a depth.
+    // Higher depths will sit on top of lower depth objects.
+    //aboveLayer.setDepth(10);
+
+    // Object layers in Tiled let you embed extra info into a map - like a spawn point or custom
+    // collision shapes. In the tmx file, there's an object layer with a point named "Spawn Point"
+    //const spawnPoint = map.findObject("Objects", obj => obj.name === "Spawn Point");
+    // Create a sprite with physics enabled via the physics system. The image used for the sprite has
+    // a bit of whitespace, so I'm using setSize & setOffset to control the size of the player's body.
+    this.player = this.physics.add
+      .sprite(10,10, "player")
+      .setScale(0.06);
+    this.player.setBounce(0.2).setCollideWorldBounds(true);
+    // Watch the player and worldLayer for collisions, for the duration of the scene:
+    this.physics.add.collider(this.player, worldLayer);
+    const camera = this.cameras.main;
+    camera.startFollow(this.player);
+    camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+    cursors = this.input.keyboard.createCursorKeys();
+    this.bombs = this.physics.add.group();
+    this.ha = this.physics.add.group();
+
+
+    this.physics.add.collider(this.bombs,worldLayer);
+    this.physics.add.collider(this.player, this.bombs, this.hitEnemy, null, this);
+
+    this.physics.add.collider(this.bombs,this.bombs);
+    this.physics.add.collider(this.ha, worldLayer);
+
+    this.physics.add.collider(this.bombs,this.ha);
+    this.physics.add.collider(this.player,this.ha);
+    this.physics.add.collider(this.ha,this.ha);
+
+    this.generateHA();
+
+  }
+  generateHA(){
+    for(let i = 0;i<metadatas.length;i++){
+
+      const x = Phaser.Math.Between(100, 1000);
+      const y = Phaser.Math.Between(100, 1000);
+      const ha = this.ha.create(x,y,"ha"+i);
+      ha.setCollideWorldBounds(true);
+      ha.setBounce(1);
+      ha.setScale(0.06);
+      ha.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
+    }
+  }
+  generateBomb(){
+    const x = Phaser.Math.Between(10, 3300);
+    const y = Phaser.Math.Between(10, 3300);
+
+    const bomb = this.bombs.create(x, y, 'bomb');
+    bomb.setScale(0.06);
+    bomb.setBounce(1);
+    bomb.setCollideWorldBounds(true);
+    bomb.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
   }
 
   hitEnemy (player, enemy){
@@ -353,7 +435,11 @@ class GamePage extends Component {
                                           </Text>
                                           <Divider mt="4" />
                                           <Center>
-                                            <Avatar src={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`} size="xl"/>
+                                            <object type="text/html"
+                                            data={`https://ipfs.io/ipfs/${blob.metadata.image.replace("ipfs://","")}`}
+                                            width="196px"
+                                            style={{borderRadius: "100px"}}>
+                                            </object>
                                           </Center>
 
                                         </LinkBox>
