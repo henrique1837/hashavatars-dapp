@@ -16,6 +16,7 @@ import {
 import HashAtack from '../components/games/HashAtack';
 import HashVille from '../components/games/HashVilleUnderHashAtack';
 import HashOperation from '../components/games/HashOperation';
+import SnowflakesInvasion from '../components/games/SnowflakeInvasion';
 
 
 class GamesPage extends React.Component {
@@ -39,13 +40,30 @@ class GamesPage extends React.Component {
         name: "HashOperation",
         description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
         image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
+      },
+      /*
+      {
+        component: <SnowflakesInvasion {...this.props} />,
+        name: "SnowflakesInvasion",
+        description: "",
+        image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
       }
+      */
     ],
     play: null
   }
 
   componentDidMount = async () => {
-
+    if(this.props.netId === 4){
+      this.state.games.push(
+        {
+          component: <SnowflakesInvasion {...this.props} />,
+          name: "SnowflakesInvasion",
+          description: "",
+          image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
+        }
+      )
+    }
   }
 
   play = (game) => {

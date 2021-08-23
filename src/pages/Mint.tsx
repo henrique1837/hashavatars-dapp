@@ -372,7 +372,7 @@ class MintPage extends React.Component {
           clotheColor : this.state.clothesColor[clotheColorIndex],
           eyeType: this.state.eye[eyeTypeIndex],
           eyebrowType: this.state.eyebrown[eyebrowIndex],
-          mounthType: this.state.mouth[mounthTypeIndex],
+          //mouthType: this.state.mouth[mounthTypeIndex],
           skinColor: this.state.skin[skinTypeIndex],
           name: e.target.value.trim(),
           dna: dna
@@ -489,8 +489,7 @@ class MintPage extends React.Component {
               <Text>
                 <p>Select the name of your HashAvatar and claim it!</p>
                 <Input placeholder="Avatar's Name" size="md" id="input_name" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} style={{marginBottom: '10px'}}/>
-                <Input placeholder="Total number of copies (if empty, default = 1)" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply" style={{marginBottom: '10px'}}/>
-
+                {/*<Input placeholder="Total number of copies (if empty, default = 1)" size="md" onChange={this.handleOnChange} onKeyUp={this.handleOnChange} name="supply" style={{marginBottom: '10px'}}/>*/}
                 {
                   (
                     this.props.coinbase ?

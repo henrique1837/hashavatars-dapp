@@ -37,41 +37,10 @@ class OwnedAvatars extends React.Component {
 
   state = {
     savedBlobs: [],
-    likes: [],
     loadingLikes: [],
     filterBy: null,
-    page: 6
   }
 
-
-  componentDidMount = () => {
-    setInterval(async () => {
-      if(this.props.likes !== this.state.likes){
-        this.setState({
-          likes: this.props.likes
-        })
-      }
-      if(document.body.scrollHeight <= window.scrollY + 800 ){
-        let page = this.state.page + 6
-        this.setState({
-          loadingHashAvatarsMsg: <Spinner size="xl" />
-        })
-        if(!this.props.loadingAvatars){
-          if(page > this.props.savedBlobs.length){
-            page = this.props.savedBlobs.length
-            this.setState({
-              loadingHashAvatarsMsg: ''
-            })
-          }
-          this.setState({
-            page: page
-          })
-        }
-      }
-
-
-    } ,1000)
-  }
   like = async(id) => {
     try{
       this.state.loadingLikes[id] =  true
@@ -105,8 +74,7 @@ class OwnedAvatars extends React.Component {
   filter = (creator) => {
     if(creator === null){
       this.setState({
-        filterBy: null,
-        page: 6
+        filterBy: null
       })
       return;
     }
@@ -135,10 +103,11 @@ class OwnedAvatars extends React.Component {
                 <>
                 <VStack spacing={2}>
                 <Heading>Creators</Heading>
-                <p><small>Total of {this.props.creators.length} HashAvatars creators</small></p>
+                <p><small>Total of {this.props.loadingAvatars ? <Spinner size='xs' /> : this.props.savedBlobs.length} HashAvatars creators</small></p>
                 <Divider />
                 <HStack spacing={2} style={{overflowX: 'auto',maxWidth: document.body.clientWidth - document.body.clientWidth*0.2}} id='hstack_profiles'>
                 {
+                  !this.props.loadingAvatars &&
                   this.props.creators?.map((string) => {
                     const obj = JSON.parse(string);
                     return(
@@ -184,7 +153,7 @@ class OwnedAvatars extends React.Component {
                   <HStack spacing={2} style={{maxWidth:  document.body.clientWidth -  document.body.clientWidth*0.2}}>
                   <Box>
                     <LinkBox as={Link} href={`https://3box.io/${this.state.filterBy.address}`} isExternal >
-                      <VStack spacing={3}>
+                      <VStack  style={{wordBreak: 'break-word'}} spacing={3}>
                         <Av src={
                             this.state.filterBy.profile?.image ?
                             (
@@ -212,7 +181,7 @@ class OwnedAvatars extends React.Component {
             </Box>
             <Box>
               <Heading>All HashAvatars generated</Heading>
-              <p><small>Total of {this.props.savedBlobs.length} HashAvatars</small></p>
+              <p><small>Total of {this.props.loadingAvatars ? <Spinner size='xs' /> : this.props.savedBlobs.length} HashAvatars</small></p>
             </Box>
             <Box>
             {
@@ -249,6 +218,7 @@ class OwnedAvatars extends React.Component {
                   >
 
                   {
+                    !this.props.loadingAvatars &&
                     this.props.savedBlobs?.map((string) => {
                       const blob = JSON.parse(string);
                       if(this.state.filterBy && blob.creator !== this.state.filterBy.address){
@@ -319,7 +289,7 @@ class OwnedAvatars extends React.Component {
                                 <small>
                                   Creator:
                                   <Tooltip label={blob.profile?.description ? (blob.profile.description) : (blob.creator)} aria-label={blob.creator}>
-                                    <Link href={`https://3box.io/${blob.creator}`} isExternal>
+                                    <Link onClick={() => {this.filter(blob.creator)}}>
                                       <Av src={
                                           blob.profile?.image ?
                                           (
@@ -341,7 +311,7 @@ class OwnedAvatars extends React.Component {
                           <Divider mt="4" />
                           <Center>
                             <Text>
-                              <p>Likes: {this.state.likes[blob.returnValues._id]?.likes}</p>
+                              <p>Likes: {this.props.likes[blob.returnValues._id]?.likes}</p>
                             </Text>
                           </Center>
                           <Center>
@@ -352,7 +322,7 @@ class OwnedAvatars extends React.Component {
                               (
                                 !this.state.loadingLikes[blob.returnValues._id] ?
                                 (
-                                  !this.state.likes[blob.returnValues._id]?.liked ?
+                                  !this.props.likes[blob.returnValues._id]?.liked ?
                                   (
                                     <Button
                                       variant="heavy"

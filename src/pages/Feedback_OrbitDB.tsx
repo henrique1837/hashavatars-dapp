@@ -107,6 +107,17 @@ class FeedBackPage extends React.Component {
               }
             </Box>
             {
+              this.props.loadingFeedbacks &&
+              (
+                <Center>
+                 <VStack spacing={4}>
+                  <Spinner size="xl" />
+                  <p>Syncing feedbacks with others peers ...</p>
+                  </VStack>
+                </Center>
+              )
+            }
+            {
               (
                 !this.props.posts &&
                 (

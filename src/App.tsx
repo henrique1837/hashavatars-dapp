@@ -36,6 +36,7 @@ import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
 import ERC1155 from './contracts/ItemsERC1155.json'
 import ERC20Rewards from './contracts/ERC20Rewards.json'
 import ERC1155Likes from './contracts/ERC1155Likes.json'
+import SnowflakesInvasion from './contracts/SnowflakesInvasion.json'
 
 import Nav from './components/Nav';
 import MintPage from './pages/Mint';
@@ -112,17 +113,16 @@ class App extends React.Component {
     } else {
       await this.initWeb3();
     }
-
-    this.setState({
-      loading: false
-    });
-    this.initiateContracts();
     try{
       await this.initOrbitDB();
       await this.initLibp2p();
     } catch(err){
       console.log(err);
     }
+    this.setState({
+      loading: false
+    });
+    this.initiateContracts();
   }
 
 
@@ -181,12 +181,12 @@ class App extends React.Component {
       let itoken;
       let rewards;
       let tokenLikes;
-      if(netId === 1){
-        itoken = new web3.eth.Contract(ERC111.abi,ERC1155.mainnet_bridged);
-      } else if(netId === 4){
+      let snowflakesInvasion;
+      if(netId === 4){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.rinkeby);
         rewards = new web3.eth.Contract(ERC20Rewards.abi, ERC20Rewards.rinkeby);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.rinkeby);
+        snowflakesInvasion = new web3.eth.Contract(SnowflakesInvasion.abi, SnowflakesInvasion.rinkeby);
       } else if(netId === 0x64){
         itoken = new web3.eth.Contract(ERC1155.abi, ERC1155.xdai);
         tokenLikes = new web3.eth.Contract(ERC1155Likes.abi, ERC1155Likes.xdai);
@@ -201,6 +201,7 @@ class App extends React.Component {
         itoken: itoken,
         rewards: rewards,
         tokenLikes: tokenLikes,
+        snowflakesInvasion: snowflakesInvasion,
         coinbase:coinbase,
         profile:profile,
         netId:netId,
@@ -214,7 +215,12 @@ class App extends React.Component {
         window.location.reload(true);
       });
       if(initiateContracts){
-        this.initiateContracts();
+        this.setState({
+          savedBlobs: [],
+          creators: [],
+          likes: []
+        })
+        await this.initiateContracts();
       }
     } catch(err){
       web3Modal.clearCachedProvider();
@@ -238,6 +244,7 @@ class App extends React.Component {
 
       this.handleLikes(null,res);
     }
+    /*
     Promise.all(promises).then(() => {
       this.setState({
         loadingAvatars: false,
@@ -248,7 +255,17 @@ class App extends React.Component {
                     })
       });
     });
-
+    */
+    await Promise.all(promises);
+    this.setState({
+      loadingAvatars: false,
+      savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
+                      const x = JSON.parse(xstr)
+                      const y = JSON.parse(ystr)
+                      return y.returnValues._id - x.returnValues._id;
+                  })
+    });
+//
     this.state.itoken.events.TransferSingle({
       filter: {
         from: '0x0000000000000000000000000000000000000'
@@ -268,13 +285,16 @@ class App extends React.Component {
     if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
       throw('Err')
     }
-    let metadataToken = JSON.parse(await (await fetch(`https://ipfs.io/ipfs/${uriToken.replace("ipfs://","")}`)).text());
+    const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
     const svgImage = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text();
-    fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))
+    //const metadataToken = await this.state.ipfs.get(uriToken.replace("ipfs://",""))
+    //alert(metadataToken)
+    //const img = await this.state.ipfs.get(metadataToken.image.replace("ipfs://",""));
     return(metadataToken)
   }
   checkTokens = async () => {
     const itoken = this.state.itoken;
+
     const lastId = await itoken.methods.totalSupply().call();
     const results = [];
     for(let i = 1;i<=lastId;i++){
@@ -477,6 +497,11 @@ class App extends React.Component {
                 })
     });
     db.events.on('peer', (peer) => {console.log(`Connected to ${peer}`)} )
+    db.events.on('replicate.progress', (address, hash, entry, progress, have) => {
+      this.setState({
+        loadingFeedbacks: true
+      });
+    });
 
     db.events.on('replicated', async (address) => {
       const posts = db.iterator({ limit: -1, reverse: true })
@@ -495,6 +520,7 @@ class App extends React.Component {
 
 
       this.setState({
+          loadingFeedbacks: false,
           posts: (await Promise.all(posts))
                   .sort(function(x, y){
                     return y.timestamp - x.timestamp;
@@ -553,7 +579,7 @@ class App extends React.Component {
         this.state.creators.unshift(JSON.stringify(creatorProfile));
         this.forceUpdate();
       }
-
+      console.log(res.returnValues);
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata,
@@ -571,18 +597,20 @@ class App extends React.Component {
 
   handleLikes = async (err,res) => {
     try{
-
         let likes = 0;
         let liked;
-        likes = await this.state.tokenLikes.methods.likes(res.returnValues._id).call();
-        if(this.state.coinbase){
-          liked = await this.state.tokenLikes.methods.liked(this.state.coinbase,res.returnValues._id).call();
+        let id = res.returnValues._id
+        if(!id){
+          id = res.returnValues.id
         }
-
-        this.state.likes[res.returnValues._id] =  {
-                                                    likes: likes,
-                                                    liked: liked
-                                                  };
+        likes = await this.state.tokenLikes.methods.likes(id).call();
+        if(this.state.coinbase){
+          liked = await this.state.tokenLikes.methods.liked(this.state.coinbase,id).call();
+        }
+        this.state.likes[id] =  {
+                                  likes: likes,
+                                  liked: liked
+                                };
 
         this.forceUpdate();
 
@@ -602,6 +630,44 @@ class App extends React.Component {
             {...this.state}
           />
         </Box>
+
+        {
+
+          (
+            !this.state.itoken &&
+            (
+              (this.state.netId === 4 || this.state.netId === 0x64) ?
+              (
+                <Center style={{paddingTop: '110px'}}>
+                 <VStack spacing={4}>
+                  <Heading>Loading ...</Heading>
+                  <Avatar
+                    size={'xl'}
+                    src={
+                      'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                    }
+                  />
+                  <Spinner size="xl" />
+                  </VStack>
+                </Center>
+              ) :
+              (
+                <Center style={{paddingTop: '110px'}}>
+                 <VStack spacing={4}>
+                  <Heading>WRONG NETWORK</Heading>
+                  <Avatar
+                    size={'xl'}
+                    src={
+                      'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
+                    }
+                  />
+                  <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
+                  </VStack>
+                </Center>
+              )
+            )
+          )
+        }
         <Box textAlign="center" fontSize="xl">
           <Grid minH="100vh" p={3}>
 
@@ -619,7 +685,7 @@ class App extends React.Component {
                           mb="20"
                           justifyContent="left"
                         >
-                          <Text style={{textAlign: 'left'}} fontSize="md">
+                          <Text style={{textAlign: 'left', wordBreak:'break-word'}} fontSize="md">
                             <p>Each HashAvatar can be minted for 1 xDai (1 USD), after that you can sell for any price you want. Your collectable can not be replicated or ever destroyed, it will be stored on Blockchain forever.</p>
                             <p>Choose your preferred HashAvatar and start your collection now!</p>
                             <br/>
@@ -650,7 +716,7 @@ class App extends React.Component {
                       <>
                       {
                         (
-                          this.state.itoken ?
+                          this.state.itoken &&
                           (
                             <MintPage
                               checkClaimed={this.checkClaimed}
@@ -660,37 +726,6 @@ class App extends React.Component {
                               checkTokens={this.checkTokens}
                               {...this.state}
                             />
-                          ) :
-                          (
-                            (this.state.netId === 4 || this.state.netId === 0x64) ?
-                            (
-                              <Center>
-                               <VStack spacing={4}>
-                                <Heading>Loading ...</Heading>
-                                <Avatar
-                                  size={'xl'}
-                                  src={
-                                    'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                  }
-                                />
-                                <Spinner size="xl" />
-                                </VStack>
-                              </Center>
-                            ) :
-                            (
-                              <Center>
-                               <VStack spacing={4}>
-                                <Heading>WRONG NETWORK</Heading>
-                                <Avatar
-                                  size={'xl'}
-                                  src={
-                                    'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                  }
-                                />
-                                <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                                </VStack>
-                              </Center>
-                            )
                           )
                         )
                       }
@@ -705,7 +740,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken ?
+                        this.state.itoken &&
                         (
                           <OwnedAvatars
                             checkClaimed={this.checkClaimed}
@@ -714,37 +749,6 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             {...this.state}
                           />
-                        ) :
-                        (
-                          (this.state.netId === 4 || this.state.netId === 0x64) ?
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
-                          ) :
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>WRONG NETWORK</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                              </VStack>
-                            </Center>
-                          )
                         )
                       )
                     }
@@ -778,7 +782,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken ?
+                        this.state.itoken &&
                         (
                           <Games
                             getMetadata={this.getMetadata}
@@ -787,37 +791,6 @@ class App extends React.Component {
                             initLibp2p={this.initLibp2p}
                             {...this.state}
                           />
-                        ):
-                        (
-                          (this.state.netId === 4 || this.state.netId === 0x64) ?
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
-                          ) :
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>WRONG NETWORK</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                              </VStack>
-                            </Center>
-                          )
                         )
                       )
                     }
@@ -830,7 +803,7 @@ class App extends React.Component {
                     <>
                     {
                       (
-                        this.state.itoken ?
+                        this.state.itoken &&
                         (
                           <HashAssault
                             itoken={this.state.itoken}
@@ -840,37 +813,6 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             coinbase={this.state.coinbase}
                           />
-                        ) :
-                        (
-                          (this.state.netId === 4 || this.state.netId === 0x64) ?
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
-                          ) :
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>WRONG NETWORK</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                              </VStack>
-                            </Center>
-                          )
                         )
                       )
                     }
@@ -894,35 +836,12 @@ class App extends React.Component {
                           />
                         ) :
                         (
-                          (this.state.netId === 4 || this.state.netId === 0x64) ?
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>Loading ...</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <Spinner size="xl" />
-                              </VStack>
-                            </Center>
-                          ) :
-                          (
-                            <Center>
-                             <VStack spacing={4}>
-                              <Heading>WRONG NETWORK</Heading>
-                              <Avatar
-                                size={'xl'}
-                                src={
-                                  'https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF'
-                                }
-                              />
-                              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>Please connect to xDai network <ExternalLinkIcon mx="2px" /></Link></p>
-                              </VStack>
-                            </Center>
-                          )
+                          <Center>
+                           <VStack spacing={4}>
+                            <Spinner size="xl" />
+                            <p>Loading OrbitDB ...</p>
+                            </VStack>
+                          </Center>
                         )
                       )
                     }
@@ -948,39 +867,41 @@ class App extends React.Component {
               }} />
             </Switch>
           </Grid>
-          <Center my="6">
-            <HStack
-              spacing="10px"
-              fontSize="sm"
-              flexDirection={{ base: 'column-reverse', lg: 'row' }}
-            >
-              <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
-              <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
-              <Link href="https://github.com/henrique1837/hashavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
-              {
+        </Box>
+        <Box>
+        <Center my="6">
+          <HStack
+            spacing="10px"
+            fontSize="sm"
+            flexDirection={{ base: 'column-reverse', lg: 'row' }}
+          >
+            <Link href="https://t.me/thehashavatars" isExternal>Telegram <ExternalLinkIcon mx="2px" /></Link>
+            <Link href="https://twitter.com/thehashavatars" isExternal>Twitter <ExternalLinkIcon mx="2px" /></Link>
+            <Link href="https://github.com/henrique1837/hashavatars-dapp" isExternal>Github <ExternalLinkIcon mx="2px" /></Link>
+            {
+              (
+                this.state.netId === 4 &&
                 (
-                  this.state.netId === 4 &&
-                  (
-                    <Link  href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`} isExternal>GovBETA {' '}<ExternalLinkIcon mx="2px" /></Link>
-                  )
+                  <Link  href={`https://rinkeby.client.aragon.org/#/erc20testdaohash.aragonid.eth`} isExternal>GovBETA {' '}<ExternalLinkIcon mx="2px" /></Link>
                 )
-              }
-              {
+              )
+            }
+            {
+              (
+                this.state.room &&
                 (
-                  this.state.room &&
-                  (
-                    <>
-                      <Tooltip label="Peers connected to you" aria-label="peers">
-                        <Image boxSize="20px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABfElEQVRIie2VOU4DQRBFn0diSMFEOOMADlhugAVYJIhVgsiJgZD1GGa7BBbXMCDMAbDBiFWCCDKQjMQQzG8NjNrjGRCZK2n9X69cVnd1D3TiDzH8TywOsA98ArkYfE7sjmrbxgHgAR9AIQZfEOupSWTMCWwCY/JSEbzJTajGA6Zbwd3Ag6BNeRngGMha+KxyGekt1d4Brq3BkoCa/pkLnMs7tPBl5apiU0Bd3oKtwZGSa9Kr0ldA2sKngYaYFXkb0mVbgxslB6VPpWekJ4FH/G3My5sVcyI9JH1ta/CuZI/0a0ib8/GAe3m90i8h/WZ+NM7cRk1R2/je4FnrgNaa1lGtRYItKsozF/EiVPtka2YOeV3aHHID+yH34e+1ByzLM4dsmzoWlawTjGk1osCM6ZlYB7iUN29r4OIfnod/acC/RBVaX7QK0C+9rdpboMvWAIKxawLj8uI8FXmC92gqggdgj98/dqUYPA6wS/LnukTCkR5JwCb64HTiR3wBnYJtcaM+zzsAAAAASUVORK5CYII="/>
-                      </Tooltip>
-                      <small>{this.state.peersOnline} peers</small>
+                  <>
+                    <Tooltip label="Peers connected to you" aria-label="peers">
+                      <Image boxSize="20px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABfElEQVRIie2VOU4DQRBFn0diSMFEOOMADlhugAVYJIhVgsiJgZD1GGa7BBbXMCDMAbDBiFWCCDKQjMQQzG8NjNrjGRCZK2n9X69cVnd1D3TiDzH8TywOsA98ArkYfE7sjmrbxgHgAR9AIQZfEOupSWTMCWwCY/JSEbzJTajGA6Zbwd3Ag6BNeRngGMha+KxyGekt1d4Brq3BkoCa/pkLnMs7tPBl5apiU0Bd3oKtwZGSa9Kr0ldA2sKngYaYFXkb0mVbgxslB6VPpWekJ4FH/G3My5sVcyI9JH1ta/CuZI/0a0ib8/GAe3m90i8h/WZ+NM7cRk1R2/je4FnrgNaa1lGtRYItKsozF/EiVPtka2YOeV3aHHID+yH34e+1ByzLM4dsmzoWlawTjGk1osCM6ZlYB7iUN29r4OIfnod/acC/RBVaX7QK0C+9rdpboMvWAIKxawLj8uI8FXmC92gqggdgj98/dqUYPA6wS/LnukTCkR5JwCb64HTiR3wBnYJtcaM+zzsAAAAASUVORK5CYII="/>
+                    </Tooltip>
+                    <small>{this.state.peersOnline} peers</small>
 
-                    </>
-                  )
+                  </>
                 )
-              }
-            </HStack>
-          </Center>
+              )
+            }
+          </HStack>
+        </Center>
         </Box>
       </ChakraProvider>
 
