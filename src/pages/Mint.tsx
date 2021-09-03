@@ -472,7 +472,7 @@ class MintPage extends React.Component {
             <Box align="center">
               <Text fontSize="sm">
                 <p>The <b>HashAvatars</b> are Avatars waiting to be claimed by anyone on xDai Chain.</p>
-                <p>Once you select the avatar's name a specific avatar figure will be generated and you can mint single or multiple copies of it.</p>
+                <p>Once you select the avatar's name a specific avatar figure will be generated and you can mint it.</p>
                 <p>Choose your preferred HashAvatar and start your collection now!</p>
               </Text>
             </Box>
@@ -535,6 +535,7 @@ class MintPage extends React.Component {
             <Box>
             {
               (
+                !this.props.loadingAvatars &&
                 this.state.savedBlobs?.length > 0 &&
                 (
                   <Heading>HashAvatars Created by you</Heading>
@@ -550,6 +551,7 @@ class MintPage extends React.Component {
               justifyContent="center"
             >
             {
+              !this.props.loadingAvatars &&
               this.state.savedBlobs?.map((string) => {
                 const blob = JSON.parse(string);
                 return(

@@ -113,16 +113,16 @@ class App extends React.Component {
     } else {
       await this.initWeb3();
     }
+    this.initiateContracts();
+    this.setState({
+      loading: false
+    });
     try{
       await this.initOrbitDB();
       await this.initLibp2p();
     } catch(err){
       console.log(err);
     }
-    this.setState({
-      loading: false
-    });
-    this.initiateContracts();
   }
 
 
@@ -295,7 +295,7 @@ class App extends React.Component {
   checkTokens = async () => {
     const itoken = this.state.itoken;
 
-    const lastId = await itoken.methods.totalSupply().call();
+    const lastId = await this.state.itoken.methods.totalSupply().call();
     const results = [];
     for(let i = 1;i<=lastId;i++){
       const res = {

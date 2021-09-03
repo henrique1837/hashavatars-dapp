@@ -10,7 +10,8 @@ import {
   Divider,
   Link,
   Center,
-  Avatar
+  Avatar,
+  Spinner
 } from "@chakra-ui/react"
 
 import HashAtack from '../components/games/HashAtack';
@@ -59,10 +60,11 @@ class GamesPage extends React.Component {
         {
           component: <SnowflakesInvasion {...this.props} />,
           name: "SnowflakesInvasion",
-          description: "",
-          image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
+          description: "Defend HashNation from Snowflakes Invasion!",
+          image: "https://ipfs.io/ipfs/QmZossnC5rci4YzVe3n2Z9bEJEXZrzTKNg2jXKXM1kehiu"
         }
       )
+      this.forceUpdate();
     }
   }
 
@@ -82,7 +84,7 @@ class GamesPage extends React.Component {
             this.state.play ?
             (
               <>
-              {this.state.play.component}
+              {this.state.play}
               </>
             ) :
             (
@@ -104,7 +106,30 @@ class GamesPage extends React.Component {
                       >
                       {
                         this.state.games.map((game) => {
-
+                          if(game.name === "SnowflakesInvasion" && this.props.loadingAvatars){
+                            return(
+                              <Box
+                                rounded="2xl"
+                                p="5"
+                                borderWidth="1px"
+                                _hover={{ boxShadow: '2xl', background: this.state.cardHoverBg }}
+                              >
+                              <VStack spacing={2}>
+                                <small>Loading SnowflakesInvasion</small>
+                                <Divider mt="4" />
+                                <Center>
+                                    <Avatar
+                                      size="2xl"
+                                      src={game.image}
+                                    />
+                                </Center>
+                                <Divider mt="4" />
+                                <Spinner size="xl"/>
+                                <Text fontSize="md">Atack is coming!</Text>
+                              </VStack>
+                              </Box>
+                            )
+                          }
                           return(
                             <Box
                               rounded="2xl"
@@ -117,7 +142,7 @@ class GamesPage extends React.Component {
                                   // h="200"
                                   role="group"
                                   as={Link}
-                                  onClick={() => {this.play(game)}}
+                                  onClick={() => {!this.props.loadingAvatars ? this.play(<SnowflakesInvasion {...this.props} />) : this.play(game.component)}}
                                 >
 
                                   <Center>
@@ -143,7 +168,7 @@ class GamesPage extends React.Component {
                                       />
                                   </Center>
                                   <Divider mt="4" />
-                                  <Text>
+                                  <Text fontSize="md">
                                     {game.description}
                                   </Text>
                                 </LinkBox>

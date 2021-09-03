@@ -103,7 +103,7 @@ class OwnedAvatars extends React.Component {
                 <>
                 <VStack spacing={2}>
                 <Heading>Creators</Heading>
-                <p><small>Total of {this.props.loadingAvatars ? <Spinner size='xs' /> : this.props.savedBlobs.length} HashAvatars creators</small></p>
+                <p><small>Total of {this.props.loadingAvatars ? <Spinner size='xs' /> : this.props.creators.length} HashAvatars creators</small></p>
                 <Divider />
                 <HStack spacing={2} style={{overflowX: 'auto',maxWidth: document.body.clientWidth - document.body.clientWidth*0.2}} id='hstack_profiles'>
                 {
