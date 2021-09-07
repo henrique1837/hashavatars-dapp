@@ -142,7 +142,7 @@ class GamesPage extends React.Component {
                                   // h="200"
                                   role="group"
                                   as={Link}
-                                  onClick={() => {!this.props.loadingAvatars ? this.play(<SnowflakesInvasion {...this.props} />) : this.play(game.component)}}
+                                  onClick={() => {game.name === "SnowflakesInvasion" && !this.props.loadingAvatars ? this.play(<SnowflakesInvasion {...this.props} />) : this.play(game.component)}}
                                 >
 
                                   <Center>

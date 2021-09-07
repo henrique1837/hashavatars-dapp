@@ -17,7 +17,6 @@ import makeBlockie from 'ethereum-blockies-base64';
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx'
 
 import {
-  getStatusFleetNodes,
   StoreCodec,
   Waku,
   WakuMessage,
@@ -27,24 +26,9 @@ class FeedBackPage extends React.Component {
 
   state = {
   }
-  
+
   componentDidMount = async () => {
-    const waku = await Waku.create({
-        libp2p: {
-          config: {
-            pubsub: {
-              enabled: true,
-              emitSelf: true,
-            },
-          },
-        },
-    });
-    const nodes = await getStatusFleetNodes();
-    await Promise.all(
-      nodes.map((addr) => {
-        return waku.dial(addr);
-      })
-    );
+    const waku = await Waku.create({ bootstrap: true });
 
     waku.relay.addObserver(async (msg) => {
       const obj = JSON.parse(msg.payloadAsUtf8);
@@ -62,42 +46,29 @@ class FeedBackPage extends React.Component {
     this.setState({
       waku: waku,
       posts: []
-    })
-    waku.libp2p.peerStore.once(
-      'change:protocols',
-      async ({ peerId, protocols }) => {
-        if (protocols.includes(StoreCodec)) {
-          console.log(
-            `Retrieving archived messages from ${peerId.toB58String()}`
-          );
-          const messages = await waku.store.queryHistory({
-            peerId,
-            contentTopics: ["/test-hashavatars-feedback/proto"]
-          });
-          messages?.map(async (msg) => {
-            try{
-              const obj = JSON.parse(msg.payloadAsUtf8);
-              if(obj.from !== null){
-                obj.profile = await getLegacy3BoxProfileAsBasicProfile(obj.from);
-              }
-              const treatedMsg = {
-                payloadAsUtf8: JSON.stringify(obj),
-                timestamp: msg.timestamp
-              };
-              this.state.posts.unshift(treatedMsg);
-              this.state.posts.sort(function(x, y){
-                  return y.timestamp - x.timestamp;
-              });
-              await this.forceUpdate();
-              console.log(this.state.posts)
-            } catch(err){
-              console.log(err)
-            }
-          });
-        }
-      }
-    );
+    });
+    const messages = await waku.store.queryHistory(['/test-hashavatars-feedback/proto']);
 
+    messages?.map(async (msg) => {
+      try{
+        const obj = JSON.parse(msg.payloadAsUtf8);
+        if(obj.from !== null){
+          obj.profile = await getLegacy3BoxProfileAsBasicProfile(obj.from);
+        }
+        const treatedMsg = {
+          payloadAsUtf8: JSON.stringify(obj),
+          timestamp: msg.timestamp
+        };
+        this.state.posts.unshift(treatedMsg);
+        this.state.posts.sort(function(x, y){
+            return y.timestamp - x.timestamp;
+        });
+        await this.forceUpdate();
+        console.log(this.state.posts)
+      } catch(err){
+        console.log(err)
+      }
+    });
   }
 
   post = async () => {
@@ -105,7 +76,7 @@ class FeedBackPage extends React.Component {
       message: this.state.msg,
       from: this.props.coinbase
     });
-    const msg = WakuMessage.fromUtf8String(str, "/test-hashavatars-feedback/proto");
+    const msg = await WakuMessage.fromUtf8String(str, "/test-hashavatars-feedback/proto");
     await this.state.waku.relay.send(msg);
   }
 

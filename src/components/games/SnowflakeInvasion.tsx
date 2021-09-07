@@ -44,13 +44,14 @@ import {
   PopoverCloseButton,
   Avatar
 } from "@chakra-ui/react"
-import { ExternalLinkIcon } from '@chakra-ui/icons'
+import { ExternalLinkIcon,ArrowRightIcon,ChevronDownIcon,ChevronUpIcon,WarningIcon } from '@chakra-ui/icons'
 import ERC1155 from '../../contracts/ItemsERC1155.json'
 
 class GamePage extends Component {
   state = {
     myHashAvatars: [],
     allHashAvatars: [],
+    spawn: [],
     loading: true,
     x: [...Array(101).keys()],
     y: [...Array(101).keys()],
@@ -78,6 +79,13 @@ class GamePage extends Component {
     this.setState({
       approved: approved
     });
+    const promisesSF = [];
+    const lastId = await this.checkTokensSnowflakes();
+
+    for(let i = 0; i < lastId; i++){
+      promisesSF.push(this.checkTokensPos(this.state.hashAvatars,i));
+    }
+    await Promise.all(promisesSF)
     setInterval(async () => {
       if(this.props.savedBlobs.length !== this.state.allHashAvatars.length){
         this.state.allHashAvatars = this.props.savedBlobs;
@@ -86,8 +94,7 @@ class GamePage extends Component {
           if(this.props.coinbase){
             const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,obj.returnValues._id).call();
 
-            if(obj.creator.toLowerCase() === this.props.coinbase.toLowerCase() &&
-               !this.state.myHashAvatars.includes(JSON.stringify(obj)) &&
+            if(!this.state.myHashAvatars.includes(JSON.stringify(obj)) &&
                balance > 0){
               this.state.myHashAvatars.push(JSON.stringify(obj));
             }
@@ -114,6 +121,18 @@ class GamePage extends Component {
 
 
   }
+  checkTokensSnowflakes = async () => {
+    const colletible = await this.props.snowflakesInvasion.methods.collectibles(1).call();
+
+    const itoken = new this.props.web3.eth.Contract(ERC1155.abi, colletible);
+
+    const lastId = await itoken.methods.totalSupply().call();
+
+    this.setState({
+      snowFlakes: itoken
+    })
+    return(lastId)
+  }
   checkTokensPos = async (collectible,id) => {
     try {
       const ownerAddr = await this.props.snowflakesInvasion.methods.tokenPlayer(collectible.options.address,id).call();
@@ -124,7 +143,8 @@ class GamePage extends Component {
       const tokenPos = await this.props.snowflakesInvasion.methods.getTokenPos(ownerAddr,id).call();
       const x = tokenPos.x
       const y = tokenPos.y
-      let uri = await this.props.itoken.methods.uri(id).call();
+
+      let uri = await collectible.methods.uri(id).call();
 
       if(uri.includes("ipfs://ipfs/")){
         uri = uri.replace("ipfs://ipfs/", "https://ipfs.io/ipfs/")
@@ -136,12 +156,37 @@ class GamePage extends Component {
       //const px = this.state.players[res.returnValues.player].from_x;
       //const py = this.state.players[res.returnValues.player].from_y;
       //this.state.positions[`${px}-${py}`] = null;
-      this.state.positions[`${x}-${y}`] = {
+      const obj = {
         owner: ownerAddr,
         tokenId: id,
         collectible: collectible.options.address,
         metadata: metadata
       }
+      if(Number(y) === 0 &&
+         Number(x) === 0 &&
+         ownerAddr.toLowerCase() === this.props.coinbase.toLowerCase()){
+
+
+        if(!this.state.spawn.includes(JSON.stringify(obj))){
+          this.state.spawn.push(JSON.stringify(obj));
+        }
+        this.setState({
+          inGame: true
+        });
+        await this.forceUpdate();
+        return
+      }
+
+      this.state.spawn = this.state.spawn.filter(str => {
+        const obj = JSON.parse(str);
+        return Number(obj.tokenId) !== Number(id)
+      })
+      console.log(this.state.spawn.filter(str => {
+        const obj = JSON.parse(str);
+
+        return obj.tokenId !== id
+      }))
+      this.state.positions[`${x}-${y}`] = obj;
       this.state.tokensPos[id] = tokenPos;
 
       if(ownerAddr.toLowerCase() === this.props.coinbase.toLowerCase()){
@@ -180,6 +225,15 @@ class GamePage extends Component {
       player: player,
       tokenPos: tokenPos,
       tokenId: id,
+    })
+
+  }
+
+  unselectToken =  () => {
+
+    this.setState({
+      tokenPos: null,
+      tokenId: null,
     })
 
   }
@@ -242,6 +296,9 @@ class GamePage extends Component {
         });
     } catch(err){
       console.log(err);
+      this.setState({
+        moving: false,
+      });
     }
     this.setState({
       moving: false
@@ -279,7 +336,26 @@ class GamePage extends Component {
             <Table border="1" size="sm" style={{backgroundImage: `url('https://ipfs.io/ipfs/QmWEAoTDgFJ5K5WLoN3azbwD5dwbA3d8KKqSYxMUnbK8XT')`,  backgroundRepeat: 'no-repeat',  backgroundSize: 'cover' , backgroundPosition: 'center'}}>
               <Thead>
                 <Tr>
-                  <Th>Spawn area hashavatars</Th>
+                  <Th>
+                    <p>Spawn area hashavatars</p>
+                    <HStack spacing={2} style={{overflowX: 'auto',maxWidth: document.body.clientWidth - document.body.clientWidth*0.85}}>
+
+                    {
+                      this.state.spawn.map(str => {
+                        const obj = JSON.parse(str);
+                        return(
+                          <VStack spacing={1}>
+                          <Avatar src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                          {
+                            !this.state.tokenId &&
+                            <Button onClick={() => {this.selectToken(obj.tokenId)}} size="xs"><ArrowRightIcon/></Button>
+                          }
+                          </VStack>
+                        )
+                      })
+                    }
+                    </HStack>
+                  </Th>
                   {
                     this.state.inGame &&
                     (
@@ -310,7 +386,13 @@ class GamePage extends Component {
                         </Th>
                       )
                     }) :
-                    <Th><Spinner /><small> loading game</small></Th>
+                    this.state.approved &&
+                    <Th>
+                      <VStack spacing={1}>
+                        <Spinner />
+                        <small> loading game</small>
+                      </VStack>
+                    </Th>
                   }
                   {/*
                     this.state.snowflakes.map(item => {
@@ -366,8 +448,13 @@ class GamePage extends Component {
                                       (Number(this.state.tokenPos.y) >= y - 3) &&
                                       (Number(this.state.tokenPos.x) <= x + 3) &&
                                       (Number(this.state.tokenPos.y) <= y + 3) &&
+                                      this.state.positions[`${x}-${y}`]?.collectible !== this.state.player.collectible &&
                                       (
-                                        <Button onClick={() => {this.move(x,y)}} size="xs">Move</Button>
+                                        this.state.positions[`${x}-${y}`]?.tokenId === this.state.tokenId ?
+                                        <Button onClick={this.unselectToken} size="xs"><ChevronUpIcon /></Button> :
+                                        this.state.positions[`${x}-${y}`]?.collectible ?
+                                        <Button onClick={() => {this.move(x,y)}} size="xs" colorScheme="red"><ChevronDownIcon /></Button> :
+                                        <Button onClick={() => {this.move(x,y)}} size="xs"><ChevronDownIcon /></Button>
                                       )
                                     )
                                   }
@@ -380,7 +467,7 @@ class GamePage extends Component {
 
                                         this.state.positions[`${x}-${y}`].owner.toLowerCase() === this.props.coinbase.toLowerCase() &&
                                         !this.state.tokenId &&
-                                        <Button onClick={() => {this.selectToken(this.state.positions[`${x}-${y}`].tokenId)}} size="xs">Select</Button>
+                                        <Button onClick={() => {this.selectToken(this.state.positions[`${x}-${y}`].tokenId)}} size="xs"><ArrowRightIcon /></Button>
 
                                       }
                                       </>

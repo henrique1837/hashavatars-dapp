@@ -113,7 +113,9 @@ class App extends React.Component {
     } else {
       await this.initWeb3();
     }
-    this.initiateContracts();
+    if(this.state.itoken){
+      this.initiateContracts();
+    }
     this.setState({
       loading: false
     });
@@ -193,7 +195,8 @@ class App extends React.Component {
       }
       const profile = await getLegacy3BoxProfileAsBasicProfile(coinbase);
       let initiateContracts = false;
-      if(this.state.netId !== netId){
+      if(this.state.netId !== netId &&
+        (netId === 0x64 || netId === 4)){
         initiateContracts = true;
       }
       this.setState({
