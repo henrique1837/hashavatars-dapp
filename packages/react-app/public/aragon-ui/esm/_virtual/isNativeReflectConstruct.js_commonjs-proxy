@@ -1,0 +1,3 @@
+import { __moduleExports as isNativeReflectConstruct } from '../node_modules/@babel/runtime/helpers/isNativeReflectConstruct.js';
+export { __moduleExports as default } from '../node_modules/@babel/runtime/helpers/isNativeReflectConstruct.js';
+//# sourceMappingURL=isNativeReflectConstruct.js_commonjs-proxy.map
