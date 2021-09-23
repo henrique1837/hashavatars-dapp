@@ -27,6 +27,9 @@ function App() {
   const [hashavatars,creators,nfts,loadingNFTs,myNfts] = useContract();
   const { state, actions } = useAppState()
   useEffect(() => {
+    if(provider){
+      actions.setProvider(provider)
+    }
     if(coinbase){
       actions.setCoinbase(coinbase)
     }
@@ -48,7 +51,7 @@ function App() {
     if(creators){
       actions.setCreators(creators)
     }
-  },[coinbase,netId,hashavatars,nfts,myNfts,loadingNFTs,creators]);
+  },[actions,provider,coinbase,netId,hashavatars,nfts,myNfts,loadingNFTs,creators]);
   return (
     <Main>
 
@@ -56,7 +59,7 @@ function App() {
         <Menu />
       </Header>
       {
-        netId !== 4 && netId !== 0x64 &&
+        netId !== 4 && netId !== 0x64 && coinbase &&
         <center>Wrong network</center>
       }
       <Box>

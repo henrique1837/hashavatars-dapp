@@ -27,7 +27,7 @@ function useContract() {
   const [loadingNFTs,setLoadingNFTs] = useState(true);
   const ids = [];
 
-  const handleEvents = async(err,res) => {
+  const handleEvents = useCallback(async(err,res) => {
     try{
       if(ids.includes(res.returnValues._id)){
         return;
@@ -94,7 +94,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  }
+  },[ids,hashavatars,coinbase,creators,nfts,myNfts]);
 
 
   useEffect(() => {
@@ -117,7 +117,7 @@ function useContract() {
     }
 
     if(mints && nfts?.length === 0){
-      const promises = [];
+      let promises = [];
       for(let i = mints.length-1; i > 0 ; i--){
         const res = mints[i];
         promises.push(handleEvents(null,res));

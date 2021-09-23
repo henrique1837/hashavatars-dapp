@@ -36,6 +36,9 @@ const useAppState = () => {
 // It's a bit like Redux's dispatch(), but as individual
 // functions.
 const getActions = (setState) => ({
+  setProvider: (provider) => {
+    setState((state) => ({ ...state, provider: provider }))
+  },
   setHashAvatars: (hashavatars) => {
     setState((state) => ({ ...state, hashavatars: hashavatars }))
   },

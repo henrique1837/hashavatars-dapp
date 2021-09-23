@@ -1,6 +1,6 @@
 import React,{useState} from "react";
 import { Container,Row,Col,Image,Popover,OverlayTrigger,Spinner } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Pagination,Split,Button } from '@aragon/ui'
+import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon } from '@aragon/ui'
 import LazyLoad from 'react-lazyload';
 
 import { useAppContext } from '../hooks/useAppState'
@@ -28,29 +28,29 @@ function AllAvatars(){
                     if(obj.address === filtered){
                       return(
                         <div>
-                        <div>
-                        <IdentityBadge
-                          label={obj.profile?.name}
-                          entity={obj.address}
-                          networkType={state.netId === 4 ? "rinkeby" : "xdai"}
-                          popoverTitle={obj.profile?.name }
-                        />
-                        </div>
-                        {
-                          obj.profile?.image &&
                           <div>
-                            <Image
-                              rounded
-                              src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
-                              style={{width: '250px',heigth: "250px"}}
-                            />
+                          <IdentityBadge
+                            label={obj.profile?.name}
+                            entity={obj.address}
+                            networkType={state.netId === 4 ? "rinkeby" : "xdai"}
+                            popoverTitle={obj.profile?.name }
+                          />
                           </div>
-                        }
-                        <p>{obj.profile?.description}</p>
-                        {
-                          obj.profile?.url &&
-                          <p><Link href={obj.profile?.url} external={true}>{obj.profile?.url} <IconLink  /></Link></p>
-                        }
+                          {
+                            obj.profile?.image &&
+                            <div>
+                              <Image
+                                rounded
+                                src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
+                                style={{width: '250px',heigth: "250px"}}
+                              />
+                            </div>
+                          }
+                          <p>{obj.profile?.description}</p>
+                          {
+                            obj.profile?.url &&
+                            <p><Link href={obj.profile?.url} external={true}>{obj.profile?.url} <IconLink  /></Link></p>
+                          }
                         </div>
                       )
                     }
@@ -83,25 +83,18 @@ function AllAvatars(){
                       <Popover.Body>
                         <p>ID: {obj.returnValues._id}</p>
                         <p>Creator: {
-                          obj.profile?.image ?
-                          <>
                           <Link href="" onClick={() => setFiltered(obj.creator)}>
-                          <Image
-                            rounded
-                            src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
-                            width={'25px'}
-                          />
-                          {' '}
-                          {obj.profile.name}
+                            <IdentityBadge
+                              label={obj.profile?.name}
+                              badgeOnly
+                              entity={obj.creator}
+                              networkType={state.netId === 4 ? "rinkeby" : "xdai"}
+                              icon={obj.profile?.image ?
+                                    <Image src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
+                                    <EthIdenticon address={obj.creator}/>
+                              }
+                            />
                           </Link>
-                          </> :
-                          <IdentityBadge
-                            label={obj.profile?.name}
-                            entity={obj.creator}
-                            networkType={state.netId === 4 ? "rinkeby" : "xdai"}
-                            popoverTitle={obj.profile?.name }
-                            popoverAction={{label: "Profile",onClick: () => {setFiltered(obj.address)}}}
-                          />
                         }
                         </p>
                       {
@@ -158,27 +151,19 @@ function AllAvatars(){
                   }
                   return(
                     <div>
-                    {
-                      obj.profile?.image ?
-                      <>
-                      <Link href="" onClick={() => setFiltered(obj.address)}>
-                      <Image
-                        rounded
-                        src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
-                        width={'25px'}
-                      />
-                      {' '}
-                      {obj.profile.name}
-                      </Link>
-                      </> :
+                    <Link href="" onClick={() => setFiltered(obj.address)}>
+
                       <IdentityBadge
-                        label={obj.profile?.name}
+                        label={obj.profile?.name && obj.profile.name}
                         entity={obj.address}
+                        badgeOnly
                         networkType={state.netId === 4 ? "rinkeby" : "xdai"}
-                        popoverTitle={obj.profile?.name }
-                        popoverAction={{label: "Profile",onClick: () => {setFiltered(obj.address)}}}
+                        icon={obj.profile?.image ?
+                              <Image src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
+                              <EthIdenticon address={obj.address}/>
+                        }
                       />
-                    }
+                    </Link>
 
                     </div>
                   )

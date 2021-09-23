@@ -1,6 +1,6 @@
 import React from "react";
 import { Container,Navbar,Nav,NavDropdown } from 'react-bootstrap';
-import { Button,IdentityBadge } from '@aragon/ui';
+import { Button,IdentityBadge,EthIdenticon,Image } from '@aragon/ui';
 import useWeb3Modal from "../hooks/useWeb3Modal";
 import useProfile from "../hooks/useProfile";
 
@@ -20,7 +20,7 @@ function Menu(){
             <Nav.Link href="#home">Informations</Nav.Link>
             <Nav.Link href="#mint"><b>Generate Avatar</b></Nav.Link>
             {
-              provider &&
+              coinbase &&
               <Nav.Link href="#profile">Profile</Nav.Link>
             }
             <Nav.Link href="#all-avatars">All Avatars</Nav.Link>
@@ -34,11 +34,14 @@ function Menu(){
       </Container>
     </Navbar>
     {
-      netId === 4 ?
-      "RINKEBY" :
-      netId === 0x64 ?
-      "XDAI" :
-      "WRONG NETWORK"
+      coinbase &&
+      (
+        netId === 4 ?
+        "RINKEBY" :
+        netId === 0x64 ?
+        "XDAI" :
+        "WRONG NETWORK"
+      )
     }
     {
       provider ?
@@ -47,7 +50,10 @@ function Menu(){
         entity={coinbase}
         connectedAccount
         popoverTitle={profile?.name}
-
+        icon={profile?.image ?
+              <Image src={profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
+              <EthIdenticon address={coinbase}/>
+        }
       /> :
       <Button
         onClick={() => {
