@@ -1,6 +1,6 @@
 import React from "react";
 import { Container,Navbar,Nav,NavDropdown } from 'react-bootstrap';
-import { Button,IdentityBadge,EthIdenticon,Image } from '@aragon/ui';
+import { Button,IdentityBadge,EthIdenticon,Image,Link } from '@aragon/ui';
 import useWeb3Modal from "../hooks/useWeb3Modal";
 import useProfile from "../hooks/useProfile";
 
@@ -25,9 +25,12 @@ function Menu(){
             }
             <Nav.Link href="#all-avatars">All Avatars</Nav.Link>
             <NavDropdown title="More" id="basic-nav-dropdown">
-              <NavDropdown.Item href="#action/3.1">Feedbacks</NavDropdown.Item>
-              <NavDropdown.Item href="#action/3.2">Games</NavDropdown.Item>
-              <NavDropdown.Item href="#action/3.3">Collections</NavDropdown.Item>
+              <NavDropdown.Item style={{textAlign:'left'}} as={Link} href="https://bafybeidlgfpmk226fjz3uwbpzm5jy5uckioqbn5idztn3p7hywggvwdtz4.ipfs.dweb.link/#/feedbacks" external>Feedbacks</NavDropdown.Item>
+              <NavDropdown.Item style={{textAlign:'left'}} as={Link} href="https://bafybeidlgfpmk226fjz3uwbpzm5jy5uckioqbn5idztn3p7hywggvwdtz4.ipfs.dweb.link/#/games" external>Games</NavDropdown.Item>
+              <NavDropdown.Item style={{textAlign:'left'}} as={Link} href="https://bafybeidlgfpmk226fjz3uwbpzm5jy5uckioqbn5idztn3p7hywggvwdtz4.ipfs.dweb.link/#/collections" external>Collections</NavDropdown.Item>
+              <NavDropdown.Divider />
+
+              <NavDropdown.Item style={{textAlign:'left'}} as={Link} href="https://bafybeidlgfpmk226fjz3uwbpzm5jy5uckioqbn5idztn3p7hywggvwdtz4.ipfs.dweb.link/#/" external>Previous Version</NavDropdown.Item>
             </NavDropdown>
           </Nav>
         </Navbar.Collapse>
@@ -44,7 +47,7 @@ function Menu(){
       )
     }
     {
-      provider ?
+      coinbase ?
       <IdentityBadge
         customLabel={profile?.name}
         entity={coinbase}
@@ -57,14 +60,14 @@ function Menu(){
       /> :
       <Button
         onClick={() => {
-          if (!provider) {
+          if (!coinbase) {
             loadWeb3Modal();
           } else {
             logoutOfWeb3Modal();
           }
         }}
       >
-        {!provider ? "Connect Wallet" : "Disconnect Wallet"}
+        {!coinbase ? "Connect Wallet" : "Disconnect Wallet"}
       </Button>
     }
     </>

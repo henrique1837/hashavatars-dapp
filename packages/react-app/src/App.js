@@ -1,4 +1,4 @@
-import React,{useEffect} from "react";
+import React,{useEffect,useState} from "react";
 import {
   HashRouter as Router,
   Route,
@@ -24,34 +24,41 @@ import Menu from "./components/Menu";
 function App() {
 
   const [provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId] = useWeb3Modal();
-  const [hashavatars,creators,nfts,loadingNFTs,myNfts] = useContract();
+  const {hashavatars,creators,nfts,loadingNFTs,myNfts,totalSupply} = useContract();
   const { state, actions } = useAppState()
+  const [nftsLength,setNftsLength] = useState();
+  const [previousCoinbase,setPrevCoinbase] = useState();
+
   useEffect(() => {
-    if(provider){
-      actions.setProvider(provider)
+    if((provider && netId) || (coinbase !== previousCoinbase)){
+      actions.setProvider(provider);
+      actions.setNetId(netId);
+      actions.setCoinbase(coinbase);
+      setPrevCoinbase(coinbase);
     }
-    if(coinbase){
-      actions.setCoinbase(coinbase)
-    }
-    if(netId){
-      actions.setNetId(netId)
-    }
+
+
     if(hashavatars){
       actions.setHashAvatars(hashavatars)
     }
-    if(nfts){
+    if(nfts && nftsLength !== nfts.length){
       actions.setNfts(nfts)
+      setNftsLength(nfts.length);
+      if(myNfts){
+        actions.setMyNfts(myNfts)
+      }
     }
-    if(myNfts){
-      actions.setMyNfts(myNfts)
-    }
+
     if(!loadingNFTs){
       actions.setLoadingNFTs(loadingNFTs)
+    }
+    if(totalSupply){
+      actions.setTotalSupply(totalSupply)
     }
     if(creators){
       actions.setCreators(creators)
     }
-  },[actions,provider,coinbase,netId,hashavatars,nfts,myNfts,loadingNFTs,creators]);
+  },[actions,provider,coinbase,netId,hashavatars,nfts,myNfts,loadingNFTs,creators,totalSupply]);
   return (
     <Main>
 
@@ -75,7 +82,7 @@ function App() {
             <Route render={() => {
 
               return(
-                <Redirect to="/home" />
+                <Redirect to="/mint" />
               );
 
             }} />

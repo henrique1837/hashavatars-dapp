@@ -1,11 +1,9 @@
-import React,{useState} from "react";
+import React,{useState,useEffect} from "react";
 import { Container,Row,Col,Image,Popover,OverlayTrigger,Spinner } from 'react-bootstrap';
 import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon } from '@aragon/ui'
 import LazyLoad from 'react-lazyload';
 
 import { useAppContext } from '../hooks/useAppState'
-
-
 
 function AllAvatars(){
   const { state } = useAppContext();
@@ -14,11 +12,19 @@ function AllAvatars(){
 
   return(
     <>
+
       <Container>
+
         <Split
           primary={
             <>
             <h4>All HashAvatars</h4>
+            {
+              state.totalSupply &&
+              <p><small>Total of {state.totalSupply} HashAvatars</small></p>
+
+            }
+
             {
               filtered &&
               <center>
@@ -59,11 +65,16 @@ function AllAvatars(){
               </center>
             }
             {
-              state.loadingNFTs ?
+              state.loadingNFTs &&
               <center>
               <Spinner animation="border" size="2xl"/>
               <p>Loading ...</p>
-              </center> :
+              </center>
+            }
+            {
+              !filtered && state.totalSupply && <Pagination pages={Number((state.totalSupply/4).toFixed(0))} selected={selected} onChange={setSelected} />
+            }
+            {
               state.nfts?.length > 0 &&
               <>
               <Row>
@@ -77,8 +88,14 @@ function AllAvatars(){
                     }
                   }
 
+                  if(!filtered &&
+                      ((obj.returnValues._id <= state.totalSupply - (selected+1)*4) ||
+                       (obj.returnValues._id > state.totalSupply - ((selected+1)*4) + 4))){
+                    return
+                  }
+
                   const popover =
-                    <Popover id={`popover-${obj.returnValues._id}`}>
+                    <Popover id={`popover-${obj.returnValues._id}`} class=".hashover">
                       <Popover.Header as="h3">{obj.metadata.name}</Popover.Header>
                       <Popover.Body>
                         <p>ID: {obj.returnValues._id}</p>
@@ -110,45 +127,45 @@ function AllAvatars(){
                     <Col style={{paddingTop:'80px'}}>
 
                     <LazyLoad>
+
+                    <Link href="">
                     <OverlayTrigger trigger="click" placement="top" overlay={popover}>
                       <center>
                         <div>
-                          <p>{obj.metadata.name}</p>
+                          <p><b>{obj.metadata.name}</b></p>
                         </div>
                         <div>
                           <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                         </div>
                       </center>
                     </OverlayTrigger>
+                    </Link>
+
                     </LazyLoad>
                     </Col>
                   )
                 })
               }
               </Row>
-              {
-                filtered &&
-                <center>
-                  <Button onClick={() => {setFiltered(null)}}>All Avatars</Button>
-                </center>
-              }
-              </>
+                {
+                  filtered &&
+                  <center>
+                    <Button onClick={() => {setFiltered(null)}}>All Avatars</Button>
+                  </center>
+                }
+                </>
             }
             </>
           }
           secondary={
-
-              !state.loadingNFTs &&
-              <>
+              <div style={{maxHeight: "300px",overflowY: "scroll"}}>
               <h4>Creators</h4>
-              <p><small>Total of {state.creators.length} HashAvatars creators</small></p>
+              <p><small>Total of {!state.loadingNFTs ? state.creators.length : <Spinner animation="border" size="sm"/>} HashAvatars creators</small></p>
               <div>
               {
                 state.creators?.map((string) => {
                   const obj = JSON.parse(string);
-                  if(state.loadingNFTs){
-                    return;
-                  }
+
                   return(
                     <div>
                     <Link href="" onClick={() => setFiltered(obj.address)}>
@@ -170,20 +187,13 @@ function AllAvatars(){
                 })
               }
               </div>
-              </>
+              </div>
 
 
           }
         />
-        <Row>
 
-        {
-          /*
-          !state.loadingNFTs &&
-          <Pagination pages={Number(((nfts.length)/10).toFixed(0))} selected={selected} onChange={setSelected} />
-          */
-        }
-        </Row>
+
       </Container>
     </>
   )

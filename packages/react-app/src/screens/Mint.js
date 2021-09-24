@@ -317,8 +317,6 @@ function Mint(){
           (
             state.coinbase ?
             (
-              !state.loadingNFTs &&
-              (
                 !minting && !pendingTx ?
                 (
                   canMint ? (<Button onClick={mint}>Claim</Button>) : ("HashAvatar with that name already claimed")
@@ -329,14 +327,18 @@ function Mint(){
                     {mintingMsg}
                   </div>
                 )
-              )
+
             ) :
             <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button>
           )
         }
         </center>
-        <h4>HashAvatars created by you</h4>
         {
+          state.coinbase &&
+          <h4>HashAvatars created by you</h4>
+        }
+        {
+          state.coinbase &&
           state.loadingNFTs ?
           <center>
           <Spinner animation="border" size="2xl"/>

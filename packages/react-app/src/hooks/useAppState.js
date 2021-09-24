@@ -60,6 +60,9 @@ const getActions = (setState) => ({
   setCreators: (creators) => {
     setState((state) => ({ ...state, creators: creators }))
   },
+  setTotalSupply: (supply) => {
+    setState((state) => ({ ...state, totalSupply: supply }))
+  },
 })
 
 
