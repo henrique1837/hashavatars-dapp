@@ -2,18 +2,20 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Image,Spinner } from 'react-bootstrap';
-import { Link,IconLink,Button,TextInput,TransactionBadge } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar } from '@aragon/ui';
 import Avatar from 'avataaars';
-import LazyLoad from 'react-lazyload';
 import IPFS from 'ipfs-http-client-lite';
 
 import { useAppContext } from '../hooks/useAppState'
+import useWeb3Modal from "../hooks/useWeb3Modal";
+import useContract from "../hooks/useContract";
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
 function Mint(){
-
+  const {provider,loadWeb3Modal,coinbase,netId} = useWeb3Modal();
+  const {getMetadata,getTotalSupply} = useContract();
   const { state } = useAppContext();
 
   const [avatar,setAvatar] = useState();
@@ -34,7 +36,7 @@ function Mint(){
       clothesColor: ["Black", "Blue01", "Blue02", "Blue03", "Gray01", "Gray02", "Heather", "PastelBlue", "PastelGreen", "PastelOrange", "PastelRed", "PastelYellow", "Pink", "Red"],
       eye: ["Close", "Cry", "Default", "Dizzy", "EyeRoll", "Happy", "Hearts", "Side", "Squint", "Surprised", "Wink"],
       eyebrown: ["Angry", "AngryNatural", "Default", "DefaultNatural", "FlatNatural", "RaisedExcited", "RaisedExcitedNatural", "SadConcerned", "SadConcernedNatural", "UnibrowNatural", "UpDown"],
-      mouth: ["Concerned", "Default", "Disbelief", "Eating", "Grimace", "Sad", "ScreamOpen", "Serious", "Smile", "Tongue", "Twinkle"],
+      mouth: ["Concerned", "Default", "Disbelief", "Eating", "Sad", "ScreamOpen", "Serious", "Smile", "Twinkle"],
       skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"]
   }
   const randomize = useCallback(() => {
@@ -49,7 +51,7 @@ function Mint(){
         clotheColor : avatarsVar.clothesColor[Math.floor(Math.random() * avatarsVar.clothesColor.length)],
         eyeType: avatarsVar.eye[Math.floor(Math.random() * avatarsVar.eye.length)],
         eyebrowType: avatarsVar.eyebrown[Math.floor(Math.random() * avatarsVar.eyebrown.length)],
-        mounthType: avatarsVar.mouth[Math.floor(Math.random() * avatarsVar.mouth.length)],
+        mouthType: "Default",
         skinColor: avatarsVar.skin[Math.floor(Math.random() * avatarsVar.skin.length)],
       });
   },[avatarsVar])
@@ -63,14 +65,13 @@ function Mint(){
       }
       setMintingMsg(<p><small>Checking all tokens already minted ... </small></p>);
 
-      if(state.loadingNFTs){
-        setMintingMsg(null);
-        return
+      const promises = [];
+      const totalSupply = await getTotalSupply();
+      for(let i = 1; i <= totalSupply; i++){
+        promises.push(getMetadata(i,state.hashavatars))
       }
-      const metadatas = state.nfts.map(string => {
-        const obj = JSON.parse(string)
-        return(obj.metadata)
-      })
+
+      const metadatas = await Promise.allSettled(promises);
       let cont = true;
 
       metadatas.map(obj => {
@@ -183,10 +184,10 @@ function Mint(){
         setMintingMsg(null);
       },2000)
     }
-  },[state,avatar,svg]);
+  },[state,avatar,svg,getMetadata,getTotalSupply,state.hashavatars]);
 
 
-  const handleOnChange = (e) => {
+  const handleOnChange = async (e) => {
         e.preventDefault();
         try{
           const web3 = state.provider;
@@ -252,7 +253,24 @@ function Mint(){
             name: e.target.value.trim(),
             dna: dna
           };
-          const metadatas = state.nfts.map(str => {
+          let metadatas;
+          /*
+          if(state.loadingNFTs && state.hashavatars){
+            const promises =[];
+            const totalSupply = await getTotalSupply();
+            for(let i = 1; i <= totalSupply; i++){
+              promises.push(getMetadata(i,state.hashavatars))
+            }
+            metadatas = await Promise.allSettled(promises);
+            alert(metadatas.length)
+            metadatas = metadatas.map(obj => {
+              return(JSON.stringify(obj))
+            })
+          } else {
+
+          }
+          */
+          metadatas = state.nfts.map(str => {
             const obj = JSON.parse(str);
             return(obj.metadata);
           });
@@ -329,30 +347,32 @@ function Mint(){
                 )
 
             ) :
-            <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button>
+            <Button onClick={loadWeb3Modal}>Connect Wallet</Button>
           )
         }
         </center>
         {
           state.coinbase &&
-          <h4>HashAvatars created by you</h4>
+          state.loadingNFTs &&
+          state.nfts &&
+          state.totalSupply &&
+          <center>
+          <p>Loading all HashAvatars ...</p>
+          <ProgressBar
+            value={state.nfts?.length/state.totalSupply}
+          />
+          </center>
         }
         {
-          state.coinbase &&
-          state.loadingNFTs ?
-          <center>
-          <Spinner animation="border" size="2xl"/>
-          <p>Loading ...</p>
-          </center> :
-          state.myNfts?.length > 0 &&
+          state.myNfts.length > 0 &&
           <>
-          <Row>
+          <h4>HashAvatars created by you</h4>
+          <Row style={{textAlign: 'center'}}>
           {
             state.myNfts?.map(str => {
               const obj = JSON.parse(str);
               return(
                 <Col style={{paddingTop:'80px'}}>
-                <LazyLoad>
                   <center>
                     <div>
                       <p>{obj.metadata.name}</p>
@@ -361,7 +381,6 @@ function Mint(){
                       <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                     </div>
                   </center>
-                </LazyLoad>
                 </Col>
               )
             })

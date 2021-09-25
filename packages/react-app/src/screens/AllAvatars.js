@@ -1,7 +1,6 @@
-import React,{useState,useEffect} from "react";
+import React,{useState} from "react";
 import { Container,Row,Col,Image,Popover,OverlayTrigger,Spinner } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon } from '@aragon/ui'
-import LazyLoad from 'react-lazyload';
+import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar } from '@aragon/ui'
 
 import { useAppContext } from '../hooks/useAppState'
 
@@ -60,24 +59,32 @@ function AllAvatars(){
                         </div>
                       )
                     }
+                    return;
                   })
                 }
               </center>
             }
             {
-              state.loadingNFTs &&
+              state.loadingNFTs && state.nfts && state.totalSupply &&
               <center>
-              <Spinner animation="border" size="2xl"/>
-              <p>Loading ...</p>
+              <p>Loading all HashAvatars ...</p>
+              <ProgressBar
+                value={state.nfts.length/state.totalSupply}
+              />
               </center>
             }
             {
-              !filtered && state.totalSupply && <Pagination pages={Number((state.totalSupply/4).toFixed(0))} selected={selected} onChange={setSelected} />
+              !filtered && state.totalSupply &&
+              <Pagination pages={
+                (Number((state.totalSupply/12).toFixed(0)) < Number((state.totalSupply/12))) ?
+                  Number((state.totalSupply/12).toFixed(0)) + 1 :
+                  Number((state.totalSupply/12).toFixed(0))
+              } selected={selected} onChange={setSelected} />
             }
             {
               state.nfts?.length > 0 &&
               <>
-              <Row>
+              <Row style={{textAlign: 'center'}}>
               {
                 state.nfts?.map(str => {
                   const obj = JSON.parse(str);
@@ -89,8 +96,8 @@ function AllAvatars(){
                   }
 
                   if(!filtered &&
-                      ((obj.returnValues._id <= state.totalSupply - (selected+1)*4) ||
-                       (obj.returnValues._id > state.totalSupply - ((selected+1)*4) + 4))){
+                      ((obj.returnValues._id <= state.totalSupply - (selected+1)*12) ||
+                       (obj.returnValues._id > state.totalSupply - ((selected+1)*12) + 12))){
                     return
                   }
 
@@ -126,7 +133,6 @@ function AllAvatars(){
                   return(
                     <Col style={{paddingTop:'80px'}}>
 
-                    <LazyLoad>
 
                     <Link href="">
                     <OverlayTrigger trigger="click" placement="top" overlay={popover}>
@@ -141,7 +147,6 @@ function AllAvatars(){
                     </OverlayTrigger>
                     </Link>
 
-                    </LazyLoad>
                     </Col>
                   )
                 })
@@ -150,7 +155,7 @@ function AllAvatars(){
                 {
                   filtered &&
                   <center>
-                    <Button onClick={() => {setFiltered(null)}}>All Avatars</Button>
+                    <Button onClick={() => {setFiltered(null);setSelected(0)}}>All Avatars</Button>
                   </center>
                 }
                 </>
@@ -158,7 +163,7 @@ function AllAvatars(){
             </>
           }
           secondary={
-              <div style={{maxHeight: "300px",overflowY: "scroll"}}>
+              <div style={{maxHeight: "1000px",overflowY: "scroll"}}>
               <h4>Creators</h4>
               <p><small>Total of {!state.loadingNFTs ? state.creators.length : <Spinner animation="border" size="sm"/>} HashAvatars creators</small></p>
               <div>

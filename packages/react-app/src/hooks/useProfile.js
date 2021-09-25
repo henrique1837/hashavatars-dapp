@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 import useWeb3Modal from './useWeb3Modal.js';
@@ -8,16 +8,19 @@ import useWeb3Modal from './useWeb3Modal.js';
 
 
 function useProfile() {
-  const [coinbase] = useWeb3Modal();
+  const {coinbase} = useWeb3Modal();
   const [profile,setProfile] = useState(null);
-  useEffect(() => {
+  useMemo(async () => {
     if (coinbase && !profile) {
-      getLegacy3BoxProfileAsBasicProfile(coinbase).then((profile) => {
-        setProfile(profile);
-      })
+      try{
+        const newProfile = await getLegacy3BoxProfileAsBasicProfile(coinbase);
+        setProfile(newProfile);
+      } catch(err){
+        console.log(err)
+      }
     }
   }, [coinbase,profile]);
-  return(profile)
+  return({profile})
 }
 
 export default useProfile;

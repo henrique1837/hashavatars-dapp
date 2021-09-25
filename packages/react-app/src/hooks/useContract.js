@@ -1,4 +1,4 @@
-import { useCallback,useContext,useMemo, useState } from "react";
+import { useCallback,useMemo, useState } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 import { addresses, abis } from "@project/contracts";
 
@@ -6,13 +6,14 @@ import useWeb3Modal from "./useWeb3Modal";
 
 function useContract() {
 
-  const [provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId] = useWeb3Modal();
+  const {provider,coinbase,netId} = useWeb3Modal();
   const [hashavatars,setHashAvatars] = useState();
   const [mints,setMints] = useState();
   const [totalSupply,setSupply] = useState();
   const [creators,setCreators] = useState([]);
   const [nfts,setNfts] = useState([]);
   const [myNfts,setMyNfts] = useState([]);
+  const [myOwnedNfts,setMyOwnedNfts] = useState([]);
 
   const [loadingNFTs,setLoadingNFTs] = useState(true);
   const ids = [];
@@ -20,7 +21,7 @@ function useContract() {
   const getMetadata = async(id,erc1155) => {
     const uriToken = await erc1155.methods.uri(id).call();
     if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-      throw('Err')
+      throw(new Error({message: "err"}))
     }
     const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
     fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
@@ -59,11 +60,7 @@ function useContract() {
     }
     if(!creators.includes(JSON.stringify(creatorProfile))){
       const newCreators = creators;
-      if(profile){
-        newCreators.unshift(JSON.stringify(creatorProfile));
-      } else {
-        newCreators.push(JSON.stringify(creatorProfile));
-      }
+      newCreators.push(JSON.stringify(creatorProfile));
       setCreators([...newCreators]);
     }
     return(creatorProfile)
@@ -71,12 +68,14 @@ function useContract() {
 
   const handleEvents = useCallback(async(err,res) => {
     try{
-      if(ids.includes(res.returnValues._id)){
+      const id = res.returnValues._id;
+
+      if(ids.includes(id)){
         return;
       }
-      ids.push(res.returnValues._id);
-      const metadata = await getMetadata(res.returnValues._id,hashavatars);
-      const creatorProfile = await getCreator(res.returnValues._id);
+      ids.push(id);
+      const metadata = await getMetadata(id,hashavatars);
+      const creatorProfile = await getCreator(id);
       const creator = creatorProfile.address;
       const profile = creatorProfile.profile
       const obj = {
@@ -104,7 +103,19 @@ function useContract() {
                           return y.returnValues._id - x.returnValues._id;
                     })]);
         }
+        const balance = await hashavatars.methods.balanceOf(coinbase,id).call();
+        if(balance > 0 && !myOwnedNfts.includes(JSON.stringify(obj))){
+          const newMyOwnedNfts = myOwnedNfts;
+          newMyOwnedNfts.push(JSON.stringify(obj));
+          setMyOwnedNfts([...newMyOwnedNfts.sort(function(xstr, ystr){
+                          const x = JSON.parse(xstr)
+                          const y = JSON.parse(ystr)
+                          return y.returnValues._id - x.returnValues._id;
+                        })]);
+        }
+
       }
+
 
       return({
         obj: obj,
@@ -113,7 +124,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[creators,hashavatars,coinbase,nfts,myNfts,ids])
+  },[creators,hashavatars,coinbase,nfts,myNfts,myOwnedNfts,ids,getCreator])
 
 
   useMemo(async () => {
@@ -147,6 +158,7 @@ function useContract() {
         }
       });
     }
+
     if(totalSupply && nfts?.length === 0){
       let promises = [];
       for(let i = totalSupply; i >= 0 ; i--){
@@ -156,7 +168,7 @@ function useContract() {
           }
         };
         promises.push(handleEvents(null,res));
-        if( i % 10 === 0 || i === 0){
+        if( i % 12 === 0 || i === 0){
           await Promise.allSettled(promises);
           if(loadingNFTs && i === 0){
             setLoadingNFTs(false);
@@ -170,9 +182,10 @@ function useContract() {
     if(!totalSupply && hashavatars){
       getTotalSupply();
     }
-  },[provider,netId,coinbase,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply])
 
-  return({hashavatars,creators,nfts,loadingNFTs,myNfts,totalSupply,getMetadata})
+  },[provider,netId,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply,getTotalSupply])
+
+  return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }
 
 export default useContract;

@@ -19,6 +19,7 @@ const useAppState = () => {
     netId: null,
     nfts: [],
     myNfts: [],
+    myOwnedNfts: [],
     creators: []
   }
 
@@ -53,6 +54,9 @@ const getActions = (setState) => ({
   },
   setMyNfts: (myNfts) => {
     setState((state) => ({ ...state, myNfts: myNfts }))
+  },
+  setMyOwnedNfts: (myOwnedNfts) => {
+    setState((state) => ({ ...state, myOwnedNfts: myOwnedNfts }))
   },
   setLoadingNFTs: (loading) => {
     setState((state) => ({ ...state, loadingNFTs: loading }))
