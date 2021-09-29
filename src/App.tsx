@@ -44,7 +44,6 @@ import FeedBackPage from './pages/Feedback_OrbitDB';
 import OwnedAvatars from './pages/OwnedAvatars';
 import AllAvatars from './pages/AllAvatars';
 import Games from './pages/Games';
-import HashAssault from './components/games/HashAssault';
 
 import Collections from './pages/Collections';
 
@@ -116,15 +115,16 @@ class App extends React.Component {
     if(this.state.itoken){
       this.initiateContracts();
     }
+    try{
+      this.initOrbitDB()
+    } catch(err){
+      console.log(err)
+    }
+
     this.setState({
       loading: false
     });
-    try{
-      await this.initOrbitDB();
-      await this.initLibp2p();
-    } catch(err){
-      console.log(err);
-    }
+
   }
 
 
@@ -226,6 +226,11 @@ class App extends React.Component {
         await this.initiateContracts();
       }
     } catch(err){
+      this.setState({
+        savedBlobs: [],
+        creators: [],
+        likes: []
+      })
       web3Modal.clearCachedProvider();
       this.initWeb3();
     }
@@ -242,24 +247,22 @@ class App extends React.Component {
     let promises = [];
     const results = await this.checkTokens();
 
-    for(let res of results){
-      promises.push(this.handleEvents(null,res));
+    for(let i = results.length - 1;i >= 0; i--){
+      promises.push(this.handleEvents(null,results[i]));
 
-      this.handleLikes(null,res);
+      this.handleLikes(null,results[i]);
+      if(i % 10 === 0){
+        await Promise.allSettled(promises);
+        this.setState({
+          savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
+                          const x = JSON.parse(xstr)
+                          const y = JSON.parse(ystr)
+                          return y.returnValues._id - x.returnValues._id;
+                      })
+        });
+      }
     }
-    /*
-    Promise.all(promises).then(() => {
-      this.setState({
-        loadingAvatars: false,
-        savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
-                        const x = JSON.parse(xstr)
-                        const y = JSON.parse(ystr)
-                        return y.returnValues._id - x.returnValues._id;
-                    })
-      });
-    });
-    */
-    await Promise.all(promises);
+
     this.setState({
       loadingAvatars: false,
       savedBlobs: this.state.savedBlobs.sort(function(xstr, ystr){
@@ -268,7 +271,7 @@ class App extends React.Component {
                       return y.returnValues._id - x.returnValues._id;
                   })
     });
-//
+
     this.state.itoken.events.TransferSingle({
       filter: {
         from: '0x0000000000000000000000000000000000000'
@@ -289,10 +292,7 @@ class App extends React.Component {
       throw('Err')
     }
     const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
-    const svgImage = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text();
-    //const metadataToken = await this.state.ipfs.get(uriToken.replace("ipfs://",""))
-    //alert(metadataToken)
-    //const img = await this.state.ipfs.get(metadataToken.image.replace("ipfs://",""));
+    fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
     return(metadataToken)
   }
   checkTokens = async () => {
@@ -356,49 +356,7 @@ class App extends React.Component {
     }
   }
   initLibp2p = async () => {
-    /*
-    const libp2p = await Libp2p.create({
-      addresses: {
-        // Add the signaling server address, along with our PeerId to our multiaddrs list
-        // libp2p will automatically attempt to dial to the signaling server so that it can
-        // receive inbound connections from other peers
 
-        listen: [
-          '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star',
-          '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star'
-        ]
-      },
-      modules: {
-        transport: [Websockets, WebRTCStar],
-        connEncryption: [NOISE],
-        streamMuxer: [Mplex],
-        peerDiscovery: [Bootstrap],
-        pubsub: Gossipsub
-      },
-      config: {
-        peerDiscovery: {
-          // The `tag` property will be searched when creating the instance of your Peer Discovery service.
-          // The associated object, will be passed to the service when it is instantiated.
-          [Bootstrap.tag]: {
-            enabled: true,
-            list: [
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
-              '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt'
-            ]
-          }
-        },
-        pubsub: {
-          enabled: true,
-          emitSelf: true,
-          canRelayMessage: true
-        }
-      }
-    });
-    await libp2p.start();
-    */
     const libp2p = this.state.ipfs;
     const room = new Room(libp2p, 'hashavatars-dapp-peers-online')
 
@@ -434,79 +392,53 @@ class App extends React.Component {
   }
   initOrbitDB = async () => {
 
-    const ipfs = await IPFS.create({
-        EXPERIMENTAL: {
-          pubsub: true
-        },
-        config: {
-          Addresses: {
-            Swarm: [
-              // Use IPFS dev signal server
-              // Prefer websocket over webrtc
-              //
-              // Websocket:
-              // '/dns4/ws-star-signal-2.servep2p.com/tcp/443//wss/p2p-websocket-star',
-              '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
-              '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
-              '/dns4/webrtc-star.discovery.libp2p.io/tcp/443/wss/p2p-webrtc-star/',
-              // Local signal server
-              //'/ip4/127.0.0.1/tcp/4711/ws/p2p-websocket-star'
-              //
-              // WebRTC:
-              //'/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star',
-              // Local signal server
-              // '/ip4/127.0.0.1/tcp/1337/ws/p2p-webrtc-star'
-            ]
-          }
-        }
+    try{
+      const ipfs = await IPFS.create({
+          EXPERIMENTAL: {
+            pubsub: true
+          },
+          config: {
+            Addresses: {
+              Swarm: [
+                // Use IPFS dev signal server
+                // Prefer websocket over webrtc
+                //
 
-    });
-
-    //const ipfs = await IPFS.create({ repo: "./ipfs" })
-    const orbitdb = await OrbitDB.createInstance(ipfs);
-    const options = {
-       // Give write access to everyone
-       accessController: {
-         write: ['*']
-       }
-     }
-
-    const db = await orbitdb.feed('/orbitdb/zdpuAqX6oSntSdJTLAHvZis3wpLUfa5PoQ5hnvqBYq2AKzCGj/feedbacks', options)
-    await db.load();
-    this.setState({
-      ipfs: ipfs,
-      orbitdb: orbitdb,
-      db: db
-    });
-    const posts = db.iterator({ limit: -1, reverse: true })
-      .collect()
-      .map((e) => {
-        return(
-          new Promise(async (resolve,reject) => {
-            if(e.payload.value.from !== null){
-              e.payload.value.profile = await getLegacy3BoxProfileAsBasicProfile(e.payload.value.from);
+                // Websocket:
+                // '/dns4/ws-star-signal-2.servep2p.com/tcp/443//wss/p2p-websocket-star',
+                '/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+                '/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/',
+                '/dns4/webrtc-star.discovery.libp2p.io/tcp/443/wss/p2p-webrtc-star/',
+                // Local signal server
+                //'/ip4/127.0.0.1/tcp/4711/ws/p2p-websocket-star'
+                //
+                // WebRTC:
+                //'/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star',
+                // Local signal server
+                // '/ip4/127.0.0.1/tcp/1337/ws/p2p-webrtc-star'
+              ]
             }
-            resolve(e.payload.value);
           }
-        )
-      )
-    });
 
-
-    this.setState({
-        posts: (await Promise.all(posts))
-                .sort(function(x, y){
-                  return y.timestamp - x.timestamp;
-                })
-    });
-    db.events.on('peer', (peer) => {console.log(`Connected to ${peer}`)} )
-    db.events.on('replicate.progress', (address, hash, entry, progress, have) => {
-      this.setState({
-        loadingFeedbacks: true
       });
-    });
 
-    db.events.on('replicated', async (address) => {
+      this.setState({
+        ipfs: ipfs
+      });
+      const orbitdb = await OrbitDB.createInstance(ipfs);
+      const options = {
+         // Give write access to everyone
+         accessController: {
+           write: ['*']
+         }
+       }
+
+      const db = await orbitdb.feed('/orbitdb/zdpuAqX6oSntSdJTLAHvZis3wpLUfa5PoQ5hnvqBYq2AKzCGj/feedbacks', options)
+      await db.load();
+      this.setState({
+        orbitdb: orbitdb,
+        db: db
+      });
       const posts = db.iterator({ limit: -1, reverse: true })
         .collect()
         .map((e) => {
@@ -519,20 +451,51 @@ class App extends React.Component {
             }
           )
         )
-      })
+      });
 
 
       this.setState({
-          loadingFeedbacks: false,
           posts: (await Promise.all(posts))
                   .sort(function(x, y){
                     return y.timestamp - x.timestamp;
                   })
       });
-    })
+      db.events.on('peer', (peer) => {console.log(`Connected to ${peer}`)} )
+      db.events.on('replicate.progress', (address, hash, entry, progress, have) => {
+        this.setState({
+          loadingFeedbacks: true
+        });
+      });
 
-    console.log("OrbitDB initiated");
+      db.events.on('replicated', async (address) => {
+        const posts = db.iterator({ limit: -1, reverse: true })
+          .collect()
+          .map((e) => {
+            return(
+              new Promise(async (resolve,reject) => {
+                if(e.payload.value.from !== null){
+                  e.payload.value.profile = await getLegacy3BoxProfileAsBasicProfile(e.payload.value.from);
+                }
+                resolve(e.payload.value);
+              }
+            )
+          )
+        })
 
+
+        this.setState({
+            loadingFeedbacks: false,
+            posts: (await Promise.all(posts))
+                    .sort(function(x, y){
+                      return y.timestamp - x.timestamp;
+                    })
+        });
+      })
+      this.initLibp2p();
+      console.log("OrbitDB initiated");
+    } catch(err){
+      console.log(err)
+    }
     return;
   }
 
@@ -591,6 +554,11 @@ class App extends React.Component {
       }
       if(!this.state.savedBlobs.includes(JSON.stringify(obj))){
         this.state.savedBlobs.unshift(JSON.stringify(obj));
+        this.state.savedBlobs = this.state.savedBlobs.sort(function(xstr, ystr){
+                                    const x = JSON.parse(xstr)
+                                    const y = JSON.parse(ystr)
+                                    return y.returnValues._id - x.returnValues._id;
+                                })
         this.forceUpdate();
       }
     } catch (err) {
@@ -793,28 +761,6 @@ class App extends React.Component {
                             checkTokens={this.checkTokens}
                             initLibp2p={this.initLibp2p}
                             {...this.state}
-                          />
-                        )
-                      )
-                    }
-                    </>
-                  )
-                }
-              }/>
-              <Route path={"/gameTest"} render={() => {
-                  return(
-                    <>
-                    {
-                      (
-                        this.state.itoken &&
-                        (
-                          <HashAssault
-                            itoken={this.state.itoken}
-                            web3={this.state.web3}
-                            getMetadata={this.getMetadata}
-                            initWeb3={this.initWeb3}
-                            checkTokens={this.checkTokens}
-                            coinbase={this.state.coinbase}
                           />
                         )
                       )

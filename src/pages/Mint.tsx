@@ -48,7 +48,7 @@ class MintPage extends React.Component {
     clothesColor: ["Black", "Blue01", "Blue02", "Blue03", "Gray01", "Gray02", "Heather", "PastelBlue", "PastelGreen", "PastelOrange", "PastelRed", "PastelYellow", "Pink", "Red"],
     eye: ["Close", "Cry", "Default", "Dizzy", "EyeRoll", "Happy", "Hearts", "Side", "Squint", "Surprised", "Wink"],
     eyebrown: ["Angry", "AngryNatural", "Default", "DefaultNatural", "FlatNatural", "RaisedExcited", "RaisedExcitedNatural", "SadConcerned", "SadConcernedNatural", "UnibrowNatural", "UpDown"],
-    mouth: ["Concerned", "Default", "Disbelief", "Eating", "Grimace", "Sad", "ScreamOpen", "Serious", "Smile", "Tongue", "Twinkle"],
+    mouth: ["Concerned", "Default", "Disbelief", "Eating", "Sad", "ScreamOpen", "Serious", "Smile", "Twinkle"],
     skin: ["Tanned", "Yellow", "Pale", "Light", "Brown", "DarkBrown"],
     savedBlobs: [],
     allHashAvatars: [],
@@ -118,7 +118,7 @@ class MintPage extends React.Component {
         clotheColor : this.state.clothesColor[Math.floor(Math.random() * this.state.clothesColor.length)],
         eyeType: this.state.eye[Math.floor(Math.random() * this.state.eye.length)],
         eyebrowType: this.state.eyebrown[Math.floor(Math.random() * this.state.eyebrown.length)],
-        mounthType: this.state.mouth[Math.floor(Math.random() * this.state.mouth.length)],
+        mouthType: this.state.mouth[Math.floor(Math.random() * this.state.mouth.length)],
         skinColor: this.state.skin[Math.floor(Math.random() * this.state.skin.length)],
       }
     });
@@ -224,8 +224,8 @@ class MintPage extends React.Component {
                 value: this.state.avatar.eyebrowType
             },
             {
-                trait_type: "Mounth Type",
-                value: this.state.avatar.mounthType
+                trait_type: "Mouth Type",
+                value: this.state.avatar.mouthType
             },
             {
                 trait_type: "Skin Color",
@@ -239,7 +239,6 @@ class MintPage extends React.Component {
       }
       const res = await ipfs.add(JSON.stringify(metadata));
       const uri = res[0].hash;
-      console.log(uri)
       //const uri = res.path;
       this.setState({
         mintingMsg: <p><small>Approve transaction ... </small></p>
@@ -353,9 +352,9 @@ class MintPage extends React.Component {
         if(eyebrowIndex > this.state.eyebrown.length - 1){
           eyebrowIndex = eyebrowIndex - (this.state.eyebrown.length - 1)*(eyebrowIndex/(this.state.eyebrown.length - 1));
         }
-        let mounthTypeIndex = (Number(dna.substring(18,20)) % 11 + 1).toFixed(0);
-        if(mounthTypeIndex > this.state.mouth.length - 1){
-          mounthTypeIndex = mounthTypeIndex - (this.state.mouth.length - 1)*(mounthTypeIndex/(this.state.mouth.length - 1));
+        let mouthTypeIndex = (Number(dna.substring(18,20)) % 11 + 1).toFixed(0);
+        if(mouthTypeIndex > this.state.mouth.length - 1){
+          mouthTypeIndex = mouthTypeIndex - (this.state.mouth.length - 1)*(mouthTypeIndex/(this.state.mouth.length - 1));
         }
         let skinTypeIndex = (Number(dna.substring(20,21)) % 6 + 1).toFixed(0);
         if(skinTypeIndex > this.state.skin.length - 1){
@@ -372,7 +371,7 @@ class MintPage extends React.Component {
           clotheColor : this.state.clothesColor[clotheColorIndex],
           eyeType: this.state.eye[eyeTypeIndex],
           eyebrowType: this.state.eyebrown[eyebrowIndex],
-          //mouthType: this.state.mouth[mounthTypeIndex],
+          mouthType: this.state.mouth[mouthTypeIndex],
           skinColor: this.state.skin[skinTypeIndex],
           name: e.target.value.trim(),
           dna: dna

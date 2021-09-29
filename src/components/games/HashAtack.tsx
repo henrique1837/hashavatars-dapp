@@ -48,7 +48,7 @@ class MainScene extends Phaser.Scene {
       this.load.image('player', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
       this.load.image('bomb', "https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF");
       this.load.image('clone',metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-      this.load.image('platform', 'https://ipfs.io/ipfs/QmdwU65egQPGZiwdWX7Bkjt442n99xd1imA1gKtCQXjXNd');
+      this.load.image('platform', 'https://ipfs.io/ipfs/bafkreiaz6syhyt45764hiiqm75tkkuwvfczzqgzcl6bugkjfh6sru4meyy');
 
   }
   create () {

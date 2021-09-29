@@ -107,9 +107,12 @@ class OwnedAvatars extends React.Component {
                 <Divider />
                 <HStack spacing={2} style={{overflowX: 'auto',maxWidth: document.body.clientWidth - document.body.clientWidth*0.2}} id='hstack_profiles'>
                 {
-                  !this.props.loadingAvatars &&
+                  !this.props.loading &&
                   this.props.creators?.map((string) => {
                     const obj = JSON.parse(string);
+                    if(this.props.loadingAvatars){
+                      return;
+                    }
                     return(
                       <LazyLoad>
                       <Box>
@@ -195,7 +198,7 @@ class OwnedAvatars extends React.Component {
             }
             {
               (
-                this.props.savedBlobs.length === 0 && !this.props.loadingAvatars ?
+                this.props.savedBlobs.length === 0 && !this.props.loading ?
                 (
                   <Center>
                    <VStack spacing={4}>
@@ -218,7 +221,6 @@ class OwnedAvatars extends React.Component {
                   >
 
                   {
-                    !this.props.loadingAvatars &&
                     this.props.savedBlobs?.map((string) => {
                       const blob = JSON.parse(string);
                       if(this.state.filterBy && blob.creator !== this.state.filterBy.address){

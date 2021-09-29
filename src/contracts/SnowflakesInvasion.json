@@ -1,6 +1,6 @@
 {
   "xdai": "0x022E2426227E510123aABaFf4108Ddb6f59c2f8a",
-  "rinkeby": "0x70d3B19a09fEdBe6F23F140D857701dBb263dBf3",
+  "rinkeby": "0xDc3F5dB163C752478FfeB25159AFD0504CC2B49b",
   "abi": [
 	{
 		"anonymous": false,
@@ -31,10 +31,22 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "address",
 				"name": "player",
 				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "collectible",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
 			}
 		],
 		"name": "PlayerJoined",
@@ -44,10 +56,22 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "address",
 				"name": "player",
 				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "collectible",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
 			}
 		],
 		"name": "PlayerLeft",
@@ -89,35 +113,6 @@
 		],
 		"name": "PlayerMoved",
 		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "getTokenPos",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "x",
-				"type": "uint8"
-			},
-			{
-				"internalType": "uint8",
-				"name": "y",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"inputs": [
@@ -256,10 +251,44 @@
 				"internalType": "contract IERC20",
 				"name": "power",
 				"type": "address"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "movement",
+				"type": "address"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "stamina",
+				"type": "address"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "canMoveToken",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
 	},
 	{
 		"inputs": [
@@ -275,6 +304,59 @@
 				"internalType": "contract IERC1155",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "getMovementPoints",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "x",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "getTokenPos",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
 			}
 		],
 		"stateMutability": "view",
@@ -382,5 +464,4 @@
 		"type": "function"
 	}
 ]
-
 }

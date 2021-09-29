@@ -25,6 +25,7 @@ import {
   Td,
   TableCaption,
   TabPanel,
+  Tooltip,
   LinkBox,
   LinkOverlay,
   SimpleGrid,
@@ -44,7 +45,14 @@ import {
   PopoverCloseButton,
   Avatar
 } from "@chakra-ui/react"
-import { ExternalLinkIcon,ArrowRightIcon,ChevronDownIcon,ChevronUpIcon,WarningIcon } from '@chakra-ui/icons'
+import {
+    ExternalLinkIcon,
+    ArrowRightIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+    WarningIcon,
+    RepeatClockIcon
+  } from '@chakra-ui/icons'
 import ERC1155 from '../../contracts/ItemsERC1155.json'
 
 class GamePage extends Component {
@@ -76,48 +84,77 @@ class GamePage extends Component {
       filter: {},
       fromBlock: 'latest'
     },this.handleEvents);
+    this.props.snowflakesInvasion.events.PlayerJoined({
+      filter: {player: this.props.coinbase,collectible: this.props.itoken.options.address},
+      fromBlock: 'latest'
+    },async (err,res) => {
+
+      const id = res.returnValues.tokenId;
+      this.state.myHashAvatars = this.state.myHashAvatars.filter(str => {
+        const obj = JSON.parse(str);
+        return Number(obj.returnValues._id) !== Number(id)
+      });
+      await this.forceUpdate();
+
+    });
+    this.props.snowflakesInvasion.events.PlayerLeft({
+      filter: {player: this.props.coinbase,collectible: this.props.itoken.options.address},
+      fromBlock: 'latest'
+    },(err,res) => {
+      const id = res.returnValues.tokenId;
+      this.props.savedBlobs.map(async str => {
+        const obj = JSON.parse(str);
+
+        if(this.props.coinbase && Number(id) === Number(res.returnValues._id)){
+          const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,id).call();
+          if(!this.state.myHashAvatars.includes(JSON.stringify(obj)) &&
+             balance > 0){
+            this.state.myHashAvatars.push(JSON.stringify(obj));
+            this.forceUpdate();
+
+          }
+
+        }
+      })
+      this.state.spawn = this.state.spawn.filter(str => {
+        const obj = JSON.parse(str);
+        return Number(obj.tokenId) !== Number(id)
+      })
+      this.forceUpdate();
+    });
     this.setState({
       approved: approved
     });
     const promisesSF = [];
     const lastId = await this.checkTokensSnowflakes();
 
-    for(let i = 0; i < lastId; i++){
-      promisesSF.push(this.checkTokensPos(this.state.hashAvatars,i));
+    for(let i = 1; i <= lastId; i++){
+      promisesSF.push(this.checkTokensPos(this.state.snowFlakes,i));
     }
     await Promise.all(promisesSF)
-    setInterval(async () => {
-      if(this.props.savedBlobs.length !== this.state.allHashAvatars.length){
-        this.state.allHashAvatars = this.props.savedBlobs;
-        this.state.allHashAvatars.map(async str => {
-          const obj = JSON.parse(str);
-          if(this.props.coinbase){
-            const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,obj.returnValues._id).call();
 
-            if(!this.state.myHashAvatars.includes(JSON.stringify(obj)) &&
-               balance > 0){
-              this.state.myHashAvatars.push(JSON.stringify(obj));
-            }
+    this.props.savedBlobs.map(async str => {
+      const obj = JSON.parse(str);
+      if(this.props.coinbase){
+        const balance = await this.props.itoken.methods.balanceOf(this.props.coinbase,obj.returnValues._id).call();
 
-          }
-        })
-        this.forceUpdate();
-      } else if(!this.state.checkedTokensPositions) {
-        this.setState({
-          checkedTokensPositions: true
-        })
-        const promises = [];
-        for(let i = 0;i<this.state.allHashAvatars.length;i++){
-          //await this.checkTokensPos(this.props.itoken,i);
-          promises.push(this.checkTokensPos(this.props.itoken,i))
+        if(!this.state.myHashAvatars.includes(JSON.stringify(obj)) &&
+           balance > 0){
+          this.state.myHashAvatars.push(JSON.stringify(obj));
         }
-        await Promise.all(promises);
-        this.setState({
-          loading: false,
-        });
-      }
 
-    },1000);
+      }
+    })
+    this.forceUpdate();
+    const promises = [];
+    for(let i = 1;i<=this.props.savedBlobs.length;i++){
+      //await this.checkTokensPos(this.props.itoken,i);
+      promises.push(this.checkTokensPos(this.props.itoken,i))
+    }
+    await Promise.all(promises);
+    this.setState({
+      loading: false,
+    });
 
 
   }
@@ -220,9 +257,24 @@ class GamePage extends Component {
     const playerAddress = await this.props.coinbase;
 
     const player = await this.props.snowflakesInvasion.methods.players(playerAddress).call();
+    const canMove = await this.props.snowflakesInvasion.methods.canMoveToken(playerAddress,id).call();
+    if(!canMove){
+      this.setState({
+        cantMoveTokenId: id
+      });
+      setTimeout(() => {
+        this.setState({
+          cantMoveTokenId: null
+        });
+      },10000);
+      this.forceUpdate();
+      return;
+    }
+    const movementPoints = await this.props.snowflakesInvasion.methods.getMovementPoints(playerAddress,id).call();
     const tokenPos = await this.props.snowflakesInvasion.methods.getTokenPos(playerAddress,id).call();
     this.setState({
       player: player,
+      movementPoints:movementPoints,
       tokenPos: tokenPos,
       tokenId: id,
     })
@@ -234,6 +286,7 @@ class GamePage extends Component {
     this.setState({
       tokenPos: null,
       tokenId: null,
+      movementPoints: null,
     })
 
   }
@@ -333,7 +386,7 @@ class GamePage extends Component {
             </Text>
           </Box>
           <Box style={{overflow: 'scroll',maxWidth: '1200px',maxHeight: '500px'}}>
-            <Table border="1" size="sm" style={{backgroundImage: `url('https://ipfs.io/ipfs/QmWEAoTDgFJ5K5WLoN3azbwD5dwbA3d8KKqSYxMUnbK8XT')`,  backgroundRepeat: 'no-repeat',  backgroundSize: 'cover' , backgroundPosition: 'center'}}>
+            <Table size="sm" style={{backgroundImage: `url('https://ipfs.io/ipfs/QmWEAoTDgFJ5K5WLoN3azbwD5dwbA3d8KKqSYxMUnbK8XT')`,  backgroundRepeat: 'no-repeat',  backgroundSize: 'cover' , backgroundPosition: 'center'}}>
               <Thead>
                 <Tr>
                   <Th>
@@ -345,10 +398,19 @@ class GamePage extends Component {
                         const obj = JSON.parse(str);
                         return(
                           <VStack spacing={1}>
-                          <Avatar src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                          <Tooltip label={obj.metadata.name} aria-label={obj.metadata.name}>
+                            <Avatar src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                          </Tooltip>
+
                           {
                             !this.state.tokenId &&
-                            <Button onClick={() => {this.selectToken(obj.tokenId)}} size="xs"><ArrowRightIcon/></Button>
+                            (
+                              this.state.cantMoveTokenId === obj.tokenId ?
+                              <RepeatClockIcon color="red"/> :
+                              <Button onClick={() => {this.selectToken(obj.tokenId)}} size="xs"><ArrowRightIcon/></Button>
+
+                            )
+
                           }
                           </VStack>
                         )
@@ -381,7 +443,9 @@ class GamePage extends Component {
 
                       return(
                         <Th>
-                          <Avatar src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                          <Tooltip label={obj.metadata.name} aria-label={obj.metadata.name}>
+                            <Avatar src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                          </Tooltip>
                           <Button onClick={() => {this.respawn(obj.returnValues._id)}} size="xs">Spawn</Button>
                         </Th>
                       )
@@ -415,11 +479,13 @@ class GamePage extends Component {
                           {
                             this.state.x.map(x => {
                               return(
-                                <Td style={{border: "1px solid"}}>
+                                <Td>
                                 <Center>
                                   {
                                     this.state.positions[`${x}-${y}`] &&
-                                    <Avatar src={this.state.positions[`${x}-${y}`].metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                                    <Tooltip label={this.state.positions[`${x}-${y}`].metadata.name} aria-label={this.state.positions[`${x}-${y}`].metadata.name}>
+                                      <Avatar src={this.state.positions[`${x}-${y}`].metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                                    </Tooltip>
                                   }
 
                                 </Center>
@@ -439,19 +505,18 @@ class GamePage extends Component {
                           {
                             this.state.x.map(x => {
                               return(
-                                <Td style={{border: "1px solid"}}>
+                                <Td>
                                 <Center>
                                   {
                                     (
                                       this.state.tokenId &&
-                                      (Number(this.state.tokenPos.x) >= x - 3) &&
-                                      (Number(this.state.tokenPos.y) >= y - 3) &&
-                                      (Number(this.state.tokenPos.x) <= x + 3) &&
-                                      (Number(this.state.tokenPos.y) <= y + 3) &&
+                                      (Number(this.state.tokenPos.x) >= x - this.state.movementPoints) &&
+                                      (Number(this.state.tokenPos.y) >= y - this.state.movementPoints) &&
+                                      (Number(this.state.tokenPos.x) - x <= this.state.movementPoints) &&
+                                      (Number(this.state.tokenPos.y) - y <= this.state.movementPoints) &&
                                       this.state.positions[`${x}-${y}`]?.collectible !== this.state.player.collectible &&
                                       (
-                                        this.state.positions[`${x}-${y}`]?.tokenId === this.state.tokenId ?
-                                        <Button onClick={this.unselectToken} size="xs"><ChevronUpIcon /></Button> :
+                                        this.state.positions[`${x}-${y}`]?.tokenId !== this.state.tokenId &&
                                         this.state.positions[`${x}-${y}`]?.collectible ?
                                         <Button onClick={() => {this.move(x,y)}} size="xs" colorScheme="red"><ChevronDownIcon /></Button> :
                                         <Button onClick={() => {this.move(x,y)}} size="xs"><ChevronDownIcon /></Button>
@@ -462,12 +527,22 @@ class GamePage extends Component {
                                     this.state.positions[`${x}-${y}`] &&
                                     (
                                       <>
-                                      <Avatar src={this.state.positions[`${x}-${y}`].metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                                      <Tooltip label={this.state.positions[`${x}-${y}`].metadata.name} aria-label={this.state.positions[`${x}-${y}`].metadata.name}>
+                                        <Avatar src={this.state.positions[`${x}-${y}`].metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} size="md"/>
+                                      </Tooltip>
                                       {
 
                                         this.state.positions[`${x}-${y}`].owner.toLowerCase() === this.props.coinbase.toLowerCase() &&
-                                        !this.state.tokenId &&
-                                        <Button onClick={() => {this.selectToken(this.state.positions[`${x}-${y}`].tokenId)}} size="xs"><ArrowRightIcon /></Button>
+                                        (
+                                          !this.state.tokenId ?
+                                          (
+                                            this.state.cantMoveTokenId === this.state.positions[`${x}-${y}`].tokenId ?
+                                            <RepeatClockIcon color="red"/> :
+                                            <Button onClick={() => {this.selectToken(this.state.positions[`${x}-${y}`].tokenId)}} size="xs"><ArrowRightIcon /></Button>
+                                          ) :
+                                          this.state.tokenId === this.state.positions[`${x}-${y}`].tokenId &&
+                                          <Button onClick={this.unselectToken} size="xs"><ChevronUpIcon /></Button>
+                                        )
 
                                       }
                                       </>
