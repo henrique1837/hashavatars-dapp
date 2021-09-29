@@ -1,6 +1,7 @@
 import React from "react";
 import { Container,Row,Col,Image } from 'react-bootstrap';
 import { Link,IconLink } from '@aragon/ui'
+import { addresses } from "@project/contracts";
 
 function Home(props){
   return(
@@ -15,9 +16,11 @@ function Home(props){
             <p>1 xDai = 1 HashAvatar</p>
             <br/>
             <p>The HashAvatar is built on xDai Chain, an Ethereum layer 2 sidechain that provides transactions cheaper and faster in a secure way, you must <Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" isExternal>set your wallet to xDai Chain network <IconLink mx="2px" /></Link> in order to join.</p>
+            <p>xDai ERC1155 at <Link href={`https://blockscout.com/xdai/mainnet/address/${addresses.erc1155.xdai}`} external>{addresses.erc1155.xdai} <IconLink /></Link></p>
 
             <br/>
             <p>You can also use it in rinkeby testnetwork to test.</p>
+            <p>Rinkeby ERC1155 at <Link href={`https://rinkeby.etherscan.io/address/${addresses.erc1155.rinkeby}`} external>{addresses.erc1155.rinkeby} <IconLink mx="2px" /></Link></p>
 
             <br/>
             <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <IconLink mx="2px" /></Link> and can be copied / modified by anyone.</p>

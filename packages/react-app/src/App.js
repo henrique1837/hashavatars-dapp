@@ -14,6 +14,9 @@ import { AppContext, useAppState } from './hooks/useAppState'
 import Home from "./screens/Home";
 import Mint from "./screens/Mint";
 import Profile from "./screens/Profile";
+import GamesPage from "./screens/Games";
+
+//import Feedbacks from "./screens/Feedbacks";
 
 import AllAvatars from "./screens/AllAvatars";
 
@@ -82,7 +85,9 @@ function App() {
     totalSupply,
     myNftsLength,
     nftsLength,
-    previousCoinbase
+    previousCoinbase,
+    myOwnedNfts,
+    myOwnedNftsLength
   ]);
   return (
     <Main>
@@ -96,7 +101,11 @@ function App() {
         <Box>
           {
             netId !== 4 && netId !== 0x64 && coinbase &&
-            <center>Wrong network</center>
+            <center>
+              <p><b>Wrong network</b></p>
+              <p><Link href="https://www.xdaichain.com/for-users/wallets/metamask/metamask-setup" external>Please connect to xDai network <IconLink /></Link></p>
+            </center>
+
           }
           <Switch>
 
@@ -104,7 +113,9 @@ function App() {
             <Route path="/all-avatars" component={AllAvatars}/>
             <Route path="/mint" component={Mint}/>
             <Route path="/profile" component={Profile}/>
+            <Route path="/games" component={GamesPage}/>
 
+            {/*<Route path="/feedbacks" component={Feedbacks}/>*/}
             <Route render={() => {
 
               return(
@@ -120,7 +131,7 @@ function App() {
           <Link href="https://t.me/thehashavatars" external>Telegram <IconLink /></Link>
           <Link href="https://twitter.com/thehashavatars" external>Twitter <IconLink /></Link>
           <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github <IconLink /></Link>
-          <Link href="https://dweb.link/ipfs/QmVZ5zkKeg7YimShgbyjpaybJ86RUzZdJiTnykGTGQ3iNi" external>Previous Version  <IconLink /></Link>
+          <Link href="https://dweb.link/ipfs/bafybeidakaaxs7hgnpdcu6t67cvajys3jyj3jcrkoi5teji564jd74cuw4" external>Previous Version  <IconLink /></Link>
 
         </footer>
 

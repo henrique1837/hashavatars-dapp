@@ -1,6 +1,7 @@
-type ExampleEntity @entity {
+type HashAvatar @entity {
   id: ID!
   count: BigInt!
+  metadata: String!
   _owner: Bytes! # address
-  _operator: Bytes! # address
+  _creator: Bytes! # address
 }

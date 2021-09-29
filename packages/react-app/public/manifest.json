@@ -1,6 +1,6 @@
 {
-  "short_name": "Eth App",
-  "name": "Create Eth App Sample",
+  "short_name": "HashAvatars",
+  "name": "HashAvatars - generate your avatar as NFT on xDai network",
   "icons": [
     {
       "src": "favicon.ico",

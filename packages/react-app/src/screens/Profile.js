@@ -1,14 +1,12 @@
-import React,{useState} from "react";
-import { Container,Row,Col,Image,Popover,OverlayTrigger,Spinner } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar } from '@aragon/ui'
+import React from "react";
+import { Container,Row,Col,Image } from 'react-bootstrap';
+import { Link,IconLink,IdentityBadge,Split,ProgressBar } from '@aragon/ui'
 
 import { useAppContext } from '../hooks/useAppState'
 import useProfile from '../hooks/useProfile';
 
 function Profile(){
   const { state } = useAppContext();
-  const [selected, setSelected] = useState(0)
-  const [filtered,setFiltered] = useState();
   const {profile} = useProfile();
   return(
     <>

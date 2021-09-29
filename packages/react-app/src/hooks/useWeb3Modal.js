@@ -3,7 +3,7 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
-import WalletConnectProvider from "@walletconnect/web3-provider";
+//import WalletConnectProvider from "@walletconnect/web3-provider";
 
 // Enter a valid infura key here to avoid being rate limited
 // You can get a key for free at https://infura.io/register
@@ -47,7 +47,13 @@ function useWeb3Modal(config = {}) {
     cacheProvider: true,
     providerOptions
   });
-
+  const logoutOfWeb3Modal = useCallback(
+    async function () {
+      await web3Modal.clearCachedProvider();
+      window.location.reload();
+    },
+    [web3Modal],
+  );
   // Open wallet selection modal.
   const loadWeb3Modal = useCallback(async () => {
 
@@ -79,15 +85,9 @@ function useWeb3Modal(config = {}) {
       logoutOfWeb3Modal();
     }
 
-  }, [web3Modal,autoLoad,coinbase,netId,provider]);
+  }, [web3Modal,logoutOfWeb3Modal]);
 
-  const logoutOfWeb3Modal = useCallback(
-    async function () {
-      await web3Modal.clearCachedProvider();
-      window.location.reload();
-    },
-    [web3Modal],
-  );
+
 
 
   // If autoLoad is enabled and the the wallet had been loaded before, load it automatically now.
@@ -111,8 +111,7 @@ function useWeb3Modal(config = {}) {
      loadWeb3Modal,
      setAutoLoaded,
      web3Modal.cachedProvider,
-     noProvider,
-     logoutOfWeb3Modal
+     noProvider
    ]);
 
   return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile});

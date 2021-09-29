@@ -2,7 +2,7 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Image,Spinner } from 'react-bootstrap';
-import { Button,TextInput,TransactionBadge,ProgressBar } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar,IconLink } from '@aragon/ui';
 import Avatar from 'avataaars';
 import IPFS from 'ipfs-http-client-lite';
 
@@ -14,13 +14,15 @@ const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
 function Mint(){
-  const {provider,loadWeb3Modal,coinbase,netId} = useWeb3Modal();
+  const {loadWeb3Modal,coinbase} = useWeb3Modal();
   const {getMetadata,getTotalSupply} = useContract();
   const { state } = useAppContext();
 
   const [avatar,setAvatar] = useState();
   const [minting,setMinting] = useState(false);
   const [canMint,setCanMint] = useState(true);
+  const [focused,setFocused] = useState(false);
+
   const [mintingMsg,setMintingMsg] = useState(false);
   const [pendingTx,setPendingTx] = useState(false);
 
@@ -307,7 +309,12 @@ function Mint(){
     if(!avatar && !svg){
       randomize();
     }
-  },[avatar,randomize,svg])
+    if(document.getElementById("input_name") && !focused){
+      setFocused(true);
+      document.getElementById("input_name").focus();
+      document.getElementById("input_name").select();
+    }
+  },[avatar,randomize,svg,focused,document.getElementById("input_name")])
 
   return(
     <>
@@ -347,7 +354,11 @@ function Mint(){
                 )
 
             ) :
-            <Button onClick={loadWeb3Modal}>Connect Wallet</Button>
+            !coinbase && window.ethereum ?
+            <Button onClick={loadWeb3Modal}>Connect Wallet</Button> :
+            !window.ethereum && <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
+
+
           )
         }
         </center>

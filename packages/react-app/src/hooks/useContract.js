@@ -8,6 +8,8 @@ function useContract() {
 
   const {provider,coinbase,netId} = useWeb3Modal();
   const [hashavatars,setHashAvatars] = useState();
+  const [getData,setGetData] = useState();
+
   const [mints,setMints] = useState();
   const [totalSupply,setSupply] = useState();
   const [creators,setCreators] = useState([]);
@@ -21,7 +23,7 @@ function useContract() {
   const getMetadata = async(id,erc1155) => {
     const uriToken = await erc1155.methods.uri(id).call();
     if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-      throw(new Error({message: "err"}))
+      throw("Err")
     }
     const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
     fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
@@ -136,9 +138,8 @@ function useContract() {
       setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.xdai));
     }
     if(!mints && hashavatars && nfts.length === 0){
-      hashavatars.getPastEvents("TransferSingle",{
+      hashavatars.getPastEvents("URI",{
         filter: {
-          from: '0x0000000000000000000000000000000000000'
         },
         fromBlock: 0
       },async (err,events) => {
@@ -146,9 +147,8 @@ function useContract() {
       });
     }
     if(hashavatars && mints?.length !== nfts?.length){
-      hashavatars.events.TransferSingle({
+      hashavatars.events.URI({
         filter: {
-          from: '0x0000000000000000000000000000000000000'
         },
         fromBlock: 'latest'
       },(err,res) => {
@@ -159,7 +159,8 @@ function useContract() {
       });
     }
 
-    if(totalSupply && nfts?.length === 0){
+    if(totalSupply && nfts?.length === 0  && !getData){
+      setGetData(true);
       let promises = [];
       for(let i = totalSupply; i >= 0 ; i--){
         const res = {
@@ -183,7 +184,7 @@ function useContract() {
       getTotalSupply();
     }
 
-  },[provider,netId,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply,getTotalSupply])
+  },[provider,netId,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply,getTotalSupply,getData])
 
   return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }
