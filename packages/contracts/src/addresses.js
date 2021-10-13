@@ -6,6 +6,9 @@ const addresses = {
     rinkeby: "0xd1B57180FDB28d4169598702477b78407B26ce5F",
     xdai: "0x022E2426227E510123aABaFf4108Ddb6f59c2f8a",
     mainnet_bridged: "0xb74ca8bd02cc027a3f62f9a142cc195220c729cd"
+  },
+  hashHistories: {
+    rinkeby: "0x8679a799fc456262f49b97a7efabc7d0e06a4040",
   }
 };
 

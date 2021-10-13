@@ -1,7 +1,15 @@
-type HashAvatar @entity {
+type Token @entity {
   id: ID!
-  count: BigInt!
-  metadata: String!
-  _owner: Bytes! # address
-  _creator: Bytes! # address
+  tokenID: BigInt!
+  metadata: Bytes! 
+  metadataURI: String!
+  createdAtTimestamp: BigInt!
+  creator: User!
+  owner: User!
+}
+
+type User @entity {
+  id: ID!
+  tokens: [Token!]! @derivedFrom(field: "owner")
+  created: [Token!]! @derivedFrom(field: "creator")
 }

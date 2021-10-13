@@ -15,7 +15,8 @@
     ]
   },
   "dependencies": {
-    "@apollo/react-hooks": "^3.1.5",
+    "@apollo/react-hooks": "^4.0.0",
+    "@aragon/connect-react": "^0.7.0",
     "@aragon/ui": "^1.9.0",
     "@ceramicstudio/idx": "^0.12.2",
     "@ethersproject/contracts": "^5.0.5",

@@ -14,6 +14,9 @@ import { AppContext, useAppState } from './hooks/useAppState'
 import Home from "./screens/Home";
 import Mint from "./screens/Mint";
 import Profile from "./screens/Profile";
+//import DAO from "./screens/DAO";
+import Histories from "./screens/HashHistories";
+
 import GamesPage from "./screens/Games";
 
 //import Feedbacks from "./screens/Feedbacks";
@@ -114,6 +117,8 @@ function App() {
             <Route path="/mint" component={Mint}/>
             <Route path="/profile" component={Profile}/>
             <Route path="/games" component={GamesPage}/>
+            <Route path="/tokens/:id" component={Histories}/>
+
 
             {/*<Route path="/feedbacks" component={Feedbacks}/>*/}
             <Route render={() => {
@@ -128,10 +133,11 @@ function App() {
         </Box>
         </Router>
         <footer style={{textAlign: "center",marginTop: "50px"}}>
-          <Link href="https://t.me/thehashavatars" external>Telegram <IconLink /></Link>
-          <Link href="https://twitter.com/thehashavatars" external>Twitter <IconLink /></Link>
-          <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github <IconLink /></Link>
-          <Link href="https://dweb.link/ipfs/bafybeidakaaxs7hgnpdcu6t67cvajys3jyj3jcrkoi5teji564jd74cuw4" external>Previous Version  <IconLink /></Link>
+          <Link href="https://t.me/thehashavatars" external>Telegram<IconLink /></Link>
+          <Link href="https://twitter.com/thehashavatars" external>Twitter<IconLink /></Link>
+          <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github<IconLink /></Link>
+          <Link href="https://www.xpollinate.io/" external>Bridge<IconLink /></Link>
+          <Link href="https://dweb.link/ipfs/bafybeidakaaxs7hgnpdcu6t67cvajys3jyj3jcrkoi5teji564jd74cuw4" external>Previous Version<IconLink /></Link>
 
         </footer>
 

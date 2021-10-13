@@ -3,11 +3,11 @@ import { Container,Row,Col,Image } from 'react-bootstrap';
 import { Link,IconLink,IdentityBadge,Split,ProgressBar } from '@aragon/ui'
 
 import { useAppContext } from '../hooks/useAppState'
-import useProfile from '../hooks/useProfile';
+import useWeb3Modal from '../hooks/useWeb3Modal';
 
 function Profile(){
   const { state } = useAppContext();
-  const {profile} = useProfile();
+  const {profile} = useWeb3Modal();
   return(
     <>
 

@@ -292,10 +292,10 @@ function Mint(){
             setCanMint(false);
             return;
           }
-          const svg = ReactDOMServer.renderToString(<Avatar {...avatar} />);
+          setAvatar(av);
+          const svg = ReactDOMServer.renderToString(<Avatar {...av} />);
           setCanMint(true);
           setSVG(svg);
-          setAvatar(av);
 
       } catch(err){
         console.log(err)
@@ -355,7 +355,7 @@ function Mint(){
 
             ) :
             !coinbase && window.ethereum ?
-            <Button onClick={loadWeb3Modal}>Connect Wallet</Button> :
+            state.hashavatars && <Button onClick={loadWeb3Modal}>Connect Wallet</Button> :
             !window.ethereum && <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
 
 

@@ -8,16 +8,15 @@ dataSources:
     source:
       address: "0xd1B57180FDB28d4169598702477b78407B26ce5F"
       abi: HashAvatars
+      startBlock: 8339486
+
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
       language: wasm/assemblyscript
       entities:
-        - ApprovalForAll
-        - SecondarySaleFees
-        - TransferBatch
-        - TransferSingle
-        - URI
+        - Token
+        - User
       abis:
         - name: HashAvatars
           file: ./abis/HashAvatars.json

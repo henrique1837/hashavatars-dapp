@@ -70,7 +70,9 @@ function Menu(){
           <Link to="/all-avatars" style={{textDecoration: "none"}}>All Avatars</Link>,
           <Link to="/games" style={{textDecoration: "none"}}>Games</Link>,
           //<Link to="/feedbacks" style={{textDecoration: "none"}}>Feedbacks</Link>,
-          coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>
+          coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>,
+        //  coinbase && (netId===4) && <Link to="/dao" style={{textDecoration: "none"}}>DAO</Link>
+
         ]
       }
       selected={selected}
