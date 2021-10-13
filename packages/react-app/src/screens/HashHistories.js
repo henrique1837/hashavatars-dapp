@@ -1,6 +1,7 @@
 import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 import { useParams } from "react-router-dom";
+import { Link as RouterLink } from 'react-router-dom';
 
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
 import {
@@ -14,7 +15,8 @@ import {
   Modal,
   Bar,
   LoadingRing,
-  TransactionBadge
+  TransactionBadge,
+  BackButton
 } from '@aragon/ui';
 import IPFS from 'ipfs-http-client-lite';
 
@@ -136,7 +138,7 @@ function HashHistories(){
           setUris([...uris,string])
           return(string)
         });
-      
+
 
         setMetadata(metadataToken);
         if(coinbase){
@@ -222,7 +224,6 @@ function HashHistories(){
               <IdentityBadge
                 label={creator.profile?.name}
                 entity={creator.address}
-                connectedAccount
                 networkType={netId === 4 ? "rinkeby" : "xdai"}
                 popoverTitle={creator.profile?.name }
               />
@@ -242,6 +243,9 @@ function HashHistories(){
                 creator.profile?.url &&
                 <p><Link href={creator.profile?.url} external={true}>{creator.profile?.url} <IconLink  /></Link></p>
               }
+              <div style={{paddingTop:"60px"}}>
+              <BackButton as={RouterLink} to={"/all-avatars"} style={{textDecoration: "none"}} />
+              </div>
             </div>
           }
         </div>

@@ -1,6 +1,7 @@
 import React,{useState} from "react";
 import { Container,Row,Col,Image,Popover,OverlayTrigger,Spinner } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar } from '@aragon/ui'
+import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar,SyncIndicator } from '@aragon/ui'
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState'
 
@@ -134,8 +135,7 @@ function AllAvatars(){
                     <Col style={{paddingTop:'80px'}}>
 
 
-                    <Link href="">
-                    <OverlayTrigger trigger="click" placement="top" overlay={popover}>
+                    <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
                       <center>
                         <div>
                           <p><b>{obj.metadata.name}</b></p>
@@ -144,8 +144,7 @@ function AllAvatars(){
                           <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                         </div>
                       </center>
-                    </OverlayTrigger>
-                    </Link>
+                    </RouterLink>
 
                     </Col>
                   )
@@ -173,7 +172,7 @@ function AllAvatars(){
 
                   return(
                     <div>
-                    <Link href="" onClick={() => setFiltered(obj.address)}>
+                    <RouterLink to={`/profiles/${obj.address}`}>
 
                       <IdentityBadge
                         label={obj.profile?.name && obj.profile.name}
@@ -185,7 +184,7 @@ function AllAvatars(){
                               <EthIdenticon address={obj.address}/>
                         }
                       />
-                    </Link>
+                    </RouterLink>
 
                     </div>
                   )
@@ -198,7 +197,10 @@ function AllAvatars(){
           }
         />
 
-
+        {
+          state.loadingNFTs &&
+          <SyncIndicator />
+        }
       </Container>
     </>
   )

@@ -2,7 +2,7 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Image,Spinner } from 'react-bootstrap';
-import { Button,TextInput,TransactionBadge,ProgressBar,IconLink } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator } from '@aragon/ui';
 import Avatar from 'avataaars';
 import IPFS from 'ipfs-http-client-lite';
 
@@ -398,6 +398,10 @@ function Mint(){
           }
           </Row>
           </>
+        }
+        {
+          state.loadingNFTs &&
+          <SyncIndicator />
         }
       </Container>
     </>

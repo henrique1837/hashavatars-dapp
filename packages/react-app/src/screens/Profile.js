@@ -1,6 +1,7 @@
 import React from "react";
 import { Container,Row,Col,Image } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Split,ProgressBar } from '@aragon/ui'
+import { Link,IconLink,IdentityBadge,Split,ProgressBar,SyncIndicator } from '@aragon/ui'
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState'
 import useWeb3Modal from '../hooks/useWeb3Modal';
@@ -42,15 +43,18 @@ function Profile(){
 
                   return(
                     <Col style={{paddingTop:'80px'}}>
+                    <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
 
                       <center>
                         <div>
                           <p><b>{obj.metadata.name}</b></p>
                         </div>
                         <div>
-                          <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                            <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                         </div>
+
                       </center>
+                    </RouterLink>
 
                     </Col>
                   )
@@ -89,12 +93,17 @@ function Profile(){
                 profile?.url &&
                 <p><Link href={state.profile?.url} external={true}>{profile?.url} <IconLink  /></Link></p>
               }
+              <p><small>Created a total of {state.myNfts?.length} HashAvatars</small></p>
+              <p><small>Owns a total of {state.myOwnedNfts?.length} HashAvatars</small></p>
             </div>
 
           }
         />
 
-
+        {
+          state.loadingNFTs &&
+          <SyncIndicator />
+        }
       </Container>
     </>
   )

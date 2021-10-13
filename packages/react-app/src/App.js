@@ -14,6 +14,8 @@ import { AppContext, useAppState } from './hooks/useAppState'
 import Home from "./screens/Home";
 import Mint from "./screens/Mint";
 import Profile from "./screens/Profile";
+import UserProfile from "./screens/UserProfile";
+
 //import DAO from "./screens/DAO";
 import Histories from "./screens/HashHistories";
 
@@ -116,8 +118,13 @@ function App() {
             <Route path="/all-avatars" component={AllAvatars}/>
             <Route path="/mint" component={Mint}/>
             <Route path="/profile" component={Profile}/>
+            <Route path="/profiles/:address" component={UserProfile}/>
+
             <Route path="/games" component={GamesPage}/>
-            <Route path="/tokens/:id" component={Histories}/>
+            {
+              netId === 4 &&
+              <Route path="/tokens/:id" component={Histories}/>
+            }
 
 
             {/*<Route path="/feedbacks" component={Feedbacks}/>*/}
@@ -138,7 +145,11 @@ function App() {
           <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github<IconLink /></Link>
           <Link href="https://www.xpollinate.io/" external>Bridge<IconLink /></Link>
           <Link href="https://dweb.link/ipfs/bafybeidakaaxs7hgnpdcu6t67cvajys3jyj3jcrkoi5teji564jd74cuw4" external>Previous Version<IconLink /></Link>
+          {
+            netId === 4 &&
+            <Link href="https://client.aragon.org/#/hashavatars/" external>DAO<IconLink /></Link>
 
+          }
         </footer>
 
       </AppContext.Provider>
