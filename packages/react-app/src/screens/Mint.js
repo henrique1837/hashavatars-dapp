@@ -3,6 +3,8 @@ import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Image,Spinner } from 'react-bootstrap';
 import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator } from '@aragon/ui';
+import { Link as RouterLink } from 'react-router-dom';
+
 import Avatar from 'avataaars';
 import IPFS from 'ipfs-http-client-lite';
 
@@ -384,6 +386,8 @@ function Mint(){
               const obj = JSON.parse(str);
               return(
                 <Col style={{paddingTop:'80px'}}>
+                <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
+
                   <center>
                     <div>
                       <p>{obj.metadata.name}</p>
@@ -392,6 +396,7 @@ function Mint(){
                       <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                     </div>
                   </center>
+                  </RouterLink>
                 </Col>
               )
             })

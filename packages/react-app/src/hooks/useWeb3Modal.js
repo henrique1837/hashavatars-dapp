@@ -1,6 +1,8 @@
 import { useCallback,useMemo, useState } from "react";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
+import ethProvider from "eth-provider";
+
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 //import WalletConnectProvider from "@walletconnect/web3-provider";
@@ -25,6 +27,10 @@ function useWeb3Modal(config = {}) {
     injected: {
       package: null
     },
+    /*
+    frame: {
+      package: ethProvider // required
+    }
     /*
     torus: {
       package: Torus, // required

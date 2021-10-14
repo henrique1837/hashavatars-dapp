@@ -25,6 +25,7 @@ import useWeb3Modal from "../hooks/useWeb3Modal";
 import useContract from "../hooks/useContract";
 import useProfile from "../hooks/useProfile";
 import useHashHistories from "../hooks/useHashHistories";
+import useERC20 from "../hooks/useERC20";
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
@@ -32,6 +33,8 @@ const ipfs = IPFS({
 function HashHistories(){
   const {netId,coinbase} = useWeb3Modal();
   const {hashavatars} = useContract();
+  const {cold,coldBalance,approvedCold,approveCold} = useERC20();
+
   const {getProfile} = useProfile();
   const {histories} = useHashHistories();
   const [metadata,setMetadata] = useState();
@@ -39,7 +42,6 @@ function HashHistories(){
   const [isOwner,setIsOwner] = useState();
   const [text,setText] = useState();
   const [txMsg,setTxMsg] = useState();
-
   const [uris,setUris] = useState([]);
   const {id} = useParams();
 
@@ -89,20 +91,29 @@ function HashHistories(){
             </center>
           );
         });
-        setTxMsg(
-          <center>
-           <LoadingRing />
-           <p><small>Transaction confirmed!</small></p>
-          </center>
-        );
-        setTimeout(() => {
-          setTxMsg(null)
-          setText(null);
-          setOpened(false);
-        },5000);
       } else {
-
+        await histories.methods.addUriWithERC20(id,uri).send({
+          from: coinbase,
+          gasPrice: 1000000000
+        }).once('transactionHash',(hash) => {
+          setTxMsg(
+            <center>
+             <LoadingRing />
+             <p><small>Tx sent <TransactionBadge transaction={hash} networkType={netId === 4 ? "rinkeby" : "xdai"} /></small></p>
+            </center>
+          );
+        });
       }
+      setTxMsg(
+        <center>
+         <p><small>Transaction confirmed!</small></p>
+        </center>
+      );
+      setTimeout(() => {
+        setTxMsg(null)
+        setText(null);
+        setOpened(false);
+      },5000);
     } catch(err){
       setTxMsg(
         <center>
@@ -154,9 +165,18 @@ function HashHistories(){
           },
           fromBlock: 'latest'
         },async(err,res) => {
-          const string = await (await fetch(`https://ipfs.io/ipfs/${res.returnValues.uri}`)).text()
-          const newUris = [...uris,string];
-          setUris(newUris);
+          if(res){
+            const string = await (await fetch(`https://ipfs.io/ipfs/${res.returnValues.uri}`)).text()
+            const newUris = [...uris,string];
+            setUris(newUris);
+            if(coinbase){
+              const balance = await hashavatars.methods.balanceOf(coinbase,id).call();
+              const historyTold = await histories.methods.uriAdded(coinbase,id).call();
+              if(balance > 0){
+                setIsOwner(historyTold);
+              }
+            }
+          }
         });
       } catch(err){
         console.log(err)
@@ -165,16 +185,23 @@ function HashHistories(){
         }
       }
     }
-  },[uris,metadata,histories,id,hashavatars,coinbase]);
+  },[uris,metadata,histories,id,hashavatars,coinbase,netId]);
 
   return(
     <Split
       primary={
         <>
         {
-          err &&
+          err && coinbase && netId === 4 &&
           <Info title="Wrong token ID" mode="warning">
             <p>Please select other token ID</p>
+          </Info>
+        }
+        {
+          err && netId !== 4 && coinbase &&
+          <Info title="HashHistories is under progress" mode="info">
+            <p>HashHistories and HashAvatars profiles is under progress</p>
+            <p>Switch to Rinkeby network if you want to check it</p>
           </Info>
         }
         {
@@ -183,9 +210,13 @@ function HashHistories(){
 
         }
         {
-          isOwner && histories &&
+          isOwner && histories && netId === 4 &&
           <div>
-          <Bar primary={<p>You can write {metadata.name}'s history</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write history</Button>} />
+          {
+            !txMsg ?
+            <Bar primary={<p>You can write {metadata.name}'s history</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write history</Button>} /> :
+            txMsg
+          }
           <Modal visible={opened} onClose={() => setOpened(false)}>
             <h4>Informations</h4>
             <p><small>To write a HashAvatar history you must have it in your wallet;</small></p>
@@ -194,7 +225,13 @@ function HashHistories(){
             <p><small>Ready? Let us know {metadata.name}'s history!</small></p>
             <div><textarea rows="5" cols="40" onChange={handleOnChange} onKeyUp={handleOnChange} id="history"></textarea></div>
             {
-              text && <div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history</Button></div>
+              text && <div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history with 0.1 XDAI</Button></div>
+            }
+            {
+              text && (approvedCold > 0) ?
+              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.01 COLD</Button></div> :
+              text &&
+              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.options.address)}>Approve COLD</Button></div>
             }
             {
               txMsg
@@ -213,41 +250,54 @@ function HashHistories(){
       secondary={
 
         <div>
-          <center>
-            <img src={metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
-          </center>
-          <h5>Creator</h5>
-          {
-            creator &&
-            <div>
+          <div>
+            <center>
+              <img src={metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+            </center>
+            <p>ID: {id}</p>
+            {
+              hashavatars && netId &&
+              <p><small><Link href={`https://unifty.io/${netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${hashavatars.options.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
+
+            }
+          </div>
+          <div>
+            <h5>Creator</h5>
+            {
+              creator &&
               <div>
-              <IdentityBadge
-                label={creator.profile?.name}
-                entity={creator.address}
-                networkType={netId === 4 ? "rinkeby" : "xdai"}
-                popoverTitle={creator.profile?.name }
-              />
-              </div>
-              {
-                creator.profile?.image &&
                 <div>
-                  <img
-                    rounded
-                    src={creator.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
-                    style={{width: '250px',heigth: "250px"}}
-                  />
+                <RouterLink to={`/profiles/${creator.address}`} style={{textDecoration: "none"}}>
+
+                <IdentityBadge
+                  label={creator.profile?.name}
+                  entity={creator.address}
+                  networkType={netId === 4 ? "rinkeby" : "xdai"}
+                  popoverTitle={creator.profile?.name }
+                />
+                </RouterLink>
                 </div>
-              }
-              <p>{creator.profile?.description}</p>
-              {
-                creator.profile?.url &&
-                <p><Link href={creator.profile?.url} external={true}>{creator.profile?.url} <IconLink  /></Link></p>
-              }
-              <div style={{paddingTop:"60px"}}>
-              <BackButton as={RouterLink} to={"/all-avatars"} style={{textDecoration: "none"}} />
+                {
+                  creator.profile?.image &&
+                  <div>
+                    <img
+                      rounded
+                      src={creator.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
+                      style={{width: '250px',heigth: "250px"}}
+                    />
+                  </div>
+                }
+                <p>{creator.profile?.description}</p>
+                {
+                  creator.profile?.url &&
+                  <p><Link href={creator.profile?.url.includes("https://") ? creator.profile.url : `https://${creator.profile.url}` } external={true}>{creator.profile?.url} <IconLink  /></Link></p>
+                }
+                <div style={{paddingTop:"60px"}}>
+                <BackButton as={RouterLink} to={"/all-avatars"} style={{textDecoration: "none"}} />
+                </div>
               </div>
-            </div>
-          }
+            }
+          </div>
         </div>
 
       }

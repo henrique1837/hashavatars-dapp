@@ -154,9 +154,13 @@ function useContract() {
         filter: {
         },
         fromBlock: 'latest'
-      },(err,res) => {
+      },async (err,res) => {
         if(!err){
-          handleEvents(err,res);
+          setLoadingNFTs(true);
+          await getTotalSupply();
+          await handleEvents(err,res);
+          setLoadingNFTs(false);
+
         }
       });
       setCheckingEvents(true);

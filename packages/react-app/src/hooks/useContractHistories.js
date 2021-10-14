@@ -18,7 +18,7 @@ function useContract() {
 
   const [myNfts,setMyNfts] = useState([]);
   const [myOwnedNfts,setMyOwnedNfts] = useState([]);
-
+  const [actualNetId,setActualNetId] = useState();
   const [loadingNFTs,setLoadingNFTs] = useState(true);
   const ids = [];
 
@@ -132,13 +132,31 @@ function useContract() {
 
 
   useMemo(async () => {
+    alert(netId)
 
-    if(netId === 4 && !hashavatars){
-      setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.rinkeby));
+    if(netId !== actualNetId){
+      alert(netId)
+      setMints(null)
+      setNfts([])
+      setMyNfts([])
+      setMyOwnedNfts([])
+      setActualNetId(netId);
+      setHashAvatars(null)
+      setLoadingNFTs(true)
+      setCheckingEvents(false);
+      setGetData(false);
+
+      ids = [];
+      let newHashAvatars;
+      if(netId === 4)){
+        newHashAvatars = new provider.eth.Contract(abis.erc1155,addresses.erc1155.rinkeby);
+      }
+      if(netId === 0x64){
+        newHashAvatars = new provider.eth.Contract(abis.erc1155,addresses.erc1155.xdai)
+      }
+      setHashAvatars(newHashAvatars);
     }
-    if(netId === 0x64 && !hashavatars){
-      setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.xdai));
-    }
+
     if(!mints && hashavatars && nfts.length === 0){
       hashavatars.getPastEvents("URI",{
         filter: {

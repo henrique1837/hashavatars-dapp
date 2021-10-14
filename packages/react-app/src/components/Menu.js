@@ -42,6 +42,7 @@ function Menu(){
             entity={coinbase}
             connectedAccount
             popoverTitle={profile?.name}
+            popoverAction={{label:"Edit Profile",onClick: () => {window.open(`https://self.id/${coinbase}`,"_blank")}}}
             icon={profile?.image ?
                   <Image src={profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
                   <EthIdenticon address={coinbase}/>

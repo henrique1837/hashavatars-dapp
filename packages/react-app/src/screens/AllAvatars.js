@@ -172,7 +172,7 @@ function AllAvatars(){
 
                   return(
                     <div>
-                    <RouterLink to={`/profiles/${obj.address}`}>
+                    <RouterLink to={`/profiles/${obj.address}`} style={{textDecoration: "none"}}>
 
                       <IdentityBadge
                         label={obj.profile?.name && obj.profile.name}

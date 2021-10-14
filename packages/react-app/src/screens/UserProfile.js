@@ -135,6 +135,8 @@ function UserProfile(){
                 entity={address}
                 networkType={netId === 4 ? "rinkeby" : "xdai"}
                 popoverTitle={profile?.name }
+                popoverAction={{label:"View Profile",onClick: () => {window.open(`https://self.id/${address}`,"_blank")}}}
+
               />
               </div>
               {

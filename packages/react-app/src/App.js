@@ -33,7 +33,7 @@ import Menu from "./components/Menu";
 
 function App() {
 
-  const {provider,coinbase,netId} = useWeb3Modal();
+  const {provider,coinbase,netId,profile} = useWeb3Modal();
   const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply} = useContract();
   const { state, actions } = useAppState()
   const [nftsLength,setNftsLength] = useState();
@@ -41,18 +41,24 @@ function App() {
   const [myOwnedNftsLength,setMyOwnedNftsLength] = useState();
 
   const [previousCoinbase,setPrevCoinbase] = useState();
+  const [previousNetId,setPrevsNetId] = useState();
+  const [previousHashAvatars,setPrevsHashAvatars] = useState();
 
   useEffect(() => {
-    if((provider && netId) || (coinbase !== previousCoinbase)){
+    if((coinbase !== previousCoinbase) || (netId !== previousNetId) ){
       actions.setProvider(provider);
       actions.setNetId(netId);
       actions.setCoinbase(coinbase);
+      actions.setProfile(profile);
+
       setPrevCoinbase(coinbase);
+      setPrevsNetId(netId);
     }
 
 
-    if(hashavatars){
+    if(hashavatars !== previousHashAvatars){
       actions.setHashAvatars(hashavatars)
+      setPrevsHashAvatars(previousHashAvatars)
     }
     if(nfts && nftsLength !== nfts.length){
       actions.setNfts(nfts)
@@ -92,7 +98,8 @@ function App() {
     nftsLength,
     previousCoinbase,
     myOwnedNfts,
-    myOwnedNftsLength
+    myOwnedNftsLength,
+    profile
   ]);
   return (
     <Main>
@@ -121,10 +128,8 @@ function App() {
             <Route path="/profiles/:address" component={UserProfile}/>
 
             <Route path="/games" component={GamesPage}/>
-            {
-              netId === 4 &&
-              <Route path="/tokens/:id" component={Histories}/>
-            }
+            <Route path="/tokens/:id" component={Histories}/>
+
 
 
             {/*<Route path="/feedbacks" component={Feedbacks}/>*/}

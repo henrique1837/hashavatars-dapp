@@ -20,7 +20,9 @@ function DAO(){
   },[votes,netId]);
 
   return(
-    <></>
+    <>
+    <p>Votes</p>
+    </>
   )
 }
 

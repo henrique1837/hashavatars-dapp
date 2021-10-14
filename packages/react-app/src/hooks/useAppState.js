@@ -20,7 +20,8 @@ const useAppState = () => {
     nfts: [],
     myNfts: [],
     myOwnedNfts: [],
-    creators: []
+    creators: [],
+    profile: null
   }
 
   // Manage the state using React.useState()
@@ -66,6 +67,9 @@ const getActions = (setState) => ({
   },
   setTotalSupply: (supply) => {
     setState((state) => ({ ...state, totalSupply: supply }))
+  },
+  setProfile: (profile) => {
+    setState((state) => ({ ...state, profile: profile }))
   },
 })
 
