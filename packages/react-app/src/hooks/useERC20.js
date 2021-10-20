@@ -61,7 +61,7 @@ function useERC20() {
 
 
 
-  return({cold,coldBalance,approvedCold,approveCold,hashBalance})
+  return({cold,coldBalance,approvedCold,approveCold,hash,hashBalance})
 }
 
 export default useERC20;

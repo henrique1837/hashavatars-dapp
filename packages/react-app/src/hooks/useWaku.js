@@ -14,16 +14,16 @@ function useWaku() {
   const [waku,setWaku] = useState();
   const [msgs,setMsgs] = useState([]);
 
-  const sendMessage = useCallBack(async (e) => {
+  const sendMessage = async (message) => {
     const str = JSON.stringify({
-      message: e.target.value,
+      message: message,
       from: coinbase
     });
     const msg = await WakuMessage.fromUtf8String(str,contentTopic);
     await waku.relay.send(msg);
-  },[waku,coinbase]);
+  };
 
-  const handleMsgReceived = useCallBack(async (msg) => {
+  const handleMsgReceived = async (msg) => {
     console.log('Message retrieved:', msg.payloadAsUtf8);
     const obj = JSON.parse(msg.payloadAsUtf8);
     if(obj.from !== null){
@@ -35,11 +35,12 @@ function useWaku() {
     };
     const newMessages = [...msgs,msg.payloadAsUtf8];
     setMsgs(newMessages);
-  },[msgs]);
+  };
 
   useMemo(async () => {
     if(!waku){
-      const newWaku = await Waku.create({ bootstrap: true });
+      const newWaku = await Waku.create();
+      alert(newWaku)
       setWaku(newWaku);
       newWaku.relay.addObserver((msg) => {
         handleMsgReceived(msg);
@@ -50,7 +51,7 @@ function useWaku() {
           handleMsgReceived(msg);
       });
     }
-  }, [waku]);
+  }, [waku,handleMsgReceived]);
   return({waku,msgs,sendMessage})
 }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Container,Row,Col,Image } from 'react-bootstrap';
+import { Container,Row,Col } from 'react-bootstrap';
 import { Link,IconLink } from '@aragon/ui'
 import { addresses } from "@project/contracts";
 
@@ -26,7 +26,7 @@ function Home(props){
             <p>This project uses "avataaars" package from <Link href="https://getavataaars.com/" isExternal>https://getavataaars.com/ <IconLink mx="2px" /></Link> and can be copied / modified by anyone.</p>
           </Col>
           <Col style={{textAlign: 'center'}}>
-            <Image boxSize="200px" src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
+            <img style={{width: '200px'}} src="https://ipfs.io/ipfs/QmeVRmVLPqUNZUKERq14uXPYbyRoUN7UE8Sha2Q4rT6oyF" />
           </Col>
         </Row>
       </Container>

@@ -16,10 +16,11 @@ const addresses = {
     mainnet_bridged: "0xb74ca8bd02cc027a3f62f9a142cc195220c729cd"
   },
   hashHistories: {
-    rinkeby: "0x611592a48bff170d2a472dc736feafb315949aa0",
+    rinkeby: "0x127400C35348Ac719ADD2bC522Db6B5372384488",
+    rinkebyOld: "0x611592a48bff170d2a472dc736feafb315949aa0"
   },
   erc20Rewards:{
-    rinkeby: "0xEeE66864AfFDfeB99D3880d3440a730E7049D87E"
+    rinkeby: "0x5Bd609966AEF613B9a7503555A95DEfbeF8B3880"
   }
 };
 

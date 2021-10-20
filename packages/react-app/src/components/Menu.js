@@ -1,13 +1,34 @@
-import React,{useState} from "react";
+import React,{useState,useMemo} from "react";
 import { Image } from 'react-bootstrap';
 import { Button,IdentityBadge,EthIdenticon,Header,Tabs,IconLink } from '@aragon/ui';
 import useWeb3Modal from '../hooks/useWeb3Modal';
 
-import { Link } from 'react-router-dom';
+import { Link,Redirect,useLocation } from 'react-router-dom';
 function Menu(){
   const {loadWeb3Modal,coinbase,netId,profile} = useWeb3Modal();
-  const [selected, setSelected] = useState(1);
+  const location = useLocation();
+  const [selected, setSelected] = useState();
 
+  useMemo(() => {
+    if(!selected && location){
+      if(location.pathname === "/home"){
+        setSelected(0);
+      }
+      if(location.pathname === "/mint"){
+        setSelected(1);
+      }
+      if(location.pathname === "/all-avatars"){
+        setSelected(2);
+      }
+      if(location.pathname === "/games"){
+        setSelected(3);
+      }
+      if(location.pathname === "/profile"){
+        setSelected(4);
+      }
+
+    }
+  },[selected,location])
 
   return(
     <>
@@ -72,14 +93,33 @@ function Menu(){
           <Link to="/games" style={{textDecoration: "none"}}>Games</Link>,
           //<Link to="/feedbacks" style={{textDecoration: "none"}}>Feedbacks</Link>,
           coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>,
-        //  coinbase && (netId===4) && <Link to="/dao" style={{textDecoration: "none"}}>DAO</Link>
+          //coinbase && (netId===4) && <Link to="/dao" style={{textDecoration: "none"}}>DAO</Link>
 
         ]
       }
       selected={selected}
       onChange={setSelected}
     />
-
+    {
+      selected === 0 &&
+      <Redirect to={"/home"} />
+    }
+    {
+      selected === 1 &&
+      <Redirect to={"/mint"} />
+    }
+    {
+      selected === 2 &&
+      <Redirect to={"/all-avatars"} />
+    }
+    {
+      selected === 3 &&
+      <Redirect to={"/games"} />
+    }
+    {
+      selected === 4 && coinbase &&
+      <Redirect to={"/profile"} />
+    }
 
     </>
   )

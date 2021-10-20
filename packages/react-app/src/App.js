@@ -16,12 +16,12 @@ import Mint from "./screens/Mint";
 import Profile from "./screens/Profile";
 import UserProfile from "./screens/UserProfile";
 
-//import DAO from "./screens/DAO";
+//import Dao from "./screens/DAO";
 import Histories from "./screens/HashHistories";
 
 import GamesPage from "./screens/Games";
 
-//import Feedbacks from "./screens/Feedbacks";
+import Feedbacks from "./screens/Feedbacks";
 
 import AllAvatars from "./screens/AllAvatars";
 
@@ -43,22 +43,24 @@ function App() {
   const [previousCoinbase,setPrevCoinbase] = useState();
   const [previousNetId,setPrevsNetId] = useState();
   const [previousHashAvatars,setPrevsHashAvatars] = useState();
+  const [previousCreators,setPrevsCreators] = useState();
+  const [previousTotalSupply,setPrevsTotalSupply] = useState();
+  const [previousLoadingNFTs,setPrevsLoadingNFTs] = useState();
 
   useEffect(() => {
     if((coinbase !== previousCoinbase) || (netId !== previousNetId) ){
+      setPrevCoinbase(coinbase);
+      setPrevsNetId(netId);
       actions.setProvider(provider);
       actions.setNetId(netId);
       actions.setCoinbase(coinbase);
       actions.setProfile(profile);
-
-      setPrevCoinbase(coinbase);
-      setPrevsNetId(netId);
     }
 
 
     if(hashavatars !== previousHashAvatars){
-      actions.setHashAvatars(hashavatars)
-      setPrevsHashAvatars(previousHashAvatars)
+      actions.setHashAvatars(hashavatars);
+      setPrevsHashAvatars(hashavatars)
     }
     if(nfts && nftsLength !== nfts.length){
       actions.setNfts(nfts)
@@ -74,14 +76,20 @@ function App() {
       setMyOwnedNftsLength(myOwnedNfts.length);
     }
 
-    if(!loadingNFTs){
+    if(loadingNFTs !== previousLoadingNFTs){
       actions.setLoadingNFTs(loadingNFTs)
+      setPrevsLoadingNFTs(loadingNFTs)
+
     }
-    if(totalSupply){
+    if(totalSupply !== previousTotalSupply){
       actions.setTotalSupply(totalSupply)
+      setPrevsTotalSupply(totalSupply)
+
     }
-    if(creators){
+    if(creators !== previousCreators){
       actions.setCreators(creators)
+      setPrevsCreators(creators)
+
     }
   },[
     actions,
@@ -130,6 +138,13 @@ function App() {
             <Route path="/games" component={GamesPage}/>
             <Route path="/tokens/:id" component={Histories}/>
 
+            {
+              /*
+              netId === 4 &&
+              <Route path="/dao" component={Dao}/>
+              */
+
+            }
 
 
             {/*<Route path="/feedbacks" component={Feedbacks}/>*/}

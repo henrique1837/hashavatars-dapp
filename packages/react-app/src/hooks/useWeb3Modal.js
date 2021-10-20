@@ -78,12 +78,13 @@ function useWeb3Modal(config = {}) {
       setProvider(web3);
       setCoinbase(newCoinbase);
       setNetId(netId);
+      setNoProvider(true);
+      setAutoLoaded(true);
       newProvider.on('accountsChanged', accounts => window.location.reload(true));
       newProvider.on('chainChanged', chainId => window.location.reload(true));
       // Subscribe to provider disconnection
       newProvider.on("disconnect", async (error: { code: number; message: string }) => {
-        await web3Modal.clearCachedProvider();
-        window.location.reload(true);
+        logoutOfWeb3Modal();
       });
       return;
     } catch(err){

@@ -20,6 +20,8 @@ function useContract() {
   const [myOwnedNfts,setMyOwnedNfts] = useState([]);
 
   const [loadingNFTs,setLoadingNFTs] = useState(true);
+  const [previousNetId,setPreviousNetId] = useState();
+
   const ids = [];
 
   const getMetadata = async(id,erc1155) => {
@@ -72,6 +74,9 @@ function useContract() {
 
   const handleEvents = useCallback(async(err,res) => {
     try{
+      if(previousNetId !== netId){
+        return
+      }
       const id = res.returnValues._id;
 
       if(ids.includes(id)){
@@ -128,26 +133,32 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[creators,hashavatars,coinbase,nfts,myNfts,myOwnedNfts,ids,getCreator])
+  },[creators,hashavatars,coinbase,nfts,myNfts,myOwnedNfts,ids,getCreator,previousNetId,netId])
 
 
   useMemo(async () => {
+    if(previousNetId !== netId){
+      setSupply(null);
+      setMints(null);
+      setNfts([]);
+      setMyNfts([]);
+      setMyOwnedNfts([]);
+      setCreators([]);
+      setGetData(false);
+      setCheckingEvents(false);
+      setLoadingNFTs(true);
+      setHashAvatars(null);
+      ids.length = 0;
+      setPreviousNetId(netId);
+      if(netId === 4){
+        setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.rinkeby));
+      }
+      if(netId === 0x64){
+        setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.xdai));
+      }
+    }
 
-    if(netId === 4 && !hashavatars){
-      setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.rinkeby));
-    }
-    if(netId === 0x64 && !hashavatars){
-      setHashAvatars(new provider.eth.Contract(abis.erc1155,addresses.erc1155.xdai));
-    }
-    if(!mints && hashavatars && nfts.length === 0){
-      hashavatars.getPastEvents("URI",{
-        filter: {
-        },
-        fromBlock: 0
-      },async (err,events) => {
-        setMints(events);
-      });
-    }
+
     if(hashavatars && !checkingEvents){
 
       hashavatars.events.URI({
@@ -177,6 +188,9 @@ function useContract() {
         };
         promises.push(handleEvents(null,res));
         if( i % 12 === 0 || i === 0){
+          if(netId !== previousNetId){
+            return;
+          }
           await Promise.allSettled(promises);
           if(loadingNFTs && i === 0){
             setLoadingNFTs(false);
@@ -191,7 +205,7 @@ function useContract() {
       getTotalSupply();
     }
 
-  },[provider,netId,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply,getTotalSupply,getData,checkingEvents])
+  },[provider,netId,hashavatars,mints,handleEvents,loadingNFTs,nfts,totalSupply,getTotalSupply,getData,checkingEvents,previousNetId])
 
   return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }

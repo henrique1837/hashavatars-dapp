@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@apollo/react-hooks": "^4.0.0",
-    "@aragon/connect-react": "^0.7.0",
     "@aragon/ui": "^1.9.0",
     "@ceramicstudio/idx": "^0.12.2",
     "@ethersproject/contracts": "^5.0.5",
@@ -41,7 +40,7 @@
     "graphql": "^14.7.0",
     "ipfs-http-client": "^45.0.0",
     "ipfs-http-client-lite": "^0.3.0",
-    "js-waku": "^0.12.2",
+    "js-waku": "^0.14.0",
     "phaser": "^3.55.2",
     "react": "16.14.0",
     "react-bootstrap": "^2.0.0-beta.6",

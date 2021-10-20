@@ -1,7 +1,7 @@
 import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
-import { Container,Row,Col,Image,Spinner } from 'react-bootstrap';
+import { Container,Row,Col,Spinner } from 'react-bootstrap';
 import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -92,10 +92,12 @@ function Mint(){
       }
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
       const imgres = await ipfs.add(svg);
+      const id = Number(await state.hashavatars.methods.totalSupply().call()) + 1;
+      console.log(id)
       let metadata = {
           name: avatar.name,
           image: `ipfs://${imgres[0].hash}`,
-          external_url: `https://thehashavatars.com`,
+          external_url: `https://thehashavatars.com/#/tokens/${id}`,
           description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
             {
@@ -152,8 +154,6 @@ function Mint(){
       const uri = res[0].hash;
       console.log(uri)
       setMintingMsg(<p><small>Approve transaction ... </small></p>);
-      const id = Number(await state.hashavatars.methods.totalSupply().call()) + 1;
-      console.log(id)
       const fees = [{
         recipient: state.coinbase,
         value: 500
@@ -284,7 +284,7 @@ function Mint(){
             //const obj = JSON.parse(string);
             if(obj.name === av.name) {
               cont = false
-              const svg = <Image src={obj.image.replace("ipfs://","https://ipfs.io/ipfs/")}  /> ;
+              const svg = <img src={obj.image.replace("ipfs://","https://ipfs.io/ipfs/")}  /> ;
               setSVG(svg);
               setAvatar(null);
             }
@@ -393,7 +393,7 @@ function Mint(){
                       <p>{obj.metadata.name}</p>
                     </div>
                     <div>
-                      <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                      <img src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                     </div>
                   </center>
                   </RouterLink>

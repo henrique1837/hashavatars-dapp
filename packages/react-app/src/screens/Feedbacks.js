@@ -8,11 +8,13 @@ function Feedbacks(){
   const [value,setValue] = useState();
   const {waku,msgs,sendMessage} = useWaku();
 
-  const sendMsg = useCallBack(() => {
+  const sendMsg = () => {
     if(value){
       sendMessage(value);
     }
-  },[waku,value]);
+    setValue("");
+    document.getElementById('input_msg').value = "";
+  }
 
   return(
     <>
@@ -21,19 +23,20 @@ function Feedbacks(){
       <Container>
         <Row>
           <Col style={{wordBreak:'break-word'}} fontSize="md">
-  
+
           </Col>
         </Row>
         <Row>
           <Col style={{wordBreak:'break-word'}} fontSize="md">
             {
-              waku &&
+              waku && sendMessage &&
               <>
               <TextInput
                 value={value}
                 onChange={event => {
                   setValue(event.target.value)
                 }}
+                id="input_msg"
               />
               <Button onClick={sendMsg}>Post</Button>
               </>

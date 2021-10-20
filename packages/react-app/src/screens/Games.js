@@ -1,5 +1,5 @@
 import React,{useState} from "react";
-import { Container,Row,Col,Image } from 'react-bootstrap';
+import { Container,Row,Col } from 'react-bootstrap';
 import { Button } from '@aragon/ui';
 
 import HashAtack from './games/HashAtack'
@@ -74,7 +74,7 @@ function GamesPage() {
                             <center>
                             <div><b>{game.name}</b></div>
                             <hr />
-                            <div><Image src={game.image} style={{width: '150px',height: '150px'}} roundedCircle/></div>
+                            <div><img src={game.image} style={{width: '150px',height: '150px',borderRadius: '50%'}}/></div>
                             <hr />
                             {
                               game.name !== "HashOperation" ?

@@ -91,8 +91,20 @@ function HashHistories(){
             </center>
           );
         });
-      } else {
+      } else if(type === 1) {
         await histories.methods.addUriWithERC20(id,uri).send({
+          from: coinbase,
+          gasPrice: 1000000000
+        }).once('transactionHash',(hash) => {
+          setTxMsg(
+            <center>
+             <LoadingRing />
+             <p><small>Tx sent <TransactionBadge transaction={hash} networkType={netId === 4 ? "rinkeby" : "xdai"} /></small></p>
+            </center>
+          );
+        });
+      } else {
+        await histories.methods.addUri(id,uri).send({
           from: coinbase,
           gasPrice: 1000000000
         }).once('transactionHash',(hash) => {
@@ -219,18 +231,28 @@ function HashHistories(){
           }
           <Modal visible={opened} onClose={() => setOpened(false)}>
             <h4>Informations</h4>
+            <IdentityBadge
+              label={"HashHistories"}
+              entity={histories.options.address}
+              networkType={netId === 4 ? "rinkeby" : "xdai"}
+              popoverTitle={"HashHistories"}
+            />
             <p><small>To write a HashAvatar history you must have it in your wallet;</small></p>
-            <p><small>The cost to write it is 0.1 xdai or 0.01 COLD, you can buy COLD at;</small></p>
+            <p><small>You can write it for free (needs to pay gas fee) or by paying 0.1 xdai or 0.1 COLD;</small></p>
+            <p><small>If you pays in xdai or COLD you will receive Hash Governance Token (HGT) to participate in our DAO;</small></p>
             <p><small>New owners of this same token id can continue its history;</small></p>
             <p><small>Ready? Let us know {metadata.name}'s history!</small></p>
             <div><textarea rows="5" cols="40" onChange={handleOnChange} onKeyUp={handleOnChange} id="history"></textarea></div>
             {
-              text && <div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history with 0.1 XDAI</Button></div>
+              text && !txMsg && <div style={{paddingTop:'10px',paddingBottom:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(3)}>Add history for free</Button></div>
             }
             {
-              text && (approvedCold > 0) ?
-              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.01 COLD</Button></div> :
-              text &&
+              text && !txMsg &&<div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history with 0.1 XDAI</Button></div>
+            }
+            {
+              text && (approvedCold > 0) && !txMsg ?
+              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.1 COLD</Button></div> :
+              text && !txMsg &&
               <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.options.address)}>Approve COLD</Button></div>
             }
             {
@@ -258,7 +280,10 @@ function HashHistories(){
             {
               hashavatars && netId &&
               <p><small><Link href={`https://unifty.io/${netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${hashavatars.options.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
-
+            }
+            {
+              hashavatars && netId && isOwner &&
+              <p><small><Link href="https://xdai-omnibridge-nft-staging.web.app/bridge" external><IconLink />NFT Bridge</Link></small></p>
             }
           </div>
           <div>

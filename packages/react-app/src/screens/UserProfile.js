@@ -1,5 +1,5 @@
 import React,{useMemo,useState} from "react";
-import { Container,Row,Col,Image } from 'react-bootstrap';
+import { Container,Row,Col } from 'react-bootstrap';
 import { Link,IconLink,IdentityBadge,Split,LoadingRing,SyncIndicator,BackButton } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 import { useParams } from "react-router-dom";
@@ -114,7 +114,7 @@ function UserProfile(){
                         <p><b>{obj.metadata.name}</b></p>
                       </div>
                       <div>
-                          <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                          <img src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
                       </div>
                     </center>
                     </RouterLink>
@@ -142,8 +142,7 @@ function UserProfile(){
               {
                 profile?.image &&
                 <div>
-                  <Image
-                    rounded
+                  <img
                     src={profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
                     style={{width: '250px',heigth: "250px"}}
                   />
