@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: HashAvatars
-    network: xdai
+    network: rinkeby
     source:
-      address: "0x022E2426227E510123aABaFf4108Ddb6f59c2f8a"
+      address: "0xd1B57180FDB28d4169598702477b78407B26ce5F"
       abi: HashAvatars
-      startBlock: 15336147
+      startBlock: 8339486
 
     mapping:
       kind: ethereum/events

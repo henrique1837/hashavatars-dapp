@@ -2,7 +2,7 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
-import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator,LoadingRing } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
 import Avatar from 'avataaars';
@@ -16,7 +16,7 @@ const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
 function Mint(){
-  const {loadWeb3Modal,coinbase} = useWeb3Modal();
+  const {loadWeb3Modal,coinbase,connecting} = useWeb3Modal();
   const {getMetadata,getTotalSupply} = useContract();
   const { state } = useAppContext();
 
@@ -346,7 +346,13 @@ function Mint(){
             (
                 !minting && !pendingTx ?
                 (
-                  canMint ? (<Button onClick={mint}>Claim</Button>) : ("HashAvatar with that name already claimed")
+                  state.hashavatars && !connecting ?
+                  (
+                    canMint ?
+                    <Button onClick={mint}>Claim</Button> :
+                    <p>HashAvatar with that name already claimed</p>
+                  ) :
+                  <p><LoadingRing/><small>Loading smart contract</small></p>
                 ) :
                 (
                   <div style={{wordBreak: 'break-word'}}>

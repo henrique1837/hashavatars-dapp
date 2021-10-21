@@ -38,6 +38,7 @@
     "eslint-plugin-flowtype": "^4.6.0",
     "eth-provider": "^0.9.4",
     "graphql": "^14.7.0",
+    "ipfs": "^0.59.1",
     "ipfs-http-client": "^45.0.0",
     "ipfs-http-client-lite": "^0.3.0",
     "js-waku": "^0.14.0",

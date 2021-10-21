@@ -38,9 +38,8 @@ export function handleTransferSingle(event: TransferSingle): void {
     token.owner = event.params._to.toHexString();
 
   }
-  /*
-``NOT SUPPORTED YET
 
+  /*
   let hash = token.metadataURI.split("/").pop();
   if (hash != null) {
     let raw = ipfs.cat(hash)
@@ -70,6 +69,7 @@ export function handleTransferSingle(event: TransferSingle): void {
     }
   }
   */
+
   token.save();
   let user = User.load(event.params._to.toHexString());
   if (!user) {

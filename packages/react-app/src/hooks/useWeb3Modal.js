@@ -18,6 +18,8 @@ function useWeb3Modal(config = {}) {
   const [coinbase, setCoinbase] = useState();
   const [profile,setProfile] = useState();
   const [netId , setNetId] = useState();
+  const [connecting , setConnecting] = useState();
+
   const [noProvider , setNoProvider] = useState();
   const [autoLoaded, setAutoLoaded] = useState(false);
   const { autoLoad = true, infuraId = INFURA_ID, NETWORK = NETWORK_NAME } = config;
@@ -64,20 +66,14 @@ function useWeb3Modal(config = {}) {
   const loadWeb3Modal = useCallback(async () => {
 
     try{
+      setConnecting(true)
       const newProvider = await web3Modal.connect();
       const web3 = new Web3(newProvider);
       const newCoinbase = await web3.eth.getCoinbase();
-      const netId = await web3.eth.net.getId();
-      let profile;
-      try{
-        profile = await getLegacy3BoxProfileAsBasicProfile(newCoinbase);
-        setProfile(profile);
-      } catch(err){
-
-      }
+      const newNetId = await web3.eth.net.getId();
       setProvider(web3);
       setCoinbase(newCoinbase);
-      setNetId(netId);
+      setNetId(newNetId);
       setNoProvider(true);
       setAutoLoaded(true);
       newProvider.on('accountsChanged', accounts => window.location.reload(true));
@@ -86,9 +82,18 @@ function useWeb3Modal(config = {}) {
       newProvider.on("disconnect", async (error: { code: number; message: string }) => {
         logoutOfWeb3Modal();
       });
+      setConnecting(false);
+      let profile;
+      try{
+        profile = await getLegacy3BoxProfileAsBasicProfile(newCoinbase);
+        setProfile(profile);
+      } catch(err){
+
+      }
       return;
     } catch(err){
       console.log(err);
+      setConnecting(false)
       logoutOfWeb3Modal();
     }
 
@@ -121,7 +126,7 @@ function useWeb3Modal(config = {}) {
      noProvider
    ]);
 
-  return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile});
+  return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile,connecting});
 }
 
 export default useWeb3Modal;
