@@ -184,7 +184,7 @@ function useContract() {
         return;
       }
       //const metadata = JSON.parse(await ipfs.cat(res.metadata.replace("ipfs://","")))
-      const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+      const metadata = JSON.parse(await (await fetch(`${res.metadata.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
       fetch(metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
 
       const creator = res.creator;
