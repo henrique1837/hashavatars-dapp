@@ -227,36 +227,38 @@ function useContract() {
       }
 
 
+      if(id <= 1){
+        setLoadingNFTs(false);
+      }
 
 
+      getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
+        const creatorProfile = {
+          address: creator,
+          profile: profile
+        }
+        if(!creators.includes(JSON.stringify(creatorProfile))){
+          const newCreators = creators;
+          newCreators.push(JSON.stringify(creatorProfile));
+          setCreators([...newCreators]);
+        }
+      }).catch(err => {
+        console.log(err);
+        const creatorProfile = {
+          address: creator,
+          profile: undefined
+        }
+        if(!creators.includes(JSON.stringify(creatorProfile))){
 
-        getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
-          const creatorProfile = {
-            address: creator,
-            profile: profile
-          }
-          if(!creators.includes(JSON.stringify(creatorProfile))){
-            const newCreators = creators;
-            newCreators.push(JSON.stringify(creatorProfile));
-            setCreators([...newCreators]);
-          }
-        }).catch(err => {
-          console.log(err);
           const creatorProfile = {
             address: creator,
             profile: undefined
           }
-          if(!creators.includes(JSON.stringify(creatorProfile))){
-
-            const creatorProfile = {
-              address: creator,
-              profile: undefined
-            }
-            const newCreators = creators;
-            newCreators.push(JSON.stringify(creatorProfile));
-            setCreators([...newCreators]);
-          }
-        });
+          const newCreators = creators;
+          newCreators.push(JSON.stringify(creatorProfile));
+          setCreators([...newCreators]);
+        }
+      });
 
 
 

@@ -2,10 +2,10 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
-import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator,LoadingRing } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator,LoadingRing,Link } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
-import Avatar from 'avataaars';
+import Avatar from '../avataaars';
 import IPFS from 'ipfs-http-client-lite';
 
 import { useAppContext } from '../hooks/useAppState'
@@ -92,12 +92,13 @@ function Mint(){
       }
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
       const imgres = await ipfs.add(svg);
+      fetch(`https://ipfs.io/ipfs/${imgres[0].hash}`)
       const id = Number(await state.hashavatars.methods.totalSupply().call()) + 1;
       console.log(id)
       let metadata = {
           name: avatar.name,
           image: `ipfs://${imgres[0].hash}`,
-          external_url: `https://thehashavatars.com/#/tokens/${id}`,
+          external_url: `https://thehashavatars.com/`,
           description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
             {
@@ -153,7 +154,12 @@ function Mint(){
       const res = await ipfs.add(JSON.stringify(metadata));
       const uri = res[0].hash;
       console.log(uri)
-      setMintingMsg(<p><small>Approve transaction ... </small></p>);
+      setMintingMsg(
+        <>
+        <p><small>Metadata stored at <Link href={`https://ipfs.io/ipfs/${uri}`} external><IconLink/>{uri}</Link>.</small></p>
+        <p><small>Approve transaction ... </small></p>
+        </>
+      );
       const fees = [{
         recipient: state.coinbase,
         value: 500
@@ -166,7 +172,13 @@ function Mint(){
       }).once('transactionHash',(hash) => {
         setMintingMsg(
           <div>
-           Tx sent <TransactionBadge transaction={hash} networkType={state.netId === 4 ? "rinkeby" : "xdai"} />
+           Tx sent <TransactionBadge
+                    as={Link}
+                    href={state.netId !== 4 ? `https://blockscout.com/xdai/mainnet/tx/${hash}` : `https://rinkeby.etherscan.io/tx/${hash}`}
+                    transaction={hash}
+                    external
+                    networkType={state.netId !== 4 ? "xdai" : "rinkeby"}
+                   />
           </div>
         )
         /*
@@ -175,11 +187,11 @@ function Mint(){
         });
         */
       });
-      setMintingMsg(<p><small>Transaction confirmed!</small></p>)
+      setMintingMsg(<p><small>Transaction confirmed! UI will update soon ...</small></p>)
       setTimeout(() => {
         setMinting(false);
         setMintingMsg(null)
-      },5000)
+      },10000)
 
     } catch(err){
       setMintingMsg(<p><small>{err.message}</small></p>)
@@ -271,7 +283,6 @@ function Mint(){
               return(JSON.stringify(obj))
             })
           } else {
-
           }
           */
           metadatas = state.nfts.map(str => {
