@@ -74,7 +74,7 @@ function GamesPage() {
                             <center>
                             <div><b>{game.name}</b></div>
                             <hr />
-                            <div><img src={game.image} style={{width: '150px',height: '150px',borderRadius: '50%'}}/></div>
+                            <div><img src={game.image} style={{width: '150px',height: '150px',borderRadius: '50%'}} alt=""/></div>
                             <hr />
                             {
                               game.name !== "HashOperation" ?

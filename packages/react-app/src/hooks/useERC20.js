@@ -1,12 +1,14 @@
-import { useCallback,useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { addresses, abis } from "@project/contracts";
+import { ethers } from "ethers";
 
-import useWeb3Modal from "./useWeb3Modal";
+import { useAppContext } from './useAppState'
 import useHashHistories from "./useHashHistories";
 
 function useERC20() {
 
-  const {provider,coinbase,netId} = useWeb3Modal();
+  const { state } = useAppContext();
+
   const { histories } = useHashHistories();
   const [cold,setCold] = useState();
   const [hash,setHash] = useState();
@@ -16,48 +18,46 @@ function useERC20() {
 
   const approveCold = async (spender) => {
 
-    const supply = await cold.methods.totalSupply().call();
+    const supply = await cold.totalSupply();
 
-    await cold.methods.approve(spender,supply).send({
-      from: coinbase
-    });
+    const signer = state.provider.getSigner();
+
+    const coldWithSigner = cold.connect(signer);
+
+    const tx = await coldWithSigner.approve(spender,supply);
+    await tx.wait();
+
   }
 
   useMemo(async () => {
-    if(!cold && provider){
-      setCold(new provider.eth.Contract(abis.erc20,addresses.erc20.cold.rinkeby));
+    if(!cold && state.provider && state.netId === 4){
+      setCold(new ethers.Contract(addresses.erc20.cold.rinkeby,abis.erc20,state.provider))
     }
-    if(!hash && provider){
-      setHash(new provider.eth.Contract(abis.erc20,addresses.erc20.hash.rinkeby));
+    if(!hash && state.provider && state.netId === 4){
+      setHash(new ethers.Contract(addresses.erc20.hash.rinkeby,abis.erc20,state.provider))
     }
-    if(coinbase && !coldBalance && !hashBalance && cold && hash && histories ){
-      const newBalanceCold = await cold.methods.balanceOf(coinbase).call();
+    if(state.coinbase && !coldBalance && !hashBalance && cold && hash && histories ){
+      const newBalanceCold = await cold.balanceOf(state.coinbase);
       setColdBalance(newBalanceCold);
-      const newBalanceHash = await hash.methods.balanceOf(coinbase).call();
+      const newBalanceHash = await hash.balanceOf(state.coinbase);
       setHashBalance(newBalanceHash);
-      const newApprovedCold = await cold.methods.allowance(coinbase,histories.options.address).call();
+      const newApprovedCold = await cold.allowance(state.coinbase,histories.address);
       setApprovedCold(newApprovedCold);
-      cold.events.Approval({
-        filter: {},
-        fromBlock: 'latest'
-      },(err,res) => {
-        if(res.returnValues.owner.toLowerCase() === coinbase.toLowerCase() &&
-           res.returnValues.spender.toLowerCase() === histories.options.address.toLowerCase()){
-          setApprovedCold(Number(res.returnValues.value))
+      cold.on('Approval',(owner,spender,value) => {
+        if(owner.toLowerCase() === state.coinbase.toLowerCase() &&
+           spender.toLowerCase() === histories.address.toLowerCase()){
+          setApprovedCold(Number(value))
         }
-      });
-      cold.events.Transfer({
-        filter: {},
-        fromBlock: 'latest'
-      },async (err,res) => {
-        if(res.returnValues.from.toLowerCase() === coinbase.toLowerCase() ||
-           res.returnValues.to.toLowerCase() === coinbase.toLowerCase()){
-          const newBalanceCold = await cold.methods.balanceOf(coinbase).call();
+      })
+      cold.on('Transfer', async (from, to, amount, event) => {
+        if(from.toLowerCase() === state.coinbase.toLowerCase() ||
+           to.toLowerCase() === state.coinbase.toLowerCase()){
+          const newBalanceCold = await cold.balanceOf(state.coinbase);
           setColdBalance(newBalanceCold);
         }
       });
     }
-  },[cold,provider,coldBalance,coinbase,histories,hash,hashBalance])
+  },[cold,state.provider,coldBalance,state.coinbase,histories,hash,hashBalance,state.netId])
 
 
 

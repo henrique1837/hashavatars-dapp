@@ -1,4 +1,4 @@
-import { useMemo,useCallBack,useState } from "react";
+import { useMemo,useState } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 import { Waku,WakuMessage } from 'js-waku';

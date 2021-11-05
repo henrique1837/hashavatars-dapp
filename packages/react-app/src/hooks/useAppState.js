@@ -13,6 +13,7 @@ import React,{ useState,useMemo,useContext } from 'react'
 
 const useAppState = () => {
   const initialState = {
+    loadWeb3Modal: null,
     hashavatars: null,
     coinbase: null,
     loadingNFTs: true,
@@ -21,7 +22,10 @@ const useAppState = () => {
     myNfts: [],
     myOwnedNfts: [],
     creators: [],
-    profile: null
+    profile: null,
+    connecting: false,
+    getMetadata: null,
+    getTotalSupply: null
   }
 
   // Manage the state using React.useState()
@@ -70,6 +74,18 @@ const getActions = (setState) => ({
   },
   setProfile: (profile) => {
     setState((state) => ({ ...state, profile: profile }))
+  },
+  setConnecting: (connecting) => {
+    setState((state) => ({ ...state, connecting: connecting }))
+  },
+  setLoadWeb3Modal: (loadWeb3Modal) => {
+    setState((state) => ({ ...state, loadWeb3Modal: loadWeb3Modal }))
+  },
+  setGetMetadata: (getMetadata) => {
+    setState((state) => ({ ...state, getMetadata: getMetadata }))
+  },
+  setGetTotalSupply: (getTotalSupply) => {
+    setState((state) => ({ ...state, getTotalSupply: getTotalSupply }))
   },
 })
 

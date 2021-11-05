@@ -3,94 +3,99 @@ import { Container,Row,Col } from 'react-bootstrap';
 import { Link,IconLink,IdentityBadge,Split,LoadingRing,SyncIndicator,BackButton } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 import { useParams } from "react-router-dom";
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+
+import { useAppContext } from '../hooks/useAppState'
+
 
 import useProfile from '../hooks/useProfile';
-import useContract from "../hooks/useContract";
-import useWeb3Modal from "../hooks/useWeb3Modal";
+
+
+const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.5";
+const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai/0.0.1";
+
+
+
 
 function UserProfile(){
-  const {hashavatars} = useContract();
+  const { state } = useAppContext();
+
   const {getProfile} = useProfile();
-  const {netId} = useWeb3Modal();
-  const [loadingNFTs,setLoadingNFTs] = useState(true);
-
-  const [checking,setChecking] = useState(false);
-
   const {address} = useParams();
-
-  const [ownedNfts,setownedNfts] = useState([]);
+  const [checking,setChecking] = useState(false);
+  const [ownedNfts,setOwnedNfts] = useState([]);
   const [createdNfts,setCreatedNfts] = useState([]);
-  const ids = [];
-
+  const [client,setClient] = useState();
   const [profile,setProfile] = useState();
 
-  useMemo(async() => {
 
-    if(!profile && hashavatars && address && !checking){
-      try{
-        setChecking(true);
-        const newProfile = await getProfile(address);
-        setProfile(newProfile);
-
-        const events = await hashavatars.getPastEvents('URI',{
-          filter:{},
-          fromBlock: 0
-        });
-        const promises = [];
-        for(const res of events){
-          promises.push(
-            new Promise(async (reject,resolve) => {
-              try{
-                const id = res.returnValues._id;
-                if(ids.includes(id)){
-                  resolve("ok")
-                }
-                ids.push(id);
-                const balance = await hashavatars.methods.balanceOf(address,id).call();
-                const creator = await hashavatars.methods.creators(id).call();
-                const uriToken = await hashavatars.methods.uri(id).call();
-
-                if(uriToken.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT") || uriToken === "ipfs://" || uriToken === "" || !uriToken ){
-                  resolve("ok")
-                }
-                const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
-                fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
-                const obj = {
-                  returnValues: res.returnValues,
-                  metadata: metadataToken
-                }
-                if(creator.toLowerCase() === address.toLowerCase()){
-                  if(createdNfts.includes(obj)){
-                    resolve("Included");
-                  }
-                  const newCreatedNfts = createdNfts;
-                  newCreatedNfts.unshift(obj);
-                  setCreatedNfts(newCreatedNfts);
-                }
-                if(balance > 0){
-                  if(ownedNfts.includes(obj)){
-                    resolve("Included");
-                  }
-                  const newOwnedNfts = ownedNfts;
-                  newOwnedNfts.unshift(obj);
-                  setownedNfts(newOwnedNfts);
-                }
-
-                resolve(obj)
-              } catch(err){
-                reject(err);
-              }
-            })
-          )
-        }
-
-        await Promise.allSettled(promises)
-        setLoadingNFTs(false);
-      } catch(err){
-        console.log(err)
-      }
+  useMemo(async () => {
+    if(!state.hashavatars){
+      setClient();
+      setOwnedNfts([])
+      setChecking(false)
+      setCreatedNfts([]);
     }
-  },[profile,ownedNfts,hashavatars,address,getProfile]);
+  },[state.hashavatars])
+  useMemo(async () => {
+    const newProfile = await getProfile(address);
+    setProfile(newProfile);
+  },[profile,address])
+  useMemo(async () => {
+    if(client && !checking && address){
+      setChecking(true);
+      const tokensQuery = `
+        query {
+              users(where: {
+                id: "${address}"
+              }) {
+                id
+                tokens {
+                  id
+                  tokenID,
+                  metadataURI,
+                  createdAtTimestamp
+                }
+                created {
+                  id
+                  tokenID,
+                  metadataURI,
+                  createdAtTimestamp
+                }
+              }
+            }
+      `
+      const results = await client.query({
+        query: gql(tokensQuery)
+      });
+      const objs = results.data.users[0].created;
+      const objsOwned = results.data.users[0].tokens;
+
+      setCreatedNfts(objs);
+      setOwnedNfts(objsOwned);
+    }
+
+  },[client,address])
+  useMemo(() => {
+
+    if(!client && state.netId){
+      let newClient;
+      if(state.netId === 4){
+        newClient = new ApolloClient({
+          uri: APIURL_RINKEBY,
+          cache: new InMemoryCache()
+        });
+      }
+      if(state.netId === 0x64){
+        newClient = new ApolloClient({
+          uri: APIURL_XDAI,
+          cache: new InMemoryCache()
+        });
+      }
+      setClient(newClient);
+    }
+
+  },[state.netId,client])
 
   return(
     <>
@@ -100,11 +105,14 @@ function UserProfile(){
         <Split
           primary={
             <>
-            <h4>HashAvatars owned</h4>
+            <h4>HashAvatars Created</h4>
             <Row style={{textAlign: 'center'}}>
             {
-              ownedNfts?.map(obj => {
-
+              state.nfts?.map(string => {
+                const obj = JSON.parse(string);
+                if(obj.creator.toLowerCase() !== address.toLowerCase()){
+                  return;
+                }
                 return(
                   <Col style={{paddingTop:'80px'}}>
                   <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
@@ -133,7 +141,7 @@ function UserProfile(){
               <IdentityBadge
                 label={profile?.name}
                 entity={address}
-                networkType={netId === 4 ? "rinkeby" : "xdai"}
+                networkType={state.netId === 4 ? "rinkeby" : "xdai"}
                 popoverTitle={profile?.name }
                 popoverAction={{label:"View Profile",onClick: () => {window.open(`https://self.id/${address}`,"_blank")}}}
 
@@ -164,7 +172,7 @@ function UserProfile(){
         />
 
         {
-          loadingNFTs &&
+          state.loadingNFTs &&
           <SyncIndicator />
         }
       </Container>

@@ -21,8 +21,6 @@ import {
 import IPFS from 'ipfs-http-client-lite';
 
 import { useAppContext } from '../hooks/useAppState'
-import useWeb3Modal from "../hooks/useWeb3Modal";
-import useContract from "../hooks/useContract";
 import useProfile from "../hooks/useProfile";
 import useHashHistories from "../hooks/useHashHistories";
 import useERC20 from "../hooks/useERC20";
@@ -31,8 +29,8 @@ const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
 function HashHistories(){
-  const {netId,coinbase} = useWeb3Modal();
-  const {hashavatars} = useContract();
+  const { state } = useAppContext();
+
   const {cold,coldBalance,approvedCold,approveCold} = useERC20();
 
   const {getProfile} = useProfile();
@@ -43,6 +41,7 @@ function HashHistories(){
   const [text,setText] = useState();
   const [txMsg,setTxMsg] = useState();
   const [uris,setUris] = useState([]);
+  const [loading,setLoading] = useState(true);
   const {id} = useParams();
 
   const [opened, setOpened] = useState(false)
@@ -77,45 +76,31 @@ function HashHistories(){
          <p><small>Approve transaction</small></p>
         </center>
       );
-      const price = await histories.methods.price().call();
+      const price = await histories.price();
+      const signer = state.provider.getSigner();
+      const historiesWithSigner = histories.connect(signer);
+      let tx;
       if(type === 0){
-        await histories.methods.addUri(id,uri).send({
-          from: coinbase,
+        tx = await historiesWithSigner.addUri(id,uri,{
           value: price,
           gasPrice: 1000000000
-        }).once('transactionHash',(hash) => {
-          setTxMsg(
-            <center>
-             <LoadingRing />
-             <p><small>Tx sent <TransactionBadge transaction={hash} networkType={netId === 4 ? "rinkeby" : "xdai"} /></small></p>
-            </center>
-          );
         });
       } else if(type === 1) {
-        await histories.methods.addUriWithERC20(id,uri).send({
-          from: coinbase,
+        tx = await historiesWithSigner.addUriWithERC20(id,uri,{
           gasPrice: 1000000000
-        }).once('transactionHash',(hash) => {
-          setTxMsg(
-            <center>
-             <LoadingRing />
-             <p><small>Tx sent <TransactionBadge transaction={hash} networkType={netId === 4 ? "rinkeby" : "xdai"} /></small></p>
-            </center>
-          );
         });
       } else {
-        await histories.methods.addUri(id,uri).send({
-          from: coinbase,
+        tx = await historiesWithSigner.addUri(id,uri,{
           gasPrice: 1000000000
-        }).once('transactionHash',(hash) => {
-          setTxMsg(
-            <center>
-             <LoadingRing />
-             <p><small>Tx sent <TransactionBadge transaction={hash} networkType={netId === 4 ? "rinkeby" : "xdai"} /></small></p>
-            </center>
-          );
         });
       }
+      setTxMsg(
+        <center>
+         <LoadingRing />
+         <p><small>Tx sent <TransactionBadge transaction={tx.hash} networkType={state.netId === 4 ? "rinkeby" : "xdai"} /></small></p>
+        </center>
+      );
+      await tx.wait();
       setTxMsg(
         <center>
          <p><small>Transaction confirmed!</small></p>
@@ -136,57 +121,70 @@ function HashHistories(){
         setTxMsg(null)
       },5000);
     }
-  },[histories,coinbase,text])
+  },[histories,state.coinbase,text])
 
   useMemo(async() => {
-    if(!metadata && id && hashavatars && histories ){
+    if(!metadata && id && state.hashavatars && histories ){
       try{
-        const uriToken = await hashavatars.methods.uri(id).call();
-        const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+        const obj = JSON.parse(
+          state.nfts.filter(string => {
+            const objStr = JSON.parse(string);
+            return(
+              Number(objStr.returnValues._id) === Number(id)
+            )
+          })
+        )
+        let metadataToken;
+        let uriToken;
+        let newCreator;
+        if(obj){
+          //alert(obj.returnValues._id)
+          //uriToken = obj.returnValues._id;
+          metadataToken = obj.metadata;
+          newCreator = obj.creator;
+        } else {
+          uriToken = await state.hashavatars.uri(id);
+          metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+          newCreator = await state.hashavatars.creators(id);
+        }
         fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
-        const newCreator = await hashavatars.methods.creators(id).call();
-        const profile = await getProfile(newCreator);
+        setMetadata(metadataToken);
         setCreator({
           address: newCreator,
-          profile: profile
+          profile: null
         });
-        const events = await histories.getPastEvents('UriAdded',{
-          filter:{
-            tokenId: id
-          },
-          fromBlock: 0
+        getProfile(newCreator).then(profile => {
+          setCreator({
+            address: newCreator,
+            profile: profile
+          });
         });
+
+        setLoading(false);
+        const filter = histories.filters.UriAdded(null,id,null);
+
+        const events = await histories.queryFilter(filter,0,'latest');
         events.map(async res=>{
-          const string = await (await fetch(`https://ipfs.io/ipfs/${res.returnValues.uri}`)).text()
+          const string = await (await fetch(`https://ipfs.io/ipfs/${res.args.uri}`)).text()
           setUris([...uris,string])
           return(string)
         });
-
-
-        setMetadata(metadataToken);
-        if(coinbase){
-          const balance = await hashavatars.methods.balanceOf(coinbase,id).call();
-          const historyTold = await histories.methods.uriAdded(coinbase,id).call();
+        if(state.coinbase){
+          const balance = await state.hashavatars.balanceOf(state.coinbase,id);
+          const historyTold = await histories.uriAdded(state.coinbase,id);
           if(balance > 0 && !historyTold){
             setIsOwner(true);
           }
         }
-        histories.events.UriAdded({
-          filter:{
-            tokenId: id
-          },
-          fromBlock: 'latest'
-        },async(err,res) => {
-          if(res){
-            const string = await (await fetch(`https://ipfs.io/ipfs/${res.returnValues.uri}`)).text()
-            const newUris = [...uris,string];
-            setUris(newUris);
-            if(coinbase){
-              const balance = await hashavatars.methods.balanceOf(coinbase,id).call();
-              const historyTold = await histories.methods.uriAdded(coinbase,id).call();
-              if(balance > 0){
-                setIsOwner(historyTold);
-              }
+        histories.on(filter,async (from,tokenId,uri) => {
+          const string = await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text()
+          const newUris = [...uris,string];
+          setUris(newUris);
+          if(state.coinbase){
+            const balance = await state.hashavatars.balanceOf(state.coinbase,id);
+            const historyTold = await histories.uriAdded(state.coinbase,id);
+            if(balance > 0){
+              setIsOwner(historyTold);
             }
           }
         });
@@ -197,20 +195,20 @@ function HashHistories(){
         }
       }
     }
-  },[uris,metadata,histories,id,hashavatars,coinbase,netId]);
+  },[uris,metadata,histories,id,state.hashavatars,state.coinbase,state.netId,state.nfts]);
 
   return(
     <Split
       primary={
         <>
         {
-          err && coinbase && netId === 4 &&
+          err && !metadata && !loading &&
           <Info title="Wrong token ID" mode="warning">
             <p>Please select other token ID</p>
           </Info>
         }
         {
-          err && netId !== 4 && coinbase &&
+          err && state.netId !== 4 && state.coinbase &&
           <Info title="HashHistories is under progress" mode="info">
             <p>HashHistories and HashAvatars profiles is under progress</p>
             <p>Switch to Rinkeby network if you want to check it</p>
@@ -222,7 +220,7 @@ function HashHistories(){
 
         }
         {
-          isOwner && histories && netId === 4 &&
+          isOwner && histories && state.netId === 4 &&
           <div>
           {
             !txMsg ?
@@ -233,8 +231,8 @@ function HashHistories(){
             <h4>Informations</h4>
             <IdentityBadge
               label={"HashHistories"}
-              entity={histories.options.address}
-              networkType={netId === 4 ? "rinkeby" : "xdai"}
+              entity={histories.address}
+              networkType={state.netId === 4 ? "rinkeby" : "xdai"}
               popoverTitle={"HashHistories"}
             />
             <p><small>To write a HashAvatar history you must have it in your wallet;</small></p>
@@ -253,7 +251,7 @@ function HashHistories(){
               text && (approvedCold > 0) && !txMsg ?
               <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.1 COLD</Button></div> :
               text && !txMsg &&
-              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.options.address)}>Approve COLD</Button></div>
+              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.address)}>Approve COLD</Button></div>
             }
             {
               txMsg
@@ -272,17 +270,21 @@ function HashHistories(){
       secondary={
 
         <div>
+          {
+            loading &&
+            <center><LoadingRing /></center>
+          }
           <div>
             <center>
               <img src={metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
             </center>
             <p>ID: {id}</p>
             {
-              hashavatars && netId &&
-              <p><small><Link href={`https://unifty.io/${netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${hashavatars.options.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
+              state.hashavatars && state.netId &&
+              <p><small><Link href={`https://unifty.io/${state.netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${state.hashavatars.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
             }
             {
-              hashavatars && netId && isOwner &&
+              state.hashavatars && state.netId && isOwner &&
               <p><small><Link href="https://xdai-omnibridge-nft-staging.web.app/bridge" external><IconLink />NFT Bridge</Link></small></p>
             }
           </div>
@@ -297,7 +299,7 @@ function HashHistories(){
                 <IdentityBadge
                   label={creator.profile?.name}
                   entity={creator.address}
-                  networkType={netId === 4 ? "rinkeby" : "xdai"}
+                  networkType={state.netId === 4 ? "rinkeby" : "xdai"}
                   popoverTitle={creator.profile?.name }
                 />
                 </RouterLink>

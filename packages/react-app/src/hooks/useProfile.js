@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 // Enter a valid infura key here to avoid being rate limited

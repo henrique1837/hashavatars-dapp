@@ -1,12 +1,11 @@
-import React,{useCallBack,useState} from "react";
-import { Container,Row,Col,Image } from 'react-bootstrap';
+import React,{useState} from "react";
+import { Container,Row,Col } from 'react-bootstrap';
 import { TextInput,Button } from '@aragon/ui'
-import useWeb3Modal from "../hooks/useWeb3Modal";
 import useWaku from "../hooks/useWaku";
 
 function Feedbacks(){
   const [value,setValue] = useState();
-  const {waku,msgs,sendMessage} = useWaku();
+  const {waku,sendMessage} = useWaku();
 
   const sendMsg = () => {
     if(value){

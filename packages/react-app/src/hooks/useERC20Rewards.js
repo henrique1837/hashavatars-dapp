@@ -1,8 +1,8 @@
 import { useCallback,useMemo, useState } from "react";
 import { addresses, abis } from "@project/contracts";
+import { ethers } from "ethers";
 
-import useWeb3Modal from "./useWeb3Modal";
-import { useAppContext } from '../hooks/useAppState'
+import { useAppContext } from './useAppState'
 import useERC20 from "./useERC20";
 
 function useERC20Rewards() {
@@ -29,7 +29,7 @@ function useERC20Rewards() {
         promises.push(
           new Promise(async (resolve,reject) => {
             try{
-              const claimed = await rewards.methods.claimed(state.coinbase,id).call();
+              const claimed = await rewards.claimed(state.coinbase,id);
               if(!claimed){
                 newIds.push(id);
                 idsChecked.push(ids)
@@ -44,7 +44,7 @@ function useERC20Rewards() {
       }
     }
     await Promise.all(promises);
-    const newBalanceHash = await hash.methods.balanceOf(rewards.options.address).call();
+    const newBalanceHash = await hash.balanceOf(rewards.address);
     setRewardsHashBalance(newBalanceHash);
     setIds(newIds);
     if(newIds.length > 0 && Number(newBalanceHash) > 0){
@@ -60,9 +60,12 @@ function useERC20Rewards() {
   const claimRewards = useCallback(async () => {
     if(ids.length > 0){
       try{
-        await rewards.methods.claimMany(ids).send({
-          from: state.coinbase
-        });
+        const signer = state.provider.getSigner()
+
+        const rewardsWithSigner = rewards.connect(signer);
+
+        const tx = await rewardsWithSigner.claimMany(ids);
+        await tx.wait();
         setIds([]);
       } catch(err){
         console.log(err)
@@ -73,34 +76,22 @@ function useERC20Rewards() {
 
   useMemo(async () => {
     if(!rewards && state.provider){
-      setRewards(new state.provider.eth.Contract(abis.erc20Rewards,addresses.erc20Rewards.rinkeby));
-
+      setRewards(new ethers.Contract(addresses.erc20Rewards.rinkeby,abis.erc20Rewards,state.provider))
     }
     if(state.coinbase && rewards && state.myNfts && state.hashavatars && !state.loadingNFTs && hash){
       const ids = await getRewards();
-      state.hashavatars.events.URI({
-        filter:{},
-        fromBlock: 'latest'
-      },async (err,res)=> {
+      state.hashavatars.on("URI", async (value,id) => {
         await getRewards();
-      })
 
-      hash.events.Transfer({
-        filter:{
-          to: rewards.options.address
-        },
-        fromBlock: 'latest'
-      },async (err,res) => {
-        await getRewards()
       });
-      hash.events.Transfer({
-        filter:{
-          from: rewards.options.address
-        },
-        fromBlock: 'latest'
-      },async (err,res) => {
-        await getRewards()
-      })
+      let filter = hash.filters.Transfer(null, rewards.address);
+      hash.on(filter, async (from, to, amount, event) => {
+          await getRewards()
+      });
+      filter = hash.filters.Transfer(rewards.address, null);
+      hash.on(filter, async (from, to, amount, event) => {
+          await getRewards()
+      });
 
       setChecked(true);
 

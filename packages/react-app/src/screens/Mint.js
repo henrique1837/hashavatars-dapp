@@ -5,19 +5,16 @@ import { Container,Row,Col,Spinner } from 'react-bootstrap';
 import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator,LoadingRing,Link } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
-import Avatar from '../avataaars';
 import IPFS from 'ipfs-http-client-lite';
+import { ethers } from "ethers";
+import Avatar from '../avataaars';
 
 import { useAppContext } from '../hooks/useAppState'
-import useWeb3Modal from "../hooks/useWeb3Modal";
-import useContract from "../hooks/useContract";
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
 })
 function Mint(){
-  const {loadWeb3Modal,coinbase,connecting} = useWeb3Modal();
-  const {getMetadata,getTotalSupply} = useContract();
   const { state } = useAppContext();
 
   const [avatar,setAvatar] = useState();
@@ -70,9 +67,9 @@ function Mint(){
       setMintingMsg(<p><small>Checking all tokens already minted ... </small></p>);
 
       const promises = [];
-      const totalSupply = await getTotalSupply();
+      const totalSupply = await state.getTotalSupply();
       for(let i = 1; i <= totalSupply; i++){
-        promises.push(getMetadata(i,state.hashavatars))
+        promises.push(state.getMetadata(i,state.hashavatars))
       }
 
       const metadatas = await Promise.allSettled(promises);
@@ -93,7 +90,7 @@ function Mint(){
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
       const imgres = await ipfs.add(svg);
       fetch(`https://ipfs.io/ipfs/${imgres[0].hash}`)
-      const id = Number(await state.hashavatars.methods.totalSupply().call()) + 1;
+      const id = Number(totalSupply) + 1;
       console.log(id)
       let metadata = {
           name: avatar.name,
@@ -164,29 +161,27 @@ function Mint(){
         recipient: state.coinbase,
         value: 500
       }];
+      const signer = state.provider.getSigner()
 
-      await state.hashavatars.methods.mint(id,fees,1,uri).send({
-        from: state.coinbase,
-        value: 10 ** 18,
+      const tokenWithSigner = state.hashavatars.connect(signer);
+
+      const tx = await tokenWithSigner.mint(id,fees,1,uri,{
+        value: ethers.utils.parseEther('1'),
         gasPrice: 1000000000
-      }).once('transactionHash',(hash) => {
-        setMintingMsg(
-          <div>
-           Tx sent <TransactionBadge
-                    as={Link}
-                    href={state.netId !== 4 ? `https://blockscout.com/xdai/mainnet/tx/${hash}` : `https://rinkeby.etherscan.io/tx/${hash}`}
-                    transaction={hash}
-                    external
-                    networkType={state.netId !== 4 ? "xdai" : "rinkeby"}
-                   />
-          </div>
-        )
-        /*
-        this.setState({
-          mintingMsg: <p><small>Transaction <Link href={`https://blockscout.com/xdai/mainnet/tx/${hash}`} isExternal >{hash}</Link> sent, wait confirmation ...</small></p>
-        });
-        */
       });
+
+      setMintingMsg(
+        <div>
+         Tx sent <TransactionBadge
+                  as={Link}
+                  href={state.netId !== 4 ? `https://blockscout.com/xdai/mainnet/tx/${tx.hash}` : `https://rinkeby.etherscan.io/tx/${tx.hash}`}
+                  transaction={tx.hash}
+                  external
+                  networkType={state.netId !== 4 ? "xdai" : "rinkeby"}
+                 />
+        </div>
+      )
+      await tx.wait();
       setMintingMsg(<p><small>Transaction confirmed! UI will update soon ...</small></p>)
       setTimeout(() => {
         setMinting(false);
@@ -200,15 +195,21 @@ function Mint(){
         setMintingMsg(null);
       },2000)
     }
-  },[state,avatar,svg,getMetadata,getTotalSupply,state.hashavatars]);
+  },[state,avatar,svg,state.getMetadata,state.getTotalSupply,state.hashavatars]);
 
 
   const handleOnChange = async (e) => {
         e.preventDefault();
-        try{
-          const web3 = state.provider;
-          const dna = web3.utils.toBN(web3.utils.toHex(web3.utils.sha3(e.target.value.trim()))).toString();
 
+        try{
+
+          const dna = ethers.BigNumber.from(
+            //ethers.BigNumber.toHexString(
+              ethers.utils.keccak256(
+                ethers.utils.toUtf8Bytes(e.target.value.trim())
+              )
+            //)
+          ).toString();
           let topIndex = (Number(dna.substring(0,2)) % 35 + 1).toFixed(0);
           if(topIndex > avatarsVar.top.length - 1){
             topIndex = topIndex - (avatarsVar.top.length - 1)*(topIndex/(avatarsVar.top.length - 1));
@@ -357,7 +358,7 @@ function Mint(){
             (
                 !minting && !pendingTx ?
                 (
-                  state.hashavatars && !connecting ?
+                  state.hashavatars && !state.connecting ?
                   (
                     canMint ?
                     <Button onClick={mint}>Claim</Button> :
@@ -373,8 +374,8 @@ function Mint(){
                 )
 
             ) :
-            !coinbase && window.ethereum ?
-            state.hashavatars && <Button onClick={loadWeb3Modal}>Connect Wallet</Button> :
+            !state.coinbase && window.ethereum ?
+            state.hashavatars && <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button> :
             !window.ethereum && <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
 
 

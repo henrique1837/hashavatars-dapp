@@ -1,7 +1,6 @@
 import { useCallback,useMemo, useState } from "react";
-import Web3 from "web3";
+import { ethers } from "ethers";
 import Web3Modal from "web3modal";
-import ethProvider from "eth-provider";
 
 import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
@@ -58,7 +57,10 @@ function useWeb3Modal(config = {}) {
   const logoutOfWeb3Modal = useCallback(
     async function () {
       await web3Modal.clearCachedProvider();
-      window.location.reload();
+      setCoinbase();
+      setProfile()
+      setNetId(0x89);
+      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com/"));
     },
     [web3Modal],
   );
@@ -67,19 +69,29 @@ function useWeb3Modal(config = {}) {
 
     try{
       setConnecting(true)
-      const newProvider = await web3Modal.connect();
-      const web3 = new Web3(newProvider);
-      const newCoinbase = await web3.eth.getCoinbase();
-      const newNetId = await web3.eth.net.getId();
-      setProvider(web3);
-      setCoinbase(newCoinbase);
-      setNetId(newNetId);
-      setNoProvider(true);
       setAutoLoaded(true);
-      newProvider.on('accountsChanged', accounts => window.location.reload(true));
-      newProvider.on('chainChanged', chainId => window.location.reload(true));
+      const conn = await web3Modal.connect();
+      const newProvider = new ethers.providers.Web3Provider(conn,"any");
+      const signer = newProvider.getSigner()
+      const newCoinbase = await signer.getAddress();
+
+      const {chainId} = await newProvider.getNetwork();
+      setProvider(newProvider);
+      setCoinbase(newCoinbase);
+      setNetId(chainId);
+      setNoProvider(true);
+      conn.on('accountsChanged', accounts => {
+        const newProvider = new ethers.providers.Web3Provider(conn,"any");
+        setProvider(newProvider)
+        setCoinbase(accounts[0]);
+      });
+      conn.on('chainChanged', async chainId => {
+        const newProvider = new ethers.providers.Web3Provider(conn,"any");
+        setProvider(newProvider)
+        setNetId(Number(chainId))
+      });
       // Subscribe to provider disconnection
-      newProvider.on("disconnect", async (error: { code: number; message: string }) => {
+      conn.on("disconnect", async (error: { code: number; message: string }) => {
         logoutOfWeb3Modal();
       });
       setConnecting(false);
@@ -106,8 +118,8 @@ function useWeb3Modal(config = {}) {
 
   useMemo(() => {
 
-    if(!noProvider && !window.ethereum?.selectedAddress && !autoLoaded && !web3Modal.cachedProvider){
-      setProvider(new Web3("https://rpc.xdaichain.com/"));
+    if(!noProvider && !window.ethereum?.selectedAddress && !autoLoaded && !web3Modal.cachedProvider && !connecting){
+      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com"));
       setNetId(0x64);
       setNoProvider(true);
     }

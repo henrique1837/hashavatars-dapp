@@ -1,20 +1,20 @@
-import { useCallback,useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { addresses, abis } from "@project/contracts";
+import { ethers } from "ethers";
 
-import useWeb3Modal from "./useWeb3Modal";
-import useContract from "./useContract";
+import { useAppContext } from './useAppState'
 
 function useHashHistories() {
 
-  const {provider} = useWeb3Modal();
+  const { state } = useAppContext();
   const [histories,setHistories] = useState();
 
 
   useMemo(() => {
-    if(!histories && provider){
-      setHistories(new provider.eth.Contract(abis.hashHistories,addresses.hashHistories.rinkeby));
+    if(!histories && state.provider){
+      setHistories(new ethers.Contract(addresses.hashHistories.rinkeby,abis.hashHistories,state.provider))
     }
-  },[histories,provider])
+  },[histories,state.provider])
 
 
 

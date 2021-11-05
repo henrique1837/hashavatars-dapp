@@ -33,82 +33,64 @@ import Menu from "./components/Menu";
 
 function App() {
 
-  const {provider,coinbase,netId,profile} = useWeb3Modal();
-  const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply} = useContract();
+  const {provider,coinbase,netId,profile,connecting,loadWeb3Modal} = useWeb3Modal();
+  const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
   const { state, actions } = useAppState()
   const [nftsLength,setNftsLength] = useState();
   const [myNftsLength,setMyNftsLength] = useState();
   const [myOwnedNftsLength,setMyOwnedNftsLength] = useState();
 
-  const [previousCoinbase,setPrevCoinbase] = useState();
-  const [previousNetId,setPrevsNetId] = useState();
-  const [previousHashAvatars,setPrevsHashAvatars] = useState();
-  const [previousCreators,setPrevsCreators] = useState();
-  const [previousTotalSupply,setPrevsTotalSupply] = useState();
-  const [previousLoadingNFTs,setPrevsLoadingNFTs] = useState();
-
   useEffect(() => {
-    if((coinbase !== previousCoinbase) || (netId !== previousNetId) ){
-      setPrevCoinbase(coinbase);
-      setPrevsNetId(netId);
-      actions.setProvider(provider);
-      actions.setNetId(netId);
-      actions.setCoinbase(coinbase);
-      actions.setProfile(profile);
-    }
+    actions.setConnecting(connecting);
+  },[connecting])
+  useEffect(() => {
+    actions.setProvider(provider);
+    actions.setLoadWeb3Modal(loadWeb3Modal);
+  },[provider])
+  useEffect(() => {
+    actions.setCoinbase(coinbase);
+  },[coinbase])
+  useEffect(() => {
+    actions.setNetId(netId);
+  },[netId])
+  useEffect(() => {
+    actions.setProfile(profile);
+  },[profile])
+  useEffect(() => {
+    actions.setHashAvatars(hashavatars);
+    actions.setGetTotalSupply(getTotalSupply);
+    actions.setGetMetadata(getMetadata);
 
-
-    if(hashavatars !== previousHashAvatars){
-      actions.setHashAvatars(hashavatars);
-      setPrevsHashAvatars(hashavatars)
-    }
-    if(nfts && nftsLength !== nfts.length){
+  },[hashavatars])
+  useEffect(() => {
+    if(nfts.length !==nftsLength){
       actions.setNfts(nfts)
-      setNftsLength(nfts.length);
+      setNftsLength(nfts.length)
+    }
+  },[nfts,nftsLength])
+  useEffect(() => {
+    if(myOwnedNfts.length !==myOwnedNftsLength){
+      actions.setMyOwnedNfts(myOwnedNfts)
+      setMyOwnedNftsLength(myOwnedNfts.length)
+    }
+  },[myOwnedNfts,myOwnedNftsLength])
+  useEffect(() => {
+    if(myNfts.length !== myNftsLength){
+      actions.setMyNfts(myNfts)
+      setMyNftsLength(myNfts.length)
     }
 
-    if(myNfts && myNftsLength !== myNfts.length){
-      actions.setMyNfts(myNfts);
-      setMyNftsLength(myNfts.length);
-    }
-    if(myOwnedNfts && myOwnedNftsLength !== myOwnedNfts.length){
-      actions.setMyOwnedNfts(myOwnedNfts);
-      setMyOwnedNftsLength(myOwnedNfts.length);
-    }
+  },[myNfts])
+  useEffect(() => {
+    actions.setLoadingNFTs(loadingNFTs)
+  },[loadingNFTs])
+  useEffect(() => {
+    actions.setTotalSupply(totalSupply)
+  },[totalSupply])
+  useEffect(() => {
+    actions.setCreators(creators)
+  },[creators])
 
-    if(loadingNFTs !== previousLoadingNFTs){
-      actions.setLoadingNFTs(loadingNFTs)
-      setPrevsLoadingNFTs(loadingNFTs)
-
-    }
-    if(totalSupply !== previousTotalSupply){
-      actions.setTotalSupply(totalSupply)
-      setPrevsTotalSupply(totalSupply)
-
-    }
-    if(creators !== previousCreators){
-      actions.setCreators(creators)
-      setPrevsCreators(creators)
-
-    }
-  },[
-    actions,
-    provider,
-    coinbase,
-    netId,
-    hashavatars,
-    nfts,
-    myNfts,
-    loadingNFTs,
-    creators,
-    totalSupply,
-    myNftsLength,
-    nftsLength,
-    previousCoinbase,
-    myOwnedNfts,
-    myOwnedNftsLength,
-    profile
-  ]);
   return (
     <Main>
 
