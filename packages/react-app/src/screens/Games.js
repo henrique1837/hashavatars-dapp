@@ -4,6 +4,7 @@ import { Button } from '@aragon/ui';
 
 import HashAtack from './games/HashAtack'
 import HashVille from './games/HashVilleUnderHashAtack'
+//import HashOperation from './games/HashOperation'
 
 function GamesPage() {
 

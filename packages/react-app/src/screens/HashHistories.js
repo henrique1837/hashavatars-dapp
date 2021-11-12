@@ -187,7 +187,6 @@ function HashHistories(){
         });
         // thegraph
         histories.on(filter,async (from,tokenId,uri) => {
-          alert(uri)
           setLoadingHistories(true);
           const string = await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text()
           const newUris = [...uris,string];
