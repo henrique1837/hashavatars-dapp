@@ -21,7 +21,7 @@ import Histories from "./screens/HashHistories";
 
 import GamesPage from "./screens/Games";
 
-import Feedbacks from "./screens/Feedbacks";
+//import Feedbacks from "./screens/Feedbacks";
 
 import AllAvatars from "./screens/AllAvatars";
 

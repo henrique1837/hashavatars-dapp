@@ -4,7 +4,7 @@ import { addresses, abis } from "@project/contracts";
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { ethers } from "ethers";
 
-
+import useIpfs from './useIPFS';
 import useWeb3Modal from "./useWeb3Modal";
 
 
@@ -19,6 +19,7 @@ const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai
 function useContract() {
 
   const {provider,coinbase,netId} = useWeb3Modal();
+  const {ipfs} = useIpfs();
   const [hashavatars,setHashAvatars] = useState();
   const [getData,setGetData] = useState();
   const [client,setClient] = useState();
@@ -31,6 +32,7 @@ function useContract() {
   const [myOwnedNfts,setMyOwnedNfts] = useState([]);
 
   const [loadingNFTs,setLoadingNFTs] = useState();
+  const [pinning,setPinning] = useState(false);
 
   let ids = [];
 
@@ -41,6 +43,11 @@ function useContract() {
     fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
     //const image = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text()
     //metadataToken.svg = image;
+
+    if(ipfs){
+      ipfs.pin.add(uriToken.replace("ipfs://",""))
+      ipfs.pin.add(metadataToken.image.replace("ipfs://",""))
+    }
     return(metadataToken)
   }
 
@@ -187,7 +194,8 @@ function useContract() {
       const obj = {
         returnValues: returnValues,
         metadata: metadata,
-        creator: creator
+        creator: creator,
+        tokenUri: res.metadata
       }
       if(!nfts.includes(JSON.stringify(obj))){
         const newNfts = nfts;
@@ -265,7 +273,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,coinbase,creators,nfts,myNfts,myOwnedNfts])
+  },[hashavatars,coinbase,creators,nfts,myNfts,myOwnedNfts,ipfs])
 
   useMemo(() => {
     if(provider && netId && !hashavatars){
@@ -435,8 +443,20 @@ function useContract() {
     hashavatars,
     nfts,
     totalSupply,
-    getData,
+    getData
   ])
+
+  useMemo(() => {
+    if(!loadingNFTs && ipfs &&!pinning){
+      setPinning(true)
+      nfts.map(async string => {
+        const obj = JSON.parse(string);
+        await ipfs.pin.add(obj.tokenUri.replace("ipfs://",""))
+        await ipfs.pin.add(obj.metadata.image.replace("ipfs://",""))
+        return(string);
+      })
+    }
+  },[ipfs,nfts,loadingNFTs,pinning])
 
   return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }

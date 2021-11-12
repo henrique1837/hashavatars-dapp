@@ -42,6 +42,8 @@ function HashHistories(){
   const [txMsg,setTxMsg] = useState();
   const [uris,setUris] = useState([]);
   const [loading,setLoading] = useState(true);
+  const [loadingHistories,setLoadingHistories] = useState(true);
+
   const {id} = useParams();
 
   const [opened, setOpened] = useState(false)
@@ -134,6 +136,7 @@ function HashHistories(){
             )
           })
         )
+
         let metadataToken;
         let uriToken;
         let newCreator;
@@ -147,6 +150,7 @@ function HashHistories(){
           metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
           newCreator = await state.hashavatars.creators(id);
         }
+
         fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
         setMetadata(metadataToken);
         setCreator({
@@ -160,23 +164,31 @@ function HashHistories(){
           });
         });
 
-        setLoading(false);
-        const filter = histories.filters.UriAdded(null,id,null);
 
-        const events = await histories.queryFilter(filter,0,'latest');
-        events.map(async res=>{
-          const string = await (await fetch(`https://ipfs.io/ipfs/${res.args.uri}`)).text()
-          setUris([...uris,string])
-          return(string)
-        });
+        setLoading(false);
         if(state.coinbase){
-          const balance = await state.hashavatars.balanceOf(state.coinbase,id);
+          const balance = await state.hashavatars.balanceOf(state.coinbase,id)
           const historyTold = await histories.uriAdded(state.coinbase,id);
           if(balance > 0 && !historyTold){
             setIsOwner(true);
           }
         }
+        const filter = histories.filters.UriAdded(null,Number(id));
+        // Change here for thegraph //
+        const events = await histories.queryFilter(filter,0,'latest');
+        if(events.length === 0){
+          setLoadingHistories(false)
+        }
+        events.map(async res=>{
+          const string = await (await fetch(`https://ipfs.io/ipfs/${res.args.uri}`)).text()
+          setUris([...uris,string]);
+          setLoadingHistories(false);
+          return(string)
+        });
+        // thegraph
         histories.on(filter,async (from,tokenId,uri) => {
+          alert(uri)
+          setLoadingHistories(true);
           const string = await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text()
           const newUris = [...uris,string];
           setUris(newUris);
@@ -184,10 +196,13 @@ function HashHistories(){
             const balance = await state.hashavatars.balanceOf(state.coinbase,id);
             const historyTold = await histories.uriAdded(state.coinbase,id);
             if(balance > 0){
-              setIsOwner(historyTold);
+              setIsOwner(!historyTold);
             }
           }
+          setLoadingHistories(false);
+
         });
+
       } catch(err){
         console.log(err)
         if(!metadata){
@@ -215,12 +230,12 @@ function HashHistories(){
           </Info>
         }
         {
-          (!metadata || !creator || !id) &&
+          loading &&
           <SyncIndicator/>
 
         }
         {
-          isOwner && histories && state.netId === 4 &&
+          isOwner && histories && state.netId === 4 && !loadingHistories &&
           <div>
           {
             !txMsg ?
@@ -260,6 +275,13 @@ function HashHistories(){
           </div>
         }
         <h4>History {metadata && <>of {metadata?.name}</>}</h4>
+        {
+          loadingHistories &&
+          <center>
+          <p><LoadingRing /></p>
+          <p><small>Loading histories ...</small></p>
+          </center>
+        }
         {
           uris?.map(string => {
             return(<div>{string}</div>)

@@ -2,7 +2,7 @@ import React,{useMemo,useState,useCallback} from "react";
 import ReactDOMServer from 'react-dom/server';
 
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
-import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,SyncIndicator,LoadingRing,Link } from '@aragon/ui';
+import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,LoadingRing,Link } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
 import IPFS from 'ipfs-http-client-lite';
@@ -23,7 +23,6 @@ function Mint(){
   const [focused,setFocused] = useState(false);
 
   const [mintingMsg,setMintingMsg] = useState(false);
-  const [pendingTx,setPendingTx] = useState(false);
 
   const [svg,setSVG] = useState();
 
@@ -67,12 +66,18 @@ function Mint(){
       setMintingMsg(<p><small>Checking all tokens already minted ... </small></p>);
 
       const promises = [];
-      const totalSupply = await state.getTotalSupply();
-      for(let i = 1; i <= totalSupply; i++){
-        promises.push(state.getMetadata(i,state.hashavatars))
+      const totalSupply = await state.totalSupply;
+      let metadatas = state.nfts.map(string => {
+        const obj = JSON.parse(string);
+        return(obj.metadata)
+      });
+      if(metadatas.length !== totalSupply){
+        for(let i = 1; i <= totalSupply; i++){
+          promises.push(state.getMetadata(i,state.hashavatars))
+        }
+        metadatas = await Promise.allSettled(promises);
       }
 
-      const metadatas = await Promise.allSettled(promises);
       let cont = true;
 
       metadatas.map(obj => {
@@ -195,7 +200,7 @@ function Mint(){
         setMintingMsg(null);
       },2000)
     }
-  },[state,avatar,svg,state.getMetadata,state.getTotalSupply,state.hashavatars]);
+  },[state,avatar,svg,state.getMetadata,state.totalSupply,state.hashavatars]);
 
 
   const handleOnChange = async (e) => {
@@ -354,17 +359,17 @@ function Mint(){
         <center>
         {
           (
-            state.coinbase ?
+            state.coinbase && state.hashavatars ?
             (
-                !minting && !pendingTx ?
+                !minting ?
                 (
-                  state.hashavatars && !state.connecting ?
+                  !state.connecting ?
                   (
                     canMint ?
                     <Button onClick={mint}>Claim</Button> :
                     <p>HashAvatar with that name already claimed</p>
                   ) :
-                  <p><LoadingRing/><small>Loading smart contract</small></p>
+                  <p><LoadingRing/><small>Loading</small></p>
                 ) :
                 (
                   <div style={{wordBreak: 'break-word'}}>
@@ -374,9 +379,9 @@ function Mint(){
                 )
 
             ) :
-            !state.coinbase && window.ethereum ?
-            state.hashavatars && <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button> :
-            !window.ethereum && <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
+            window.ethereum ?
+            <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button> :
+            <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
 
 
           )
@@ -421,10 +426,6 @@ function Mint(){
           }
           </Row>
           </>
-        }
-        {
-          state.loadingNFTs &&
-          <SyncIndicator />
         }
       </Container>
     </>

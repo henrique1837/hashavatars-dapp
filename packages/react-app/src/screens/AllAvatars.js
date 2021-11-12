@@ -1,6 +1,6 @@
 import React,{useState} from "react";
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar,SyncIndicator } from '@aragon/ui'
+import { Link,IconLink,IdentityBadge,Pagination,Split,Button,EthIdenticon,ProgressBar } from '@aragon/ui'
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState'
@@ -127,10 +127,6 @@ function AllAvatars(){
           }
         />
 
-        {
-          state.loadingNFTs &&
-          <SyncIndicator />
-        }
       </Container>
     </>
   )
