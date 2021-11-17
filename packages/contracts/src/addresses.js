@@ -7,7 +7,7 @@ const addresses = {
       rinkeby: "0x4f959be3d630200eb3ce29b8e3316badfd056cc7"
     },
     hash: {
-      rinkeby: "0x84531e649574713bde08beafae2f429cd4372c10"
+      rinkeby: "0xef989c48a2b49185144c6f987d8f0194f050814b"
     }
   },
   erc1155: {
@@ -16,11 +16,16 @@ const addresses = {
     mainnet_bridged: "0xb74ca8bd02cc027a3f62f9a142cc195220c729cd"
   },
   hashHistories: {
-    rinkeby: "0x127400C35348Ac719ADD2bC522Db6B5372384488",
+    xdai: "0x4EDBD2c1dE6c29c0FC8c495d9dF76650ce310e24",
+    rinkeby: "0xf23aD8E3ABe73042c024A187e6cba904439b24b5",
     rinkebyOld: "0x611592a48bff170d2a472dc736feafb315949aa0"
   },
   erc20Rewards:{
-    rinkeby: "0x5Bd609966AEF613B9a7503555A95DEfbeF8B3880"
+    rinkeby: "0xaB54FfE555ae9174C6397194A995f2fd58f42F99"
+  },
+  likes:{
+    rinkeby: "0x6B2aeBCD6D5143deCA1030AD391A6af1F28aE949" ,
+    xdai: "0x3086f887Ed3c682fe3282BDB0305Fa9aF8a363dc"
   }
 };
 

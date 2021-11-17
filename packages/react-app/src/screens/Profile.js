@@ -4,16 +4,16 @@ import { Link,IconLink,IdentityBadge,Split,ProgressBar,SyncIndicator,TokenAmount
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState'
-import useERC20 from "../hooks/useERC20";
-import useERC20Rewards from "../hooks/useERC20Rewards";
+//import useERC20 from "../hooks/useERC20";
+//import useERC20Rewards from "../hooks/useERC20Rewards";
 
 function Profile(){
   const { state } = useAppContext();
-  const {rewards,claimRewards,haveRewards} = useERC20Rewards();
+  //const {rewards,claimRewards,haveRewards} = useERC20Rewards();
 
-  const {coldBalance,hashBalance} = useERC20();
+  //const {coldBalance,hashBalance} = useERC20();
 
-  const [claiming,setClaiming] = useState(false);
+  //const [claiming,setClaiming] = useState(false);
 
 
   return(
@@ -104,11 +104,14 @@ function Profile(){
               <p><small>Created a total of {state.myNfts?.length} HashAvatars</small></p>
               <p><small>Owns a total of {state.myOwnedNfts?.length} HashAvatars</small></p>
               {
+                /*
                 (coldBalance || hashBalance) &&
                 <p>Balances:</p>
+                */
               }
               <div>
               {
+                /*
                 coldBalance &&
                 <TokenAmount
                   address={state.coinbase}
@@ -117,10 +120,12 @@ function Profile(){
                   iconUrl={'https://ipfs.io/ipfs/bafkreihncs32gbqx42cgwoqxouk6lv6ytdufddhgfajpersoxirvijjtei'}
                   symbol={"COLD"}
                 />
+                */
               }
               </div>
               <div>
               {
+                /*
                 hashBalance &&
                 <TokenAmount
                   address={state.coinbase}
@@ -146,6 +151,7 @@ function Profile(){
                     }
                   }} mode="strong">Claim</Button></center>
                 </Info>
+                */
               }
               </div>
             </div>
@@ -154,8 +160,8 @@ function Profile(){
         />
 
         {
-          (state.loadingNFTs ||
-          ((!coldBalance || !hashBalance || !rewards) && state.coinbase && state.netId === 4)) &&
+          state.loadingNFTs &&
+          //|| ((!coldBalance || !hashBalance || !rewards) && state.coinbase && state.netId === 4)) &&
           <SyncIndicator />
         }
       </Container>

@@ -16,14 +16,18 @@ import {
   Bar,
   LoadingRing,
   TransactionBadge,
-  BackButton
+  BackButton,
+  IconStar,
+  IconStarFilled
 } from '@aragon/ui';
 import IPFS from 'ipfs-http-client-lite';
 
 import { useAppContext } from '../hooks/useAppState'
 import useProfile from "../hooks/useProfile";
 import useHashHistories from "../hooks/useHashHistories";
-import useERC20 from "../hooks/useERC20";
+import useLikes from "../hooks/useLikes";
+
+//import useERC20 from "../hooks/useERC20";
 
 const ipfs = IPFS({
   apiUrl: 'https://ipfs.infura.io:5001'
@@ -31,10 +35,12 @@ const ipfs = IPFS({
 function HashHistories(){
   const { state } = useAppContext();
 
-  const {cold,coldBalance,approvedCold,approveCold} = useERC20();
 
   const {getProfile} = useProfile();
   const {histories} = useHashHistories();
+  const {likes,like,unlike,getLiked,getLikes,liking} = useLikes();
+  const [totalLikes,setLikes] = useState(null);
+  const [liked,setLiked] = useState(null);
   const [metadata,setMetadata] = useState();
   const [creator,setCreator] = useState();
   const [isOwner,setIsOwner] = useState();
@@ -78,24 +84,10 @@ function HashHistories(){
          <p><small>Approve transaction</small></p>
         </center>
       );
-      const price = await histories.price();
       const signer = state.provider.getSigner();
       const historiesWithSigner = histories.connect(signer);
-      let tx;
-      if(type === 0){
-        tx = await historiesWithSigner.addUri(id,uri,{
-          value: price,
-          gasPrice: 1000000000
-        });
-      } else if(type === 1) {
-        tx = await historiesWithSigner.addUriWithERC20(id,uri,{
-          gasPrice: 1000000000
-        });
-      } else {
-        tx = await historiesWithSigner.addUri(id,uri,{
-          gasPrice: 1000000000
-        });
-      }
+      const tx = await historiesWithSigner.addUri(id,uri,{});
+
       setTxMsg(
         <center>
          <LoadingRing />
@@ -125,6 +117,20 @@ function HashHistories(){
     }
   },[histories,state.coinbase,text])
 
+  const likeToken = useCallback(async () => {
+    await like(id);
+    const newLiked = await getLikes(id);
+    const newLikes = await getLiked(id);
+    return(newLikes)
+  },[likes,like,state.coinbase,id,getLikes,getLiked])
+
+  const unlikeToken = useCallback(async () => {
+    await unlike(id);
+    const newLiked =await getLikes(id);
+    const newLikes = await getLiked(id);
+    setLiked(newLiked);
+    setLikes(newLikes);
+  },[likes,unlike,state.coinbase,id,,getLikes,getLiked])
   useMemo(async() => {
     if(!metadata && id && state.hashavatars && histories ){
       try{
@@ -150,8 +156,6 @@ function HashHistories(){
           metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
           newCreator = await state.hashavatars.creators(id);
         }
-
-        fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
         setMetadata(metadataToken);
         setCreator({
           address: newCreator,
@@ -168,9 +172,9 @@ function HashHistories(){
         setLoading(false);
         if(state.coinbase){
           const balance = await state.hashavatars.balanceOf(state.coinbase,id)
-          const historyTold = await histories.uriAdded(state.coinbase,id);
-          if(balance > 0 && !historyTold){
-            setIsOwner(true);
+          if(balance > 0){
+            const historyTold = await histories.uriAdded(state.coinbase,id);
+            setIsOwner(!historyTold);
           }
         }
         const filter = histories.filters.UriAdded(null,Number(id));
@@ -211,6 +215,17 @@ function HashHistories(){
     }
   },[uris,metadata,histories,id,state.hashavatars,state.coinbase,state.netId,state.nfts]);
 
+  useMemo(async () => {
+    if(likes && id && totalLikes === null){
+      if(state.coinbase){
+        const newLiked = await getLiked(id);
+        setLiked(newLiked);
+      }
+      const newLikes = await getLikes(id);
+      setLikes(newLikes);
+    }
+  },[likes,state.coinbase,id,totalLikes])
+
   return(
     <Split
       primary={
@@ -222,11 +237,13 @@ function HashHistories(){
           </Info>
         }
         {
+          /*
           err && state.netId !== 4 && state.coinbase &&
           <Info title="HashHistories is under progress" mode="info">
             <p>HashHistories and HashAvatars profiles is under progress</p>
             <p>Switch to Rinkeby network if you want to check it</p>
           </Info>
+          */
         }
         {
           loading &&
@@ -234,7 +251,7 @@ function HashHistories(){
 
         }
         {
-          isOwner && histories && state.netId === 4 && !loadingHistories &&
+          isOwner && histories && !loadingHistories &&
           <div>
           {
             !txMsg ?
@@ -250,15 +267,15 @@ function HashHistories(){
               popoverTitle={"HashHistories"}
             />
             <p><small>To write a HashAvatar history you must have it in your wallet;</small></p>
-            <p><small>You can write it for free (needs to pay gas fee) or by paying 0.1 xdai or 0.1 COLD;</small></p>
-            <p><small>If you pays in xdai or COLD you will receive Hash Governance Token (HGT) to participate in our DAO;</small></p>
-            <p><small>New owners of this same token id can continue its history;</small></p>
+            <p><small>You can write it for free (needs to pay gas fee);</small></p>
+            <p><small><b>Only new owners of this same token id can continue its history</b>;</small></p>
             <p><small>Ready? Let us know {metadata.name}'s history!</small></p>
             <div><textarea rows="5" cols="40" onChange={handleOnChange} onKeyUp={handleOnChange} id="history"></textarea></div>
             {
-              text && !txMsg && <div style={{paddingTop:'10px',paddingBottom:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(3)}>Add history for free</Button></div>
+              text && !txMsg && <div style={{paddingTop:'10px',paddingBottom:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(3)}>Add history</Button></div>
             }
             {
+              /*
               text && !txMsg &&<div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history with 0.1 XDAI</Button></div>
             }
             {
@@ -266,6 +283,7 @@ function HashHistories(){
               <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.1 COLD</Button></div> :
               text && !txMsg &&
               <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.address)}>Approve COLD</Button></div>
+              */
             }
             {
               txMsg
@@ -308,6 +326,23 @@ function HashHistories(){
               state.hashavatars && state.netId && isOwner &&
               <p><small><Link href="https://xdai-omnibridge-nft-staging.web.app/bridge" external><IconLink />NFT Bridge</Link></small></p>
             }
+            {
+              totalLikes >= 0 &&
+              <p>
+                Likes: {totalLikes}
+                {
+                  state.coinbase &&
+                  (
+                    liking ?
+                    <LoadingRing/> :
+                    liked ?
+                    <IconStarFilled alt="Unlike" onClick={() => {unlikeToken()}}/> :
+                    <IconStar alt="Like"  onClick={() => {likeToken()}}/>
+                  )
+                }
+               </p>
+            }
+
           </div>
           <div>
             <h5>Creator</h5>

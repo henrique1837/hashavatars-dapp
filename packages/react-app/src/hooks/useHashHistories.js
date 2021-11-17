@@ -11,10 +11,14 @@ function useHashHistories() {
 
 
   useMemo(() => {
-    if(!histories && state.provider){
-      setHistories(new ethers.Contract(addresses.hashHistories.rinkeby,abis.hashHistories,state.provider))
+    if(!histories && state.provider && state.netId){
+      if(state.netId === 4){
+        setHistories(new ethers.Contract(addresses.hashHistories.rinkeby,abis.hashHistories,state.provider))
+      } else {
+        setHistories(new ethers.Contract(addresses.hashHistories.xdai,abis.hashHistories,state.provider))
+      }
     }
-  },[histories,state.provider])
+  },[histories,state.provider,state.netId])
 
 
 

@@ -171,8 +171,7 @@ function Mint(){
       const tokenWithSigner = state.hashavatars.connect(signer);
 
       const tx = await tokenWithSigner.mint(id,fees,1,uri,{
-        value: ethers.utils.parseEther('1'),
-        gasPrice: 1000000000
+        value: ethers.utils.parseEther('1')
       });
 
       setMintingMsg(

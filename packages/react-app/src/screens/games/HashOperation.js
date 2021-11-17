@@ -198,22 +198,23 @@ const MainScene = {
 }
 
 const game = {
-    type: Phaser.AUTO,
-    width: "60%",
-    height: "90%",
-    physics: {
-        default: 'arcade',
-        matter: {
-            gravity: {
-                x: 0,
-                y: 0
-            },
-            enableSleeping: true
-        }
-    },
-    scene: [ MainScene ]
+  width: "60%",
+  height: "60%",
+  type: Phaser.AUTO,
+  render: {
+    antialias: false,
+    pixelArt: true,
+    roundPixels: true
+  },
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 0,x:0 },
+      debug: false
+    }
+  },
+  scene: MainScene
 };
-
 
 export default function HashOperation () {
   const gameRef = useRef(null);
@@ -241,7 +242,7 @@ export default function HashOperation () {
     });
   },[state.nfts])
   useMemo(() => {
-    if(!room && state.hashavatars && ipfs){
+    if(state.hashavatars && ipfs){
       room = new Room(ipfs, 'hashavatars-dapp-hashoperation-game-'+state.hashavatars.address)
       /*
       room.on('message', async (message) => {
@@ -275,7 +276,7 @@ export default function HashOperation () {
       */
     }
 
-  },[state.hashavatars,ipfs,room]);
+  },[state.hashavatars,ipfs]);
   return (
     <center>
       {
