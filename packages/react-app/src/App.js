@@ -18,6 +18,7 @@ import UserProfile from "./screens/UserProfile";
 
 //import Dao from "./screens/DAO";
 import Histories from "./screens/HashHistories";
+import Activities from "./screens/Activities";
 
 import GamesPage from "./screens/Games";
 
@@ -119,6 +120,8 @@ function App() {
 
             <Route path="/games" component={GamesPage}/>
             <Route path="/tokens/:id" component={Histories}/>
+            <Route path="/activities" component={Activities}/>
+
 
             {
               /*
@@ -141,6 +144,10 @@ function App() {
 
         </Box>
         </Router>
+        <center style={{marginTop: "5px",fontSize: '10px'}}>
+          <h4>Other projects from HashAvatars</h4>
+          <Link href="https://snowflakeshash.com" external><img alt="" style={{width: "10px"}} src="https://ipfs.io/ipfs/QmZossnC5rci4YzVe3n2Z9bEJEXZrzTKNg2jXKXM1kehiu" />SnowflakesHash</Link>
+        </center>
         <footer style={{textAlign: "center",marginTop: "50px"}}>
           <Link href="https://t.me/thehashavatars" external>Telegram<IconLink /></Link>
           <Link href="https://twitter.com/thehashavatars" external>Twitter<IconLink /></Link>
@@ -153,6 +160,7 @@ function App() {
 
           }
         </footer>
+
 
       </AppContext.Provider>
 

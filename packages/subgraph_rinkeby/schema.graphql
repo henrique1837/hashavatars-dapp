@@ -13,6 +13,14 @@ type User @entity {
   created: [Token!]! @derivedFrom(field: "creator")
 }
 
+type Story @entity {
+  id: ID!
+  tokenID: BigInt!
+  uri: String!
+  createdAtTimestamp: BigInt!
+  creator: User!
+}
+
 type Metadata @entity {
   id : ID!
   name: String!

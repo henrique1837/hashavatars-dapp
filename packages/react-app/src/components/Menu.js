@@ -23,8 +23,11 @@ function Menu(){
       if(location.pathname === "/games"){
         setSelected(3);
       }
-      if(location.pathname === "/profile"){
+      if(location.pathname === "/activities"){
         setSelected(4);
+      }
+      if(location.pathname === "/profile"){
+        setSelected(5);
       }
 
     }
@@ -97,7 +100,7 @@ function Menu(){
           <Link to="/mint" style={{textDecoration: "none"}}><b>Generate Avatar</b></Link>,
           <Link to="/all-avatars" style={{textDecoration: "none"}}>All Avatars</Link>,
           <Link to="/games" style={{textDecoration: "none"}}>Games</Link>,
-          //<Link to="/feedbacks" style={{textDecoration: "none"}}>Feedbacks</Link>,
+          <Link to="/activities" style={{textDecoration: "none"}}>Activities</Link>,
           state.coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>,
           //state.coinbase && (state.netId===4) && <Link to="/dao" style={{textDecoration: "none"}}>DAO</Link>
 
@@ -123,7 +126,11 @@ function Menu(){
       <Redirect to={"/games"} />
     }
     {
-      selected === 4 && state.coinbase &&
+      selected === 4 &&
+      <Redirect to={"/activities"} />
+    }
+    {
+      selected === 5 && state.coinbase &&
       <Redirect to={"/profile"} />
     }
 

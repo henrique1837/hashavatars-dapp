@@ -8,8 +8,8 @@ import useIpfs from './useIPFS';
 import useWeb3Modal from "./useWeb3Modal";
 
 
-const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.5";
-const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai/0.0.1";
+const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
+const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai/0.0.2";
 
 
 
@@ -350,7 +350,7 @@ function useContract() {
 
 
 
-    if(totalSupply && nfts?.length === 0  && !getData && hashavatars){
+    if(totalSupply && nfts?.length === 0  && !getData && hashavatars && client){
       setGetData(true);
       setLoadingNFTs(true);
       if(Number(totalSupply) === 0){
@@ -443,7 +443,8 @@ function useContract() {
     hashavatars,
     nfts,
     totalSupply,
-    getData
+    getData,
+    client
   ])
 
   useMemo(() => {

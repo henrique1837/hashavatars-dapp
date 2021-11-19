@@ -9,7 +9,6 @@ dataSources:
       address: "0xd1B57180FDB28d4169598702477b78407B26ce5F"
       abi: HashAvatars
       startBlock: 8339486
-
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -32,3 +31,24 @@ dataSources:
         - event: URI(string,indexed uint256)
           handler: handleURI
       file: ./src/mapping.ts
+
+  - kind: ethereum/contract
+    name: Stories
+    network: rinkeby
+    source:
+          address: "0xf23ad8e3abe73042c024a187e6cba904439b24b5"
+          abi: Stories
+          startBlock: 9659078
+    mapping:
+         kind: ethereum/events
+         apiVersion: 0.0.4
+         language: wasm/assemblyscript
+         entities:
+           - Stories
+         abis:
+           - name: Stories
+             file: ./abis/Stories.json
+         eventHandlers:
+           - event: UriAdded(indexed address,indexed uint256,string)
+             handler: handleStoryAdded
+         file: ./src/mapping.ts

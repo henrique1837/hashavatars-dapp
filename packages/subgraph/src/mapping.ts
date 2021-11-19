@@ -9,10 +9,14 @@ import {
 } from "../generated/HashAvatars/HashAvatars"
 
 import {
-  Token, User,Metadata
+  Stories as StoriesContract,
+  UriAdded,
+} from "../generated/Stories/Stories"
+
+import {
+  Token, User,Metadata,Story
 } from '../generated/schema'
 
-import { Bytes, ipfs, json, JSONValueKind, log } from '@graphprotocol/graph-ts'
 
 
 
@@ -38,38 +42,8 @@ export function handleTransferSingle(event: TransferSingle): void {
     token.owner = event.params._to.toHexString();
 
   }
-  /*
-``NOT SUPPORTED YET
 
-  let hash = token.metadataURI.split("/").pop();
-  if (hash != null) {
-    let raw = ipfs.cat(hash)
-    if (raw != null) {
-      let value = json.fromBytes(raw as Bytes);
-      if (value.kind == JSONValueKind.OBJECT) {
-        let data = value.toObject();
-        let metadata = Metadata.load(event.params._id.toString());
-        if(!metadata){
-          metadata = new Metadata(event.params._id.toString());
 
-          if (data.isSet('name')) {
-            metadata.name = data.get('name').toString()
-          }
-
-          if (data.isSet('description')) {
-            metadata.description = data.get('description').toString()
-          }
-
-          if (data.isSet('image')) {
-            metadata.image = data.get('image').toString()
-          }
-          metadata.save();
-        }
-
-      }
-    }
-  }
-  */
   token.save();
   let user = User.load(event.params._to.toHexString());
   if (!user) {
@@ -80,3 +54,15 @@ export function handleTransferSingle(event: TransferSingle): void {
 }
 
 export function handleURI(event: URI): void {}
+
+export function handleStoryAdded(event: UriAdded): void {
+  let story = Story.load(event.params.uri);
+  if (!story) {
+    story = new Story(event.params.uri);
+    story.creator = event.params.from.toHexString();
+    story.tokenID = event.params.tokenId;
+    story.createdAtTimestamp = event.block.timestamp;
+    story.uri = event.params.uri;
+  }
+  story.save();
+}

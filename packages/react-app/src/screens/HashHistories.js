@@ -255,32 +255,32 @@ function HashHistories(){
           <div>
           {
             !txMsg ?
-            <Bar primary={<p>You can write {metadata.name}'s history</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write history</Button>} /> :
+            <Bar primary={<p>You can write {metadata.name}'s story</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write story</Button>} /> :
             txMsg
           }
           <Modal visible={opened} onClose={() => setOpened(false)}>
             <h4>Informations</h4>
             <IdentityBadge
-              label={"HashHistories"}
+              label={"HashStories"}
               entity={histories.address}
               networkType={state.netId === 4 ? "rinkeby" : "xdai"}
-              popoverTitle={"HashHistories"}
+              popoverTitle={"HashStories"}
             />
-            <p><small>To write a HashAvatar history you must have it in your wallet;</small></p>
+            <p><small>To write a HashAvatar story you must have it in your wallet;</small></p>
             <p><small>You can write it for free (needs to pay gas fee);</small></p>
-            <p><small><b>Only new owners of this same token id can continue its history</b>;</small></p>
-            <p><small>Ready? Let us know {metadata.name}'s history!</small></p>
+            <p><small><b>Only new owners of this same token id can continue its story</b>;</small></p>
+            <p><small>Ready? Let us know {metadata.name}'s story!</small></p>
             <div><textarea rows="5" cols="40" onChange={handleOnChange} onKeyUp={handleOnChange} id="history"></textarea></div>
             {
-              text && !txMsg && <div style={{paddingTop:'10px',paddingBottom:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(3)}>Add history</Button></div>
+              text && !txMsg && <div style={{paddingTop:'10px',paddingBottom:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(3)}>Add story</Button></div>
             }
             {
               /*
-              text && !txMsg &&<div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add history with 0.1 XDAI</Button></div>
+              text && !txMsg &&<div><Button mode="strong" size="small" onClick={() => addUri(0)}>Add story with 0.1 XDAI</Button></div>
             }
             {
               text && (approvedCold > 0) && !txMsg ?
-              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add history with 0.1 COLD</Button></div> :
+              <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => addUri(1)}>Add story with 0.1 COLD</Button></div> :
               text && !txMsg &&
               <div style={{paddingTop:'10px'}}><Button mode="strong" size="small" onClick={() => approveCold(histories.address)}>Approve COLD</Button></div>
               */
@@ -291,7 +291,7 @@ function HashHistories(){
           </Modal>
           </div>
         }
-        <h4>History {metadata && <>of {metadata?.name}</>}</h4>
+        <h4>Story {metadata && <>of {metadata?.name}</>}</h4>
         {
           loadingHistories &&
           <center>
@@ -320,7 +320,10 @@ function HashHistories(){
             <p>ID: {id}</p>
             {
               state.hashavatars && state.netId &&
+              <>
+              <p><small><Link href={`https://epor.io/tokens/${state.hashavatars.address}/${id}`} external={true}><IconLink />View on Epor.io</Link></small></p>
               <p><small><Link href={`https://unifty.io/${state.netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${state.hashavatars.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
+              </>
             }
             {
               state.hashavatars && state.netId && isOwner &&
