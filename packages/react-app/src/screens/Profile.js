@@ -49,7 +49,14 @@ function Profile(){
                   const obj = JSON.parse(str);
 
                   return(
-                    <Col style={{paddingTop:'80px'}}>
+                    <Col style={{
+                      paddingTop:'80px',
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap"
+                    }}
+                    md={4}
+                    >
                     <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
 
                       <center>

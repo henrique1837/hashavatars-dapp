@@ -62,12 +62,20 @@ function AllAvatars(){
                   }
 
                   return(
-                    <Col style={{paddingTop:'80px'}}>
+                    <Col style={{
+                      paddingTop:'80px',
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap"
+                    }}
+                    md={4}>
 
 
-                    <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{textDecoration: "none"}}>
+                    <RouterLink to={`/tokens/${obj.returnValues._id}`} style={{
+                      textDecoration: "none"
+                    }}>
                       <center>
-                        <div>
+                        <div style={{maxWidth:"200px"}}>
                           <p><b>{obj.metadata.name}</b></p>
                         </div>
                         <div>

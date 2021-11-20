@@ -255,7 +255,7 @@ function HashHistories(){
           <div>
           {
             !txMsg ?
-            <Bar primary={<p>You can write {metadata.name}'s story</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write story</Button>} /> :
+            <Bar primary={<p style={{wordBreak:"break-word"}}>You can write {metadata.name}'s story</p>} secondary={<Button mode="strong" onClick={() => setOpened(true)}>Write story</Button>} /> :
             txMsg
           }
           <Modal visible={opened} onClose={() => setOpened(false)}>
@@ -291,6 +291,7 @@ function HashHistories(){
           </Modal>
           </div>
         }
+        <div style={{wordBreak:"break-all"}}>
         <h4>Story {metadata && <>of {metadata?.name}</>}</h4>
         {
           loadingHistories &&
@@ -304,6 +305,7 @@ function HashHistories(){
             return(<div>{string}</div>)
           })
         }
+        </div>
         </>
       }
       secondary={

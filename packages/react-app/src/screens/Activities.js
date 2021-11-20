@@ -114,8 +114,8 @@ function Activities(){
       {
        stories?.map(obj => {
          return(
-           <Row style={{paddingTop: '50px'}}>
-             <Col style={{wordBreak:'break-word',textOverflow:"ellipsis"}} fontSize="md">
+           <Row style={{paddingTop: '50px',height: "300px",textOverflow:"ellipsis",overflow:"hidden"}}>
+             <Col style={{wordBreak:'break-word'}} md={9} fontSize="md">
              <div>
               <p><small>{(new Date(Number(obj.story.createdAtTimestamp)*1000)).toUTCString()}</small></p>
               <p>
@@ -130,7 +130,7 @@ function Activities(){
              </div>
              <div style={{paddingTop:'25px'}}>{obj.text}</div>
              </Col>
-             <Col style={{wordBreak:'break-word',textAlign:"center"}} fontSize="md">
+             <Col style={{wordBreak:'break-all',textAlign:"center"}} md={3} fontSize="md">
                <Link to={`/tokens/${obj.story.tokenID}`} style={{textDecoration: "none"}}>
                 <div>
                   <div>
