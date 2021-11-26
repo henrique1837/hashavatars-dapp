@@ -13,7 +13,7 @@ import useIpfs from '../hooks/useIPFS';
 
 
 const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
-const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai/0.0.2";
+const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
 
 
 function Activities(){
@@ -44,13 +44,19 @@ function Activities(){
       if(state.netId === 4){
         newClient = new ApolloClient({
           uri: APIURL_RINKEBY,
-          cache: new InMemoryCache()
+          cache: new InMemoryCache(),
+          fetchOptions: {
+            mode: 'no-cors',
+          }
         });
       }
       if(state.netId === 0x64){
         newClient = new ApolloClient({
           uri: APIURL_XDAI,
-          cache: new InMemoryCache()
+          cache: new InMemoryCache(),
+          fetchOptions: {
+            mode: 'no-cors',
+          }
         });
       }
       setClient(newClient);

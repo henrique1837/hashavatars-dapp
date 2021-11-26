@@ -14,10 +14,11 @@ import {
 } from "../generated/Stories/Stories"
 
 import {
-  Token, User,Metadata,Story
+  Token,User,Story
 } from '../generated/schema'
 
 
+import { ipfs, json, JSONValue,Bytes } from '@graphprotocol/graph-ts'
 
 
 export function handleApprovalForAll(event: ApprovalForAll): void {
@@ -34,13 +35,26 @@ export function handleTransferSingle(event: TransferSingle): void {
     token = new Token(event.params._id.toString());
     token.creator = event.params._to.toHexString();
     token.tokenID = event.params._id;
-
-    let tokenContract = TokenContract.bind(event.address);
-    token.metadataURI = tokenContract.uri(event.params._id);
-    //token.metadata = event.params._id.toString();
+    token.supply = event.params._value;
     token.createdAtTimestamp = event.block.timestamp;
     token.owner = event.params._to.toHexString();
+    let tokenContract = TokenContract.bind(event.address);
+    token.metadataURI = tokenContract.uri(event.params._id);
+    if(token.metadataURI != ''){
+      let hash = token.metadataURI.split('ipfs://').join('')
+      let data = ipfs.cat(hash) as Bytes;
+      if (!data) return
 
+      if (data != null){
+        let value = json.fromBytes(data).toObject()
+
+        let name = value.get('name');
+
+        let imageUri = value.get('image');
+        token.name = name.toString();
+        token.imageURI = imageUri.toString();
+      }
+    }
   }
 
 

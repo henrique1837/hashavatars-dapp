@@ -86,6 +86,33 @@ export class Token extends Entity {
   set owner(value: string) {
     this.set("owner", Value.fromString(value));
   }
+
+  get imageURI(): string {
+    let value = this.get("imageURI");
+    return value.toString();
+  }
+
+  set imageURI(value: string) {
+    this.set("imageURI", Value.fromString(value));
+  }
+
+  get name(): string {
+    let value = this.get("name");
+    return value.toString();
+  }
+
+  set name(value: string) {
+    this.set("name", Value.fromString(value));
+  }
+
+  get supply(): BigInt {
+    let value = this.get("supply");
+    return value.toBigInt();
+  }
+
+  set supply(value: BigInt) {
+    this.set("supply", Value.fromBigInt(value));
+  }
 }
 
 export class User extends Entity {
@@ -201,63 +228,5 @@ export class Story extends Entity {
 
   set creator(value: string) {
     this.set("creator", Value.fromString(value));
-  }
-}
-
-export class Metadata extends Entity {
-  constructor(id: string) {
-    super();
-    this.set("id", Value.fromString(id));
-  }
-
-  save(): void {
-    let id = this.get("id");
-    assert(id !== null, "Cannot save Metadata entity without an ID");
-    assert(
-      id.kind == ValueKind.STRING,
-      "Cannot save Metadata entity with non-string ID. " +
-        'Considering using .toHex() to convert the "id" to a string.'
-    );
-    store.set("Metadata", id.toString(), this);
-  }
-
-  static load(id: string): Metadata | null {
-    return store.get("Metadata", id) as Metadata | null;
-  }
-
-  get id(): string {
-    let value = this.get("id");
-    return value.toString();
-  }
-
-  set id(value: string) {
-    this.set("id", Value.fromString(value));
-  }
-
-  get name(): string {
-    let value = this.get("name");
-    return value.toString();
-  }
-
-  set name(value: string) {
-    this.set("name", Value.fromString(value));
-  }
-
-  get description(): string {
-    let value = this.get("description");
-    return value.toString();
-  }
-
-  set description(value: string) {
-    this.set("description", Value.fromString(value));
-  }
-
-  get image(): string {
-    let value = this.get("image");
-    return value.toString();
-  }
-
-  set image(value: string) {
-    this.set("image", Value.fromString(value));
   }
 }

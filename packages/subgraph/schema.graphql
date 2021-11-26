@@ -5,6 +5,9 @@ type Token @entity {
   createdAtTimestamp: BigInt!
   creator: User!
   owner: User!
+  imageURI: String!
+  name: String!
+  supply: BigInt!
 }
 
 type User @entity {
@@ -13,17 +16,11 @@ type User @entity {
   created: [Token!]! @derivedFrom(field: "creator")
 }
 
+
 type Story @entity {
   id: ID!
   tokenID: BigInt!
   uri: String!
   createdAtTimestamp: BigInt!
   creator: User!
-}
-
-type Metadata @entity {
-  id : ID!
-  name: String!
-  description: String!
-  image: String!
 }

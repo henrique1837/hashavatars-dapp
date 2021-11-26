@@ -9,7 +9,7 @@ import useWeb3Modal from "./useWeb3Modal";
 
 
 const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
-const APIURL_XDAI = "https://api.studio.thegraph.com/query/6693/hashavatars-xdai/0.0.2";
+const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
 
 
 
@@ -186,7 +186,16 @@ function useContract() {
         return;
       }
       //const metadata = JSON.parse(await ipfs.cat(res.metadata.replace("ipfs://","")))
-      const metadata = JSON.parse(await (await fetch(`${res.metadata.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+      let metadata;
+      if(!res.imageURI){
+        metadata = JSON.parse(await (await fetch(`${res.metadata.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+      } else {
+        metadata = {
+          name: res.name,
+          image: res.imageURI,
+        }
+      }
+
       fetch(metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
 
       const creator = res.creator;
@@ -284,14 +293,20 @@ function useContract() {
         newToken = new ethers.Contract(addresses.erc1155.rinkeby,abis.erc1155,provider);
         newClient = new ApolloClient({
           uri: APIURL_RINKEBY,
-          cache: new InMemoryCache()
+          cache: new InMemoryCache(),
+          fetchOptions: {
+            mode: 'no-cors',
+          }
         });
       }
       if(netId === 0x64){
         newToken = new ethers.Contract(addresses.erc1155.xdai,abis.erc1155,provider);
         newClient = new ApolloClient({
           uri: APIURL_XDAI,
-          cache: new InMemoryCache()
+          cache: new InMemoryCache(),
+          fetchOptions: {
+            mode: 'no-cors',
+          }
         });
       }
       setHashAvatars(newToken)
@@ -402,7 +417,9 @@ function useContract() {
                     id: token.tokenID,
                     owner: token.owner.id,
                     creator: token.creator.id,
-                    metadata: token.metadataURI
+                    metadata: token.metadataURI,
+                    name: token.name,
+                    imageURI: token.imageURI
             })
           )
           if(token.tokenID % 12 === 0 || token.tokenID === 1){

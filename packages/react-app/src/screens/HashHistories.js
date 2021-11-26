@@ -183,12 +183,15 @@ function HashHistories(){
         if(events.length === 0){
           setLoadingHistories(false)
         }
-        events.map(async res=>{
+        const newUris = [];
+        for(let res of events){
           const string = await (await fetch(`https://ipfs.io/ipfs/${res.args.uri}`)).text()
-          setUris([...uris,string]);
-          setLoadingHistories(false);
-          return(string)
-        });
+          newUris.push(string);
+          setUris(newUris);
+
+        }
+        setLoadingHistories(false);
+
         // thegraph
         histories.on(filter,async (from,tokenId,uri) => {
           setLoadingHistories(true);
@@ -302,7 +305,7 @@ function HashHistories(){
         }
         {
           uris?.map(string => {
-            return(<div>{string}</div>)
+            return(<p>{string}</p>)
           })
         }
         </div>
