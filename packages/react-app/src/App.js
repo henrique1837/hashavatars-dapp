@@ -153,7 +153,6 @@ function App() {
           <Link href="https://twitter.com/thehashavatars" external>Twitter<IconLink /></Link>
           <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github<IconLink /></Link>
           <Link href="https://www.xpollinate.io/" external>Bridge<IconLink /></Link>
-          <Link href="https://dweb.link/ipfs/bafybeidakaaxs7hgnpdcu6t67cvajys3jyj3jcrkoi5teji564jd74cuw4" external>Previous Version<IconLink /></Link>
           {
             netId === 4 &&
             <Link href="https://client.aragon.org/#/hashavatars/" external>DAO<IconLink /></Link>

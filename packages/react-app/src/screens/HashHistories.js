@@ -294,13 +294,13 @@ function HashHistories(){
           </Modal>
           </div>
         }
-        <div style={{wordBreak:"break-all"}}>
-        <h4>Story {metadata && <>of {metadata?.name}</>}</h4>
+        <div style={{wordBreak:"break-word"}}>
+        <h4 style={{wordBreak:"break-all"}}>Story {metadata && <>of {metadata?.name}</>}</h4>
         {
           loadingHistories &&
           <center>
           <p><LoadingRing /></p>
-          <p><small>Loading histories ...</small></p>
+          <p><small>Loading stories ...</small></p>
           </center>
         }
         {

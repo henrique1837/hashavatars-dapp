@@ -393,9 +393,9 @@ function useContract() {
             }
         }
       `
-      let totalQueries = id % 100;
+      let totalQueries = id/100;
       let actualQuery = 1;
-      if(totalQueries > Number(id % 100).toFixed(0)){
+      if(totalQueries > Number(id/100).toFixed(0)){
         totalQueries = totalQueries + 1;
       }
       if(totalQueries < actualQuery){

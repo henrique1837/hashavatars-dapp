@@ -8,7 +8,7 @@ dataSources:
     source:
       address: "0x022E2426227E510123aABaFf4108Ddb6f59c2f8a"
       abi: HashAvatars
-      startBlock: 15336147
+      startBlock: 15336146
 
     mapping:
       kind: ethereum/events

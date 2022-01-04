@@ -4,7 +4,7 @@ import { Button } from '@aragon/ui';
 
 import HashAtack from './games/HashAtack'
 import HashVille from './games/HashVilleUnderHashAtack'
-//import HashOperation from './games/HashOperation'
+import HashOperation from './games/HashOperation'
 
 function GamesPage() {
 
@@ -24,7 +24,7 @@ function GamesPage() {
       image: "https://ipfs.io/ipfs/QmUs9rX2FsYUML9PCWMExJZfgcTPiXGV3FpArrTxd1Yf8i"
     },
     {
-      component: "",
+      component: <HashOperation/>,
       name: "HashOperation",
       description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
       image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
@@ -77,11 +77,9 @@ function GamesPage() {
                             <hr />
                             <div><img src={game.image} style={{width: '150px',height: '150px',borderRadius: '50%'}} alt=""/></div>
                             <hr />
-                            {
-                              game.name !== "HashOperation" ?
-                              <div><Button onClick={() => {setPlay(game.component)}} size="small" mode="strong">Play</Button></div>:
-                              <div><Button size="small" mode="disabled">Migration in Progress</Button></div>
-                            }
+                            <div><Button onClick={() => {setPlay(game.component)}} size="small" mode="strong">Play</Button></div>
+
+
                             <div>{game.description}</div>
                             </center>
                           </Col>

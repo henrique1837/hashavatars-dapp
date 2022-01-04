@@ -77,6 +77,19 @@ export function handleStoryAdded(event: UriAdded): void {
     story.tokenID = event.params.tokenId;
     story.createdAtTimestamp = event.block.timestamp;
     story.uri = event.params.uri;
+    /*
+    if(story.uri != ''){
+      let hash = story.uri.split('ipfs://').join('')
+      let data = ipfs.cat(hash) as Bytes;
+      if (!data) return
+
+      if (data != null){
+        let value = data.toString();
+        story.text = value;
+      }
+    }
+    */
+
   }
   story.save();
 }
