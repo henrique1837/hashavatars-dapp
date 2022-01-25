@@ -43,8 +43,6 @@ export function handleTransferSingle(event: TransferSingle): void {
     if(token.metadataURI != ''){
       let hash = token.metadataURI.split('ipfs://').join('')
       let data = ipfs.cat(hash) as Bytes;
-      if (!data) return
-
       if (data != null){
         let value = json.fromBytes(data).toObject()
 
@@ -67,7 +65,31 @@ export function handleTransferSingle(event: TransferSingle): void {
 
 }
 
-export function handleURI(event: URI): void {}
+export function handleURI(event: URI): void {
+  let token = Token.load(event.params._id.toString());
+  if(!token.metadataURI){
+    let tokenContract = TokenContract.bind(event.address);
+    token.metadataURI = tokenContract.uri(event.params._id);
+    if(token.metadataURI != ''){
+      let hash = token.metadataURI.split('ipfs://').join('')
+      let data = ipfs.cat(hash) as Bytes;
+      if (data != null){
+        let value = json.fromBytes(data).toObject()
+
+        let name = value.get('name');
+
+        let imageUri = value.get('image');
+        token.name = name.toString();
+        token.imageURI = imageUri.toString();
+      }
+    }
+  }
+  token.save();
+
+}
+
+
+
 
 export function handleStoryAdded(event: UriAdded): void {
   let story = Story.load(event.params.uri);

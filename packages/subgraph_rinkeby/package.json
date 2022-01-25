@@ -1,5 +1,5 @@
 {
-  "name": "testgraph",
+  "name": "testgraphrinkeby",
   "license": "UNLICENSED",
   "scripts": {
     "codegen": "graph codegen",

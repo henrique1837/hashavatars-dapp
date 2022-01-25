@@ -373,12 +373,12 @@ export default function HashOperation () {
     const msgSend = await WakuMessage.fromUtf8String(msgWaku, contentTopicChat);
 
     await waku.relay.send(msgSend);
-    inputMessage.value = '';
-    inputMessage.innerText = '';
-    setMsg('');
     const newMsgs = msgs;
     newMsgs.unshift(JSON.parse(msgWaku));
     setMsgs(newMsgs);
+    inputMessage.value = '';
+    inputMessage.innerText = '';
+    setMsg('');
 
   },[waku,WakuMessage,state.coinbase,metadataPlayer,document.getElementById('input_message'),msg,msgs]);
 

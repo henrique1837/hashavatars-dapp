@@ -26,6 +26,12 @@ const addresses = {
   likes:{
     rinkeby: "0x6B2aeBCD6D5143deCA1030AD391A6af1F28aE949" ,
     xdai: "0x3086f887Ed3c682fe3282BDB0305Fa9aF8a363dc"
+  },
+  hashVoteToken: {
+    rinkeby: "0x5E7c0e4A817558e589817DA4E669f07CF4020f4F"
+  },
+  hashGovern: {
+    rinkeby: "0x682175097cF16CF5575d5124eEA06e3000505852"
   }
 };
 
