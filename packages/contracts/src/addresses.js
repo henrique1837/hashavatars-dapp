@@ -28,10 +28,14 @@ const addresses = {
     xdai: "0x3086f887Ed3c682fe3282BDB0305Fa9aF8a363dc"
   },
   hashVoteToken: {
-    rinkeby: "0x5E7c0e4A817558e589817DA4E669f07CF4020f4F"
+    rinkeby_old: "0x5E7c0e4A817558e589817DA4E669f07CF4020f4F",
+    rinkeby: "0xae25e0149cf4c205b081055cb06a2bf573121243"
+
   },
   hashGovern: {
-    rinkeby: "0x682175097cF16CF5575d5124eEA06e3000505852"
+    rinkebyold: "0x682175097cF16CF5575d5124eEA06e3000505852",
+    rinkeby: "0x1C7DEFD4c26a9603Be72d0Bd322Dcfaddb270E61"
+
   }
 };
 

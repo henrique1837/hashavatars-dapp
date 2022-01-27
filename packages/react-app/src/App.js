@@ -20,7 +20,6 @@ import UserProfile from "./screens/UserProfile";
 import Histories from "./screens/HashHistories";
 import Activities from "./screens/Activities";
 import Governance from "./screens/Governance";
-import Proposal from "./screens/Proposal";
 
 import GamesPage from "./screens/Games";
 
@@ -124,7 +123,6 @@ function App() {
             <Route path="/tokens/:id" component={Histories}/>
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
-            <Route path="/proposal/:proposalId" component={Proposal}/>
 
 
             {

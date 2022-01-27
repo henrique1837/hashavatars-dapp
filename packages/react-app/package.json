@@ -28,6 +28,8 @@
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "@types/react": "^16.9.53",
+    "@uauth/js": "^0.7.9",
+    "@uauth/web3modal": "^0.7.9",
     "@walletconnect/web3-provider": "^1.3.1",
     "apollo-boost": "^0.4.9",
     "apollo-client": "^2.6.10",
