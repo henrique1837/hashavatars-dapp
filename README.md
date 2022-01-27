@@ -8,7 +8,7 @@ Gaming (offchain) and Governance are being tested.
 
 ### Working App
 
-https://bafybeifhm7cpptvjlkllth6io7sa57rdjcxlc2htwsyx546al3xi7vyf7m.ipfs.infura-ipfs.io/
+https://thehashavatars.com/
 
 ### Project Code
 
