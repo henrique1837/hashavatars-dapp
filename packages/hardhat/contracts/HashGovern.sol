@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFractio
 contract HashGovern is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction {
     constructor(ERC20Votes _token)
         Governor("HashGovern")
-        GovernorSettings(1 /* 1 block */, 45818 /* 1 week */, 0)
+        GovernorSettings(1 /* 1 block */, 45 , 1)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
     {}
