@@ -1,6 +1,6 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useState,useMemo} from "react";
 import {
-  HashRouter as Router,
+  BrowserRouter as Router,
   Route,
   Switch,
   Redirect
@@ -28,6 +28,7 @@ import GamesPage from "./screens/Games";
 import AllAvatars from "./screens/AllAvatars";
 
 import Menu from "./components/Menu";
+import CallbackUNSLogin from "./callback/callbackUNSLogin";
 
 
 //import GET_TRANSFERS from "./graphql/subgraph";
@@ -46,9 +47,10 @@ function App() {
     actions.setConnecting(connecting);
   },[connecting])
   useEffect(() => {
-    actions.setProvider(provider);
+    //actions.setProvider(provider);
     actions.setLoadWeb3Modal(loadWeb3Modal);
   },[provider])
+
   useEffect(() => {
     actions.setCoinbase(coinbase);
   },[coinbase])
@@ -58,18 +60,21 @@ function App() {
   useEffect(() => {
     actions.setProfile(profile);
   },[profile])
+
   useEffect(() => {
     actions.setHashAvatars(hashavatars);
     actions.setGetTotalSupply(getTotalSupply);
     actions.setGetMetadata(getMetadata);
 
   },[hashavatars])
+
   useEffect(() => {
     if(nfts.length !==nftsLength){
       actions.setNfts(nfts)
       setNftsLength(nfts.length)
     }
   },[nfts,nftsLength])
+
   useEffect(() => {
     if(myOwnedNfts.length !==myOwnedNftsLength){
       actions.setMyOwnedNfts(myOwnedNfts)
@@ -83,6 +88,7 @@ function App() {
     }
 
   },[myNfts])
+
   useEffect(() => {
     actions.setLoadingNFTs(loadingNFTs)
   },[loadingNFTs])
@@ -92,6 +98,8 @@ function App() {
   useEffect(() => {
     actions.setCreators(creators)
   },[creators])
+
+
 
   return (
     <Main>
@@ -123,15 +131,9 @@ function App() {
             <Route path="/tokens/:id" component={Histories}/>
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
+            <Route path="/callback" component={CallbackUNSLogin}/>
 
 
-            {
-              /*
-              netId === 4 &&
-              <Route path="/dao" component={Dao}/>
-              */
-
-            }
 
 
             {/*<Route path="/feedbacks" component={Feedbacks}/>*/}
@@ -155,11 +157,7 @@ function App() {
           <Link href="https://twitter.com/thehashavatars" external>Twitter<IconLink /></Link>
           <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github<IconLink /></Link>
           <Link href="https://www.xpollinate.io/" external>Bridge<IconLink /></Link>
-          {
-            netId === 4 &&
-            <Link href="https://client.aragon.org/#/hashavatars/" external>DAO<IconLink /></Link>
 
-          }
         </footer>
 
 

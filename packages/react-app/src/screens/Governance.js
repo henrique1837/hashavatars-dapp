@@ -223,7 +223,7 @@ function Governance(){
                     return [
                       <Checkbox
                           checked={checked.includes(obj.returnValues._id)}
-                          onChange={() => {
+                          onClick={() => {
                             let newChecked = checked;
                             if(!newChecked.includes(obj.returnValues._id)){
                               newChecked.push(obj.returnValues._id);

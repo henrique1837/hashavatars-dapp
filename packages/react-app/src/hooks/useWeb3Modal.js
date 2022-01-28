@@ -9,9 +9,8 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 // These options are used to construct the UAuthSPA instance.
 const uauthOptions: IUAuthOptions = {
   clientID: 'eXGAyGpvImE6nYUIQD4fe5S964iFCwduUOIAYNTLCBY=',
-  clientSecret: 'nbXsKnUVYoZvywbVj7bH2Nw9/nMrNHgMEDH05FaPKt8=',
-  redirectUri: 'https://thehashavatars.com',
-
+  clientSecret: 'EAA7DSw/N8SpUGzl9ozrEFphoijFhWy4dWSKJfM0eUM=',
+  redirectUri: 'https://thehashavatars/callback',
   // Must include both the openid and wallet scopes.
   scope: 'openid wallet',
 }
@@ -55,14 +54,13 @@ const web3Modal = new Web3Modal({
 });
 // Register the web3modal so the connector has access to it.
 UAuthWeb3Modal.registerWeb3Modal(web3Modal)
-
+export {web3Modal,uauthOptions};
 function useWeb3Modal(config = {}) {
   const [provider, setProvider] = useState();
   const [coinbase, setCoinbase] = useState();
   const [profile,setProfile] = useState();
   const [netId , setNetId] = useState();
   const [connecting , setConnecting] = useState();
-
   const [noProvider , setNoProvider] = useState();
   const [autoLoaded, setAutoLoaded] = useState(false);
   const { autoLoad = true } = config;
@@ -85,11 +83,6 @@ function useWeb3Modal(config = {}) {
       setConnecting(true)
       setAutoLoaded(true);
       const conn = await web3Modal.connect();
-      if(!conn.on){
-        setConnecting(false)
-        logoutOfWeb3Modal();
-        return
-      }
       const newProvider = new ethers.providers.Web3Provider(conn,"any");
       const signer = newProvider.getSigner()
       const newCoinbase = await signer.getAddress();
@@ -124,6 +117,7 @@ function useWeb3Modal(config = {}) {
       } catch(err){
 
       }
+
       return;
     } catch(err){
       console.log(err);
@@ -165,5 +159,6 @@ function useWeb3Modal(config = {}) {
   return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile,connecting});
 }
 
-export default useWeb3Modal;
 
+
+export default useWeb3Modal;

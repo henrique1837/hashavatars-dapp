@@ -12,20 +12,27 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
-contract HashVoteToken is ERC20, ERC20Permit, ERC20Votes,Ownable,Pausable,IERC1155Receiver  {
+contract HashVoteToken is ERC20, ERC20Permit, ERC20Votes,Ownable,Pausable,IERC1155Receiver {
 
     mapping(address => bool) public allowedErc1155;
+    mapping(address => uint256) public erc1155Power;
+
     mapping(address => mapping(uint256 => bool)) public locked;
     mapping(address => mapping(uint256 => address)) public locker;
 
-    constructor(address[] memory _erc1155)
+    constructor(address[] memory _erc1155,uint256[] memory _power)
         ERC20("HashVoteToken", "HVT")
         ERC20Permit("HashVoteToken"){
 
       for(uint i =0 ;i < _erc1155.length; i++){
         allowedErc1155[_erc1155[i]] = true;
+        erc1155Power[_erc1155[i]] = _power[i];
       }
     }
+
+    event CollectibleAllowed(address erc1155,uint256 power);
+    event Locked(address owner,address indexed erc1155,uint256 indexed tokenId);
+    event Unlocked(address owner,address indexed erc1155,uint256 indexed tokenId);
 
     modifier onlyAllowedErc1155(address _erc1155){
       require(allowedErc1155[_erc1155],"Collectible not allowed");
@@ -48,9 +55,10 @@ contract HashVoteToken is ERC20, ERC20Permit, ERC20Votes,Ownable,Pausable,IERC11
     function _lock(address _erc1155,uint256 _tokenId) internal onlyAllowedErc1155(_erc1155) {
       require(!locked[_erc1155][_tokenId],"Collectible already locked");
       IERC1155(_erc1155).safeTransferFrom(msg.sender,address(this),_tokenId,1,"");
-      _mint(msg.sender,1);
+      _mint(msg.sender,erc1155Power[_erc1155]);
       locked[_erc1155][_tokenId] = true;
       locker[_erc1155][_tokenId] = msg.sender;
+      emit Locked(msg.sender,_erc1155,_tokenId);
     }
 
     function _unlock(address _erc1155,uint256 _tokenId) internal {
@@ -58,24 +66,25 @@ contract HashVoteToken is ERC20, ERC20Permit, ERC20Votes,Ownable,Pausable,IERC11
       require(locker[_erc1155][_tokenId] == msg.sender,"Collectible can only be unlocked by locker");
 
       IERC1155(_erc1155).safeTransferFrom(address(this),msg.sender,_tokenId,1,"");
-      transferFrom(msg.sender,0x000000000000000000000000000000000000dEaD,1);
+      _burn(msg.sender,erc1155Power[_erc1155]);
       locked[_erc1155][_tokenId] = false;
       delete(locker[_erc1155][_tokenId]);
+      emit Unlocked(msg.sender,_erc1155,_tokenId);
     }
 
     function transfer(address to, uint256 amount) public override(ERC20) returns (bool) {
-      require(msg.sender == address(this),"Collectible cant be transfered");
-      return(super.transfer(to,amount));
+      revert("ERC20 cant be transfered");
     }
     function transferFrom(address from,address to, uint256 amount) public override(ERC20) returns (bool) {
-      require(msg.sender == address(this),"Collectible cant be transfered");
-      return(super.transferFrom(from,to,amount));
+      revert("ERC20 cant be transfered");
     }
 
 
-    function allowErc1155(address _erc1155) public onlyOwner{
+    function allowErc1155(address _erc1155,uint256 _power) public onlyOwner{
       require(!allowedErc1155[_erc1155],"Collectible already allowed");
       allowedErc1155[_erc1155] = true;
+      erc1155Power[_erc1155] = _power;
+      emit CollectibleAllowed(_erc1155,_power);
     }
     function pause() public onlyOwner {
       _pause();
