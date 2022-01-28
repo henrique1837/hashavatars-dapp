@@ -78,18 +78,10 @@ function Menu(){
           !state.connecting ?
           <Button
             onClick={() => {
-              if (!state.coinbase && window.ethereum) {
-                state.loadWeb3Modal();
-              } else if(!window.ethereum){
-                window.open("https://metamask.io/", '_blank');
-              }
+              state.loadWeb3Modal();
             }}
           >
-            {
-              !state.coinbase && window.ethereum ?
-              "Connect Wallet" :
-               !window.ethereum && <>Install Metamask <IconLink/></>
-            }
+            Connect Wallet
           </Button> :
           <center><p><LoadingRing/><small>Connecting wallet ...</small></p></center>
         }

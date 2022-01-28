@@ -378,11 +378,7 @@ function Mint(){
                 )
 
             ) :
-            window.ethereum ?
-            <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button> :
-            <Button onClick={() => {window.open("https://metamask.io/", '_blank')}}>Install Metamask <IconLink/></Button>
-
-
+            <Button onClick={state.loadWeb3Modal}>Connect Wallet</Button>
           )
         }
         </center>
