@@ -47,7 +47,7 @@ function App() {
     actions.setConnecting(connecting);
   },[connecting])
   useEffect(() => {
-    //actions.setProvider(provider);
+    actions.setProvider(provider);
     actions.setLoadWeb3Modal(loadWeb3Modal);
   },[provider])
 
