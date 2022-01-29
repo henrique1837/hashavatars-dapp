@@ -16,7 +16,7 @@ https://github.com/henrique1837/hashavatars-dapp/tree/uns_login_integration
 
 ### Demo video
 
-
+![UNS Login Demo Video](unsLoginIntegrationDemo.mkv)
 
 ### Contact
 Discord: bongador#2753
@@ -26,6 +26,12 @@ UD Email: bongador@protonmail.com
 ## Info
 
 This project was bootstrapped with [Create Eth App](https://github.com/paulrberg/create-eth-app).
+
+Cloning (to test in localhost):
+
+```
+git clone https://github.com/henrique1837/hashavatars-dapp -b uns_login_integration
+```
 
 ## Project Structure
 
