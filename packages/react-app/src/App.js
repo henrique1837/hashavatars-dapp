@@ -1,6 +1,6 @@
 import React,{useEffect,useState,useMemo} from "react";
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Route,
   Switch,
   Redirect
