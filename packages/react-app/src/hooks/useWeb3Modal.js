@@ -8,9 +8,9 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 
 // These options are used to construct the UAuthSPA instance.
 const uauthOptions: IUAuthOptions = {
-  clientID: 'eXGAyGpvImE6nYUIQD4fe5S964iFCwduUOIAYNTLCBY=',
-  clientSecret: 'EAA7DSw/N8SpUGzl9ozrEFphoijFhWy4dWSKJfM0eUM=',
-  redirectUri: 'https://thehashavatars/callback',
+  clientID: 'fkQeD1BJWhUToHhWOW1BeitZe79hoOPnulmHWyiY6l4=',
+  clientSecret: 'kvj2DDayF32xBWWdrFll/VFeWVgOFyYIkifEy7RakiA=',
+  redirectUri: 'http://localhost:3000/callback',
   // Must include both the openid and wallet scopes.
   scope: 'openid wallet',
 }
