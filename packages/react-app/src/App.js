@@ -1,6 +1,6 @@
-import React,{useEffect,useState,useMemo} from "react";
+import React,{useEffect,useState} from "react";
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Route,
   Switch,
   Redirect
@@ -47,7 +47,7 @@ function App() {
     actions.setConnecting(connecting);
   },[connecting])
   useEffect(() => {
-    //actions.setProvider(provider);
+    actions.setProvider(provider);
     actions.setLoadWeb3Modal(loadWeb3Modal);
   },[provider])
 

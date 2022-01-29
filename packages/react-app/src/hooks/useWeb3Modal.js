@@ -10,7 +10,7 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 const uauthOptions: IUAuthOptions = {
   clientID: 'eXGAyGpvImE6nYUIQD4fe5S964iFCwduUOIAYNTLCBY=',
   clientSecret: 'EAA7DSw/N8SpUGzl9ozrEFphoijFhWy4dWSKJfM0eUM=',
-  redirectUri: 'https://thehashavatars/callback',
+  redirectUri: 'https://thehashavatars.com/callback',
   // Must include both the openid and wallet scopes.
   scope: 'openid wallet',
 }
