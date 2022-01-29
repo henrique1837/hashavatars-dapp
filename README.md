@@ -16,7 +16,7 @@ https://github.com/henrique1837/hashavatars-dapp/tree/uns_login_integration
 
 ### Demo video
 
-![UNS Login Demo Video](./unsLoginIntegrationDemo.mkv)
+https://bafybeihw5nezvw6k6ourk6juoqlqnf4zoqu5nrryg674x37ko4a54gbzru.ipfs.infura-ipfs.io/#/
 
 ### Contact
 Discord: bongador#2753
