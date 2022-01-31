@@ -1,15 +1,20 @@
 import React,{useState,useCallback} from "react";
 import { Container,Row,Col,Image } from 'react-bootstrap';
-import { IdentityBadge,Pagination,Split,TokenAmount,TransactionBadge,Button,EthIdenticon,ProgressBar,DataView,Checkbox,Link } from '@aragon/ui'
+import { IdentityBadge,Pagination,Tabs,Split,TokenAmount,TransactionBadge,Button,EthIdenticon,ProgressBar,DataView,Checkbox,Link } from '@aragon/ui'
 
 import { useAppContext } from '../hooks/useAppState'
 import  useHashGovern  from '../hooks/useHashGovern'
+import Feedbacks from '../components/Feedbacks';
 
 function Governance(){
   const { state } = useAppContext();
   const {erc20votes,hashGovern,proposals,hashBalance,approved,wrapped} = useHashGovern();
   const [checked,setChecked] = useState([]);
   const [txMsg,setTxMsg] = useState();
+  const [selected, setSelected] = useState();
+
+
+
   const wrap = useCallback(async (all) => {
     setTxMsg(<p><small>Wrapping ...</small></p>)
     try{
@@ -164,7 +169,10 @@ function Governance(){
                 }}
               />
             }
+            <Feedbacks />
+
             </>
+
           }
           secondary={
               <div>

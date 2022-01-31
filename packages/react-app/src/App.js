@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useMemo,useState} from "react";
 import {
   HashRouter as Router,
   Route,
@@ -9,6 +9,8 @@ import { Main,Box,Link,IconLink } from '@aragon/ui';
 
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import useContract from "./hooks/useContract";
+import useIPFS from "./hooks/useIPFS";
+
 import { AppContext, useAppState } from './hooks/useAppState'
 
 import Home from "./screens/Home";
@@ -38,8 +40,10 @@ function App() {
 
   const {provider,coinbase,netId,profile,connecting,loadWeb3Modal} = useWeb3Modal();
   const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
+  const {ipfs} = useIPFS();
   const { state, actions } = useAppState()
   const [nftsLength,setNftsLength] = useState();
+  const [pinning,setPinning] = useState();
   const [myNftsLength,setMyNftsLength] = useState();
   const [myOwnedNftsLength,setMyOwnedNftsLength] = useState();
 
@@ -68,25 +72,16 @@ function App() {
 
   },[hashavatars])
 
-  useEffect(() => {
-    if(nfts.length !==nftsLength){
-      actions.setNfts(nfts)
-      setNftsLength(nfts.length)
-    }
-  },[nfts,nftsLength])
 
   useEffect(() => {
-    if(myOwnedNfts.length !==myOwnedNftsLength){
-      actions.setMyOwnedNfts(myOwnedNfts)
-      setMyOwnedNftsLength(myOwnedNfts.length)
-    }
-  },[myOwnedNfts,myOwnedNftsLength])
-  useEffect(() => {
-    if(myNfts.length !== myNftsLength){
-      actions.setMyNfts(myNfts)
-      setMyNftsLength(myNfts.length)
-    }
+    actions.setNfts(nfts)
+  },[nfts])
 
+  useEffect(() => {
+    actions.setMyOwnedNfts(myOwnedNfts)
+  },[myOwnedNfts])
+  useEffect(() => {
+    actions.setMyNfts(myNfts)
   },[myNfts])
 
   useEffect(() => {
@@ -95,12 +90,26 @@ function App() {
   useEffect(() => {
     actions.setTotalSupply(totalSupply)
   },[totalSupply])
+
   useEffect(() => {
     actions.setCreators(creators)
   },[creators])
 
-
-
+  useEffect(() => {
+    actions.setIPFS(ipfs)
+  },[ipfs]);
+  
+  useMemo(() => {
+    if(!loadingNFTs && ipfs &&!pinning){
+      setPinning(true)
+      nfts.map(async string => {
+        const obj = JSON.parse(string);
+        await ipfs.pin.add(obj.tokenUri.replace("ipfs://",""))
+        await ipfs.pin.add(obj.metadata.image.replace("ipfs://",""))
+        return(string);
+      })
+    }
+  },[ipfs,nfts,loadingNFTs,pinning])
   return (
     <Main>
 

@@ -28,7 +28,6 @@ function UserProfile(){
   const [client,setClient] = useState();
   const [profile,setProfile] = useState();
 
-
   useMemo(async () => {
     if(!state.hashavatars){
       setClient();
@@ -41,6 +40,7 @@ function UserProfile(){
     const newProfile = await getProfile(address);
     setProfile(newProfile);
   },[profile,address])
+
   useMemo(async () => {
     if(client && !checking && address){
       setChecking(true);
@@ -75,27 +75,8 @@ function UserProfile(){
       setOwnedNfts(objsOwned);
     }
 
-  },[client,address])
-  useMemo(() => {
+  },[client,address]);
 
-    if(!client && state.netId){
-      let newClient;
-      if(state.netId === 4){
-        newClient = new ApolloClient({
-          uri: APIURL_RINKEBY,
-          cache: new InMemoryCache()
-        });
-      }
-      if(state.netId === 0x64){
-        newClient = new ApolloClient({
-          uri: APIURL_XDAI,
-          cache: new InMemoryCache()
-        });
-      }
-      setClient(newClient);
-    }
-
-  },[state.netId,client])
 
   return(
     <>

@@ -1,6 +1,6 @@
 import React,{useState} from "react";
 import { Container,Row,Col } from 'react-bootstrap';
-import { TextInput,Button } from '@aragon/ui'
+import { TextInput,Button,LoadingRing } from '@aragon/ui'
 import useWaku from "../hooks/useWaku";
 
 function Feedbacks(){
@@ -28,7 +28,7 @@ function Feedbacks(){
         <Row>
           <Col style={{wordBreak:'break-word'}} fontSize="md">
             {
-              waku && sendMessage &&
+              waku && sendMessage ?
               <>
               <TextInput
                 value={value}
@@ -38,6 +38,10 @@ function Feedbacks(){
                 id="input_msg"
               />
               <Button onClick={sendMsg}>Post</Button>
+              </> :
+              <>
+              <LoadingRing style={{width: '50px'}}/>
+              <p>Loading js-waku ...</p>
               </>
             }
           </Col>

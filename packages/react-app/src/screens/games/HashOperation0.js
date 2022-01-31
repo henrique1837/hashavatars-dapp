@@ -229,6 +229,9 @@ export default function HashOperation () {
     }
     setInitialize(false)
   }
+
+  const receiveMsg = (msg) => console.log(new TextDecoder().decode(msg.data))
+
   const setMetadata = (mt) => {
       metadata = mt;
       coinbase = state.coinbase;
@@ -243,6 +246,10 @@ export default function HashOperation () {
   },[state.nfts])
   useMemo(() => {
     if(state.hashavatars && ipfs){
+      const topic = 'hash-avatars/games/hash-operation';
+      await ipfs.pubsub.subscribe(topic, receiveMsg)
+      const peerIds = await ipfs.pubsub.peers(topic)
+
       /*
       room = new Room(ipfs, 'hashavatars-dapp-hashoperation-game-'+state.hashavatars.address)
 

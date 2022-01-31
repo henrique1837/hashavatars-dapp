@@ -3,12 +3,8 @@ import Phaser from 'phaser'
 import { IonPhaser } from '@ion-phaser/react'
 import { Container,Row,Col,Image } from 'react-bootstrap';
 import { Button,ProgressBar,Link,IconLink,Box,LoadingRing } from '@aragon/ui';
-import { Waku,WakuMessage } from 'js-waku';
 
 import { useAppContext } from '../../hooks/useAppState';
-import useIpfs from '../../hooks/useIPFS';
-const contentTopic =  "/hashavatars-dapp/1/hashoperation/proto";
-const contentTopicChat =  "/hashavatars-dapp/1/hashoperation_chat/proto";
 
 let metadata;
 let metadatas = [];
@@ -17,6 +13,9 @@ let loaded = [];
 let coinbase;
 let cursors;
 let room;
+const topicMovements = 'hash-avatars/games/hash-operation/movements';
+const topic = 'hash-avatars/games/hash-operation';
+
 const MainScene = {
 
   init: function(){
@@ -109,7 +108,7 @@ const MainScene = {
     }
   },
 
-  playerMoved: function(){
+  playerMoved: async function(){
     const msg = JSON.stringify({
       metadata: metadata,
       player: this.player,
@@ -117,13 +116,12 @@ const MainScene = {
       type: "movement"
     });
 
-    WakuMessage.fromUtf8String(msg, contentTopic)
-    .then(msgSend => {
-      room.relay.send(msgSend);
-    })
+
+    const msgSend = new TextEncoder().encode(msg)
+    await room.pubsub.publish(topicMovements, msgSend)
 
   },
-  create: function(){
+  create: async function(){
 
     const map = this.make.tilemap({ key: "map" });
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -157,9 +155,9 @@ const MainScene = {
 
     cursors = this.input.keyboard.createCursorKeys();
 
-    room.relay.addObserver(async (msg) => {
+    room.pubsub.subscribe(topicMovements,async (msg) => {
       try{
-        const obj = JSON.parse(msg.payloadAsUtf8);
+        const obj = JSON.parse(new TextDecoder().decode(msg.data));
         if(obj.type === "movement"){
           let added = false;
           this.otherPlayers.getChildren().forEach(function (otherPlayer) {
@@ -168,7 +166,7 @@ const MainScene = {
               added = true;
             }
           });
-          if(!added && obj.metadata.name !== obj.name){
+          if(!added && obj.metadata.name !== metadata.name){
             const playerInfo = obj.metadata;
             const otherPlayer = this.physics.add.sprite(0, 0,  playerInfo.name).setScale(0.05);
             otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
@@ -201,14 +199,15 @@ const MainScene = {
             if(!added && objPlayer.metadata.name !== metadata.name){
               this.addOtherPlayers(objPlayer.metadata);
             }
-            const msgSend = await WakuMessage.fromUtf8String(str, contentTopicChat)
-            await this.room.relay.send(msgSend);
+
+            const msgSend = new TextEncoder().encode(str)
+            await room.pubsub.publish(topic, msgSend)
           }
         }
       } catch(err){
         console.log(err)
       }
-    }, [contentTopic]);
+    });
 
 
 
@@ -220,15 +219,15 @@ const MainScene = {
           type: "collision"
         });
         enemy.destroy();
-        const msgSend = await WakuMessage.fromUtf8String(msg, contentTopic)
-        await room.relay.send(msgSend);
+        const msgSend = new TextEncoder().encode(msg)
+        await room.pubsub.publish(topicMovements, msgSend)
       } else if(player.body.touching.up) {
         const msg = JSON.stringify({
           name: player.name,
           type: "collision"
         });
-        const msgSend = await WakuMessage.fromUtf8String(msg, contentTopic)
-        await room.relay.send(msgSend);
+        const msgSend = new TextEncoder().encode(msg)
+        await room.pubsub.publish(topicMovements, msgSend)
       } else {
         player.setVelocityX(0);
         player.setVelocityY(0);
@@ -249,10 +248,9 @@ const MainScene = {
       type: "message"
     });
 
-    WakuMessage.fromUtf8String(msg, contentTopicChat)
-    .then(msgSend => {
-      room.relay.send(msgSend);
-    })
+    let msgSend = new TextEncoder().encode(msg)
+    await room.pubsub.publish(topic, msgSend)
+
 
     msg = JSON.stringify({
       metadata: metadata,
@@ -261,11 +259,9 @@ const MainScene = {
       type: "movement"
     });
 
-    WakuMessage.fromUtf8String(msg, contentTopic)
-    .then(msgSend => {
-      room.relay.send(msgSend);
-    })
 
+    msgSend = new TextEncoder().encode(msg)
+    await room.pubsub.publish(topicMovements, msgSend)
   },
 
   hitEnemy: async function(player, enemy){
@@ -275,15 +271,15 @@ const MainScene = {
           type: "collision"
         });
         enemy.destroy();
-        const msgSend = await WakuMessage.fromUtf8String(msg, contentTopic)
-        await this.room.relay.send(msgSend);
+        const msgSend = new TextEncoder().encode(msg)
+        await room.pubsub.publish(topicMovements, msgSend)
       } else if(player.body.touching.up) {
         const msg = JSON.stringify({
           name: player.name,
           type: "collision"
         });
-        const msgSend = await WakuMessage.fromUtf8String(msg, contentTopic)
-        await this.room.relay.send(msgSend);
+        const msgSend = new TextEncoder().encode(msg)
+        await room.pubsub.publish(topicMovements, msgSend)
       } else {
         player.setVelocityX(0);
         player.setVelocityY(0);
@@ -294,7 +290,7 @@ const MainScene = {
   },
 
 
-  update: function(){
+  update: async function(){
 
     //this.player.setVelocity(0);
     const msg = JSON.stringify({
@@ -304,10 +300,8 @@ const MainScene = {
       type: "movement"
     });
     if(cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown){
-      WakuMessage.fromUtf8String(msg, contentTopic)
-      .then(msgSend => {
-        room.relay.send(msgSend);
-      });
+      const msgSend = new TextEncoder().encode(msg)
+      await room.pubsub.publish(topicMovements, msgSend)
     }
     if (cursors.left.isDown){
       this.player.setVelocityX(-150);
@@ -345,12 +339,13 @@ const game = {
 export default function HashOperation () {
   const gameRef = useRef(null);
   const { state } = useAppContext();
-  const [waku,setWaku] = useState();
   const [msgs,setMsgs] = useState([]);
   const [metadataPlayer,setMetadataPlayer] = useState();
   // Call `setInitialize` when you want to initialize your game! :)
   const [initialize, setInitialize] = useState(false);
   const [msg,setMsg] = useState();
+  const [subscribed,setSubscribed] = useState();
+  const [peers,setPeersIds] = useState();
   const destroy = () => {
     if (gameRef.current) {
       gameRef.current.destroy()
@@ -362,24 +357,21 @@ export default function HashOperation () {
 
  const post =  useCallback(async () => {
     const inputMessage = document.getElementById('input_message');
-    const msgWaku = JSON.stringify({
+    const msgString = JSON.stringify({
       message: msg,
       from: state.coinbase,
       timestamp: (new Date()).getTime(),
       metadata: metadataPlayer,
       type: "message"
     });
-    const msgSend = await WakuMessage.fromUtf8String(msgWaku, contentTopicChat);
+    const msgToSend = new TextEncoder().encode(msgString)
 
-    await waku.relay.send(msgSend);
-    const newMsgs = msgs;
-    newMsgs.unshift(JSON.parse(msgWaku));
-    setMsgs(newMsgs);
+    await state.ipfs.pubsub.publish(topic, msgToSend);
     inputMessage.value = '';
     inputMessage.innerText = '';
     setMsg('');
 
-  },[waku,WakuMessage,state.coinbase,metadataPlayer,document.getElementById('input_message'),msg,msgs]);
+  },[state.ipfs,state.coinbase,metadataPlayer,document.getElementById('input_message'),msg]);
 
   const setMetadata = (mt) => {
       metadata = mt;
@@ -396,28 +388,27 @@ export default function HashOperation () {
   },[state.nfts]);
 
   useMemo(async () => {
-    if(state.hashavatars && !waku){
-      const newWaku = await Waku.create({ bootstrap: true });
-      await newWaku.waitForConnectedPeer();
-      console.log(newWaku);
-      setWaku(newWaku)
-      room = newWaku;
-      newWaku.relay.addObserver(async (msgWaku) => {
-        try{
-          const obj = JSON.parse(msgWaku.payloadAsUtf8);
-          if(obj.type === "message"){
-            const newMsgs = msgs;
-            newMsgs.unshift(obj);
-            setMsgs(newMsgs);
-          }
-        } catch(err){
-          console.log(err)
-        }
-      }, [contentTopicChat]);
+    if(state.hashavatars && state.ipfs && !subscribed){
+      await state.ipfs.pubsub.subscribe(topic, async (msg) => {
+        console.log(new TextDecoder().decode(msg.data));
+        const obj = JSON.parse(new TextDecoder().decode(msg.data));
+        const newMsgs = msgs;
+        newMsgs.unshift(obj);
+        setMsgs(newMsgs);
+        const newPeerIds = await state.ipfs.pubsub.peers(topic);
+        setPeersIds(newPeerIds);
+      });
+      setInterval(async () => {
+        const newPeerIds = await state.ipfs.pubsub.peers(topic);
+        setPeersIds(newPeerIds);
+      },5000)
+
+      room = state.ipfs;
+      setSubscribed(true);
 
     }
 
-  },[state.hashavatars,waku,msgs]);
+  },[state.hashavatars,state.ipfs,msgs]);
 
   useMemo(()=>{
     const inputMessage = document.getElementById('input_message');
@@ -444,8 +435,9 @@ export default function HashOperation () {
           <Row>
             <Col md={4}>
             {
-              waku ?
+              state.ipfs ?
               <>
+              <p>Total of {peers?.length} players</p>
               <input  placeholder="Message" id='input_message' onChange={(e) => {setMsg(e.target.value);}} />
               <Button onClick={() => {post()}}>Send Message</Button>
               <Container>
@@ -469,13 +461,13 @@ export default function HashOperation () {
               </> :
               <>
               <LoadingRing style={{width: '50px'}}/>
-              <p>Loading js-waku ...</p>
+              <p>Loading ipfs pubsub ...</p>
               </>
             }
             </Col>
             <Col md={8}>
               {
-                waku && <IonPhaser ref={gameRef} game={game} initialize={initialize} />
+                state.ipfs && <IonPhaser ref={gameRef} game={game} initialize={initialize} />
               }
             </Col>
           </Row>
@@ -485,7 +477,6 @@ export default function HashOperation () {
         <p>HashOperation game (beta) - HashIsland is under war! Kill all others players by touching their head! Survive!</p>
         <p><small><Link href="https://phaser.io/" external>Done with phaser <IconLink /></Link></small></p>
         <p><small><Link href="https://merchant-shade.itch.io/16x16-mini-world-sprites" external>Tilesets by Shade <IconLink /></Link></small></p>
-        <p><small><Link href="https://github.com/status-im/js-waku" external>Powered with js-waku<IconLink /></Link></small></p>
 
         {
           state.loadingNFTs && state.nfts && state.totalSupply &&

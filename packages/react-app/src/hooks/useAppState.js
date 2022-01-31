@@ -25,7 +25,8 @@ const useAppState = () => {
     profile: null,
     connecting: false,
     getMetadata: null,
-    getTotalSupply: null
+    getTotalSupply: null,
+    ipfs: null
   }
 
   // Manage the state using React.useState()
@@ -86,6 +87,9 @@ const getActions = (setState) => ({
   },
   setGetTotalSupply: (getTotalSupply) => {
     setState((state) => ({ ...state, getTotalSupply: getTotalSupply }))
+  },
+  setIPFS: (ipfs) => {
+    setState((state) => ({ ...state, ipfs: ipfs }))
   },
 })
 

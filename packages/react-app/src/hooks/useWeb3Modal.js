@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import * as UAuthWeb3Modal from '@uauth/web3modal'
 import UAuthSPA from '@uauth/js'
 import Web3Modal from "web3modal";
-import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
+import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
 // These options are used to construct the UAuthSPA instance.
@@ -62,6 +62,8 @@ function useWeb3Modal(config = {}) {
   const [netId , setNetId] = useState();
   const [connecting , setConnecting] = useState();
   const [noProvider , setNoProvider] = useState();
+  const [cyberConnect , setCyberConnect] = useState();
+
   const [autoLoaded, setAutoLoaded] = useState(false);
   const { autoLoad = true } = config;
   // Web3Modal also supports many other wallets.

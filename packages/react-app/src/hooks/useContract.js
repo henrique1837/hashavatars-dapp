@@ -1,10 +1,9 @@
 import { useCallback,useMemo,useEffect, useState } from "react";
-import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
+import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 import { addresses, abis } from "@project/contracts";
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { ethers } from "ethers";
 
-import useIpfs from './useIPFS';
 import useWeb3Modal from "./useWeb3Modal";
 
 
@@ -13,13 +12,9 @@ const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-a
 
 
 
-
-
-
 function useContract() {
 
   const {provider,coinbase,netId} = useWeb3Modal();
-  const {ipfs} = useIpfs();
   const [hashavatars,setHashAvatars] = useState();
   const [getData,setGetData] = useState();
   const [client,setClient] = useState();
@@ -44,10 +39,6 @@ function useContract() {
     //const image = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text()
     //metadataToken.svg = image;
 
-    if(ipfs){
-      ipfs.pin.add(uriToken.replace("ipfs://",""))
-      ipfs.pin.add(metadataToken.image.replace("ipfs://",""))
-    }
     return(metadataToken)
   }
 
@@ -89,6 +80,7 @@ function useContract() {
     return(creatorProfile)
   },[hashavatars,creators])
 
+
   const handleEvents = useCallback(async(err,res) => {
     try{
       if(res.address !== hashavatars.address){
@@ -100,6 +92,7 @@ function useContract() {
       }
       const creator = await hashavatars.creators(id);
       const metadata = await getMetadata(id,hashavatars)
+
       getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
         const creatorProfile = {
           address: creator,
@@ -196,7 +189,7 @@ function useContract() {
         }
       }
 
-      fetch(metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+      //fetch(metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
 
       const creator = res.creator;
 
@@ -282,7 +275,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,coinbase,creators,nfts,myNfts,myOwnedNfts,ipfs])
+  },[hashavatars,coinbase,creators,nfts,myNfts,myOwnedNfts])
 
   useMemo(() => {
     if(provider && netId && !hashavatars){
@@ -464,17 +457,8 @@ function useContract() {
     client
   ])
 
-  useMemo(() => {
-    if(!loadingNFTs && ipfs &&!pinning){
-      setPinning(true)
-      nfts.map(async string => {
-        const obj = JSON.parse(string);
-        await ipfs.pin.add(obj.tokenUri.replace("ipfs://",""))
-        await ipfs.pin.add(obj.metadata.image.replace("ipfs://",""))
-        return(string);
-      })
-    }
-  },[ipfs,nfts,loadingNFTs,pinning])
+
+
 
   return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }

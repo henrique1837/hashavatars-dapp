@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from "react";
 import { ethers } from "ethers";
 import UAuthSPA from '@uauth/js'
-import * as UAuthWeb3Modal from '@uauth/web3modal'
+import * as UAuthWeb3Modal from '@uauth/web3modal';
 import  { Redirect } from 'react-router-dom';
 import {  useAppState } from '../hooks/useAppState'
 import  {web3Modal,uauthOptions}  from '../hooks/useWeb3Modal'
@@ -28,7 +28,6 @@ function CallbackUNSLogin(){
           actions.setProvider(newProvider);
           actions.setCoinbase(newCoinbase);
           actions.setNetId(chainId);
-
           setRedirectTo('/');
 
         })

@@ -1,5 +1,5 @@
 import { useMemo,useState } from "react";
-import { getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
+import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 
 import { Waku,WakuMessage } from 'js-waku';
 
@@ -39,8 +39,8 @@ function useWaku() {
 
   useMemo(async () => {
     if(!waku){
-      const newWaku = await Waku.create();
-      alert(newWaku)
+      const newWaku = await Waku.create({ bootstrap: true });
+      await newWaku.waitForConnectedPeer();
       setWaku(newWaku);
       newWaku.relay.addObserver((msg) => {
         handleMsgReceived(msg);
