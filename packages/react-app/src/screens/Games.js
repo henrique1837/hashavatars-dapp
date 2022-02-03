@@ -5,6 +5,7 @@ import { Button } from '@aragon/ui';
 import HashAtack from './games/HashAtack'
 import HashVille from './games/HashVilleUnderHashAtack'
 import HashOperation from './games/HashOperation1'
+import FirstContact from './games/FirstContact'
 
 function GamesPage() {
 
@@ -29,14 +30,14 @@ function GamesPage() {
       description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
       image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
     },
-    /*
+
     {
-      component: <SnowflakesInvasion {...this.props} />,
-      name: "SnowflakesInvasion",
-      description: "",
+      component: <FirstContact />,
+      name: "First Contact",
+      description: "Unknow ships have been saw for a long time. Now they are close.",
       image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
     }
-    */
+
   ]
 
   return(

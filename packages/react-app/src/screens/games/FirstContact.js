@@ -7,14 +7,15 @@ import { Button,ProgressBar,Link,IconLink,Box,LoadingRing } from '@aragon/ui';
 import { useAppContext } from '../../hooks/useAppState';
 
 let metadata;
+let contractAddress;
 let metadatas = [];
 let players = [];
 let loaded = [];
 let coinbase;
 let cursors;
 let room;
-const topicMovements = 'hash-avatars/games/hash-operation/movements';
-const topic = 'hash-avatars/games/hash-operation';
+const topicMovements = 'hash-avatars/games/first-contact/movements';
+const topic = 'hash-avatars/games/first-contact';
 
 const MainScene = {
 
@@ -77,81 +78,54 @@ const MainScene = {
     });
 
     this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
-    this.load.image("tiles", "https://ipfs.io/ipfs/QmVpCeH52ya9gWdGnsa1u6z7kDLTPosUoPxhuYkwfqgKqi");
+    this.load.image("tiles", "https://ipfs.io/ipfs/bafkreier6xkncx24wj4wm7td3v2k3ea2r2gpfg2qamtvh7digt27mmyqkm");
     //this.load.image("background", "https://ipfs.io/ipfs/QmQuEkDthgq6Hd5XWpUYZQ3oEoopHbt3X6EH2EwapSGxUA");
 
-    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/QmNhhHG84xkV4h8s8vBw6bQHncDwzyvcJZ8eAUqgmKMi63");
-    /*
-    for(let i = 0;i<metadatas.length;i++){
-      this.load.image(metadatas[i].name, metadatas[i].image.replace("ipfs://","https://ipfs.io/ipfs/"));
-    }
-    */
+    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/bafkreicnzjogkejde3c5sj227seszgjduusx54sf6uvxrwi5xvecyjgvci");
+
 
 
   },
-  addOtherPlayers: function(playerInfo){
-    const otherPlayer = this.physics.add.sprite(0, 0,  playerInfo.name).setScale(0.05);
-    otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
-    otherPlayer.name = playerInfo.name;
-    this.load.image(playerInfo.name, playerInfo.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-    this.otherPlayers.add(otherPlayer);
-  },
-  setPlayerPosition: function(objPlayer){
 
-    let added = false;
-    this.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      if (objPlayer.metadata.name === otherPlayer.name) {
-        otherPlayer.setPosition(objPlayer.player.x, objPlayer.player.y);
-        added = true;
-      }
-    });
-    if(!added && objPlayer.metadata.name !== metadata.name){
-      this.addOtherPlayers(objPlayer.metadata);
-    }
-  },
-
-  playerMoved: async function(){
-    const msg = JSON.stringify({
-      metadata: metadata,
-      player: this.player,
-      from: coinbase,
-      type: "movement"
-    });
-
-
-    const msgSend = new TextEncoder().encode(msg)
-    await room.pubsub.publish(topicMovements, msgSend)
-
-  },
   create: async function(){
 
+    alert("Init")
+
     const map = this.make.tilemap({ key: "map" });
+    alert( map.widthInPixels)
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     //this.add.image(1000,1020,'background')
     // Parameters are the name you gave the tileset in Tiled and then the key of the tileset image in
     // Phaser's cache (i.e. the name you used in preload)
-    const tileset = map.addTilesetImage("AllAssetsPreview", "tiles");
+    alert(map)
+    const tileset = map.addTilesetImage("FirstContactTilesets", "tiles");
+    alert(tileset)
     // Parameters: layer name (or index) from Tiled, tileset, x, y
     const bellowLayer = map.createStaticLayer("Ground", tileset, 0, 0);
-    const worldLayer = map.createStaticLayer("World", tileset, 0, 0);
+    const worldLayer = map.createStaticLayer("Layer1", tileset, 0, 0);
+    const waterLayer = map.createStaticLayer("Water", tileset, 0, 0);
+    const layer2 = map.createStaticLayer("Layer2", tileset, 0, 0);
+
     worldLayer.setCollisionByProperty({ collides: true });
+    waterLayer.setCollisionByProperty({ collides: true });
+    layer2.setCollisionByProperty({ collides: true });
 
     this.room = room;
     this.otherPlayers = this.physics.add.group();
+    this.friendlyPlayers = this.physics.add.group();
 
 
     this.physics.world.setBounds(0, 0, 2000, 2000);
     this.cameras.main.setBounds(0, 0, 2000, 2000);
     //this.createLandscape();
-    this.cameras.main.setZoom(4);
+    this.cameras.main.setZoom(2);
 
     //  Add a player ship and camera follow
-    this.player = this.physics.add.sprite(Phaser.Math.Between(800, 1300), Phaser.Math.Between(800, 1600), 'ship')
-        .setScale(0.05);
-    this.player.setBounce(0.2).setCollideWorldBounds(true);
+    this.player = this.physics.add.sprite(Phaser.Math.Between(0, 400), Phaser.Math.Between(0, 400), 'ship')
+        .setScale(0.5);
+        alert(this.player)
+    this.player.setCollideWorldBounds(true);
     this.player.name = metadata.name;
-    //this.physics.add.collider(this.player, this.otherPlayers);
-    //this.physics.add.collider(this.otherPlayers, this.otherPlayers);
     this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
     this.cameras.main.setZoom(2);
 
@@ -163,18 +137,28 @@ const MainScene = {
         if(obj.type === "movement"){
           let added = false;
           this.otherPlayers.getChildren().forEach(function (otherPlayer) {
-            if (obj.metadata.name === otherPlayer.name) {
+            if (obj.metadata.name === otherPlayer.name && obj.contractAddress !== contractAddress) {
+              otherPlayer.setPosition(obj.player.x, obj.player.y);
+              added = true;
+            }
+          });
+          this.friendlyPlayers.getChildren().forEach(function (otherPlayer) {
+            if (obj.metadata.name === otherPlayer.name && obj.contractAddress === contractAddress) {
               otherPlayer.setPosition(obj.player.x, obj.player.y);
               added = true;
             }
           });
           if(!added && obj.metadata.name !== metadata.name){
-            const playerInfo = obj.metadata;
-            const otherPlayer = this.physics.add.sprite(0, 0,  playerInfo.name).setScale(0.05);
-            otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
-            otherPlayer.name = playerInfo.name
-            this.load.image(playerInfo.name, playerInfo.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-            this.otherPlayers.add(otherPlayer);
+            const otherPlayer = this.physics.add.sprite(0, 0,  obj.metadata.name).setScale(0.5);
+            otherPlayer.setCollideWorldBounds(true);
+            otherPlayer.name =  obj.metadata.name
+            otherPlayer.contractAddress = obj.contractAddress;
+            this.load.image(obj.metadata.name, obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
+            if(obj.contractAddress !== contractAddress){
+              this.otherPlayers.add(otherPlayer);
+            } else {
+              this.friendlyPlayers.add(otherPlayer);
+            }
           }
         }
         if(obj.type === "collision"){
@@ -187,23 +171,6 @@ const MainScene = {
               metadata: metadata,
               type: "message"
             });
-            /*
-            const objPlayer = {
-              player: this.player,
-              metadata: metadata
-            };
-            let added = false;
-            this.otherPlayers.getChildren().forEach(function (otherPlayer) {
-              if (objPlayer.metadata.name === otherPlayer.name) {
-                otherPlayer.setPosition(objPlayer.player.x, objPlayer.player.y);
-                added = true;
-              }
-            });
-            if(!added && objPlayer.metadata.name !== metadata.name){
-              this.addOtherPlayers(objPlayer.metadata);
-            }
-            */
-
             const msgSend = new TextEncoder().encode(str)
             await room.pubsub.publish(topic, msgSend)
           }
@@ -215,6 +182,7 @@ const MainScene = {
 
 
 
+    this.physics.add.collider(this.player, this.friendlyPlayers);
 
     this.physics.add.collider(this.player,this.otherPlayers,async (player, enemy) => {
       if(enemy.body.touching.up){
@@ -242,10 +210,21 @@ const MainScene = {
     },null, this);
 
     this.physics.add.collider(this.player,worldLayer);
+    this.physics.add.collider(this.player,layer2);
+    this.physics.add.collider(this.player,waterLayer);
+
     this.physics.add.collider(this.otherPlayers,worldLayer);
+    this.physics.add.collider(this.otherPlayers,layer2);
+    this.physics.add.collider(this.otherPlayers,waterLayer);
+
+    this.physics.add.collider(this.friendlyPlayers, worldLayer);
+    this.physics.add.collider(this.friendlyPlayers, layer2);
+    this.physics.add.collider(this.friendlyPlayers, waterLayer);
+
+
 
     let msg = JSON.stringify({
-      message: `${metadata.name} joined HashIsland!`,
+      message: `${metadata.name} joined HashVillage!`,
       from: coinbase,
       timestamp: (new Date()).getTime(),
       metadata: metadata,
@@ -258,6 +237,7 @@ const MainScene = {
 
     msg = JSON.stringify({
       metadata: metadata,
+      contractAddress: contractAddress,
       player: this.player,
       from: coinbase,
       type: "movement"
@@ -297,6 +277,7 @@ const MainScene = {
   update: async function(){
 
     //this.player.setVelocity(0);
+    /*
     const msg = JSON.stringify({
       metadata: metadata,
       player: this.player,
@@ -318,6 +299,7 @@ const MainScene = {
     } else {
       this.player.setVelocity(0);
     }
+    */
   }
 }
 
@@ -340,7 +322,7 @@ const game = {
   scene: MainScene
 };
 
-export default function HashOperation () {
+export default function FirstContact () {
   const gameRef = useRef(null);
   const { state } = useAppContext();
   const [msgs,setMsgs] = useState([]);

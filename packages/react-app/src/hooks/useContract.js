@@ -1,23 +1,23 @@
 import { useCallback,useMemo,useEffect, useState } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 import { addresses, abis } from "@project/contracts";
-import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { gql } from '@apollo/client';
 import { ethers } from "ethers";
 
 import useWeb3Modal from "./useWeb3Modal";
+import useGraphClient from "./useGraphClient";
 
-
-const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
-const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
 
 
 
 function useContract() {
 
   const {provider,coinbase,netId} = useWeb3Modal();
+  const {client} = useGraphClient();
   const [hashavatars,setHashAvatars] = useState();
   const [getData,setGetData] = useState();
-  const [client,setClient] = useState();
+  const [getMyData,setGetMyData] = useState();
+
   const [totalSupply,setSupply] = useState();
   const [creators,setCreators] = useState([]);
   const [nfts,setNfts] = useState([]);
@@ -80,19 +80,15 @@ function useContract() {
     return(creatorProfile)
   },[hashavatars,creators])
 
-
-  const handleEvents = useCallback(async(err,res) => {
-    try{
-      if(res.address !== hashavatars.address){
-        Promise.reject("Changed network")
+  const getCreatorProfileCheck = useCallback(async (creator) => {
+    let getCreatorProfile = true;
+    creators.map(str => {
+      const creatorProfile = JSON.parse(str);
+      if(creator.toLowerCase() === creatorProfile.address.toLowerCase()){
+        getCreatorProfile = false;
       }
-      const id = res.returnValues._id;
-      if(ids.includes(id)){
-        return;
-      }
-      const creator = await hashavatars.creators(id);
-      const metadata = await getMetadata(id,hashavatars)
-
+    });
+    if(getCreatorProfile){
       getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
         const creatorProfile = {
           address: creator,
@@ -100,9 +96,10 @@ function useContract() {
         }
         if(!creators.includes(JSON.stringify(creatorProfile))){
           const newCreators = creators;
-          newCreators.unshift(JSON.stringify(creatorProfile));
+          newCreators.push(JSON.stringify(creatorProfile));
           setCreators([...newCreators]);
         }
+
       }).catch(err => {
         console.log(err);
         const creatorProfile = {
@@ -110,20 +107,52 @@ function useContract() {
           profile: undefined
         }
         if(!creators.includes(JSON.stringify(creatorProfile))){
-
-          const creatorProfile = {
-            address: creator,
-            profile: undefined
-          }
           const newCreators = creators;
           newCreators.push(JSON.stringify(creatorProfile));
           setCreators([...newCreators]);
         }
       });
+    }
+  },[creators]);
+
+  const checkNftOwned = useCallback((obj) => {
+
+    if(coinbase.toLowerCase() === obj.creator.toLowerCase() && !myNfts.includes(JSON.stringify(obj))){
+      const newMyNfts = myNfts;
+      newMyNfts.push(JSON.stringify(obj));
+      setMyNfts([...newMyNfts.sort(function(xstr, ystr){
+                      const x = JSON.parse(xstr)
+                      const y = JSON.parse(ystr)
+                      return y.returnValues._id - x.returnValues._id;
+                })]);
+    }
+    const owner = obj.owner;
+    if(owner.toLowerCase() === coinbase.toLowerCase() && !myOwnedNfts.includes(JSON.stringify(obj))){
+      const newMyOwnedNfts = myOwnedNfts;
+      newMyOwnedNfts.push(JSON.stringify(obj));
+      setMyOwnedNfts([...newMyOwnedNfts.sort(function(xstr, ystr){
+                      const x = JSON.parse(xstr)
+                      const y = JSON.parse(ystr)
+                      return y.returnValues._id - x.returnValues._id;
+                    })]);
+    }
+
+  },[coinbase,myNfts,myOwnedNfts]);
+  const handleEvents = useCallback(async(err,res) => {
+    try{
+      const id = res.returnValues._id;
+      if(ids.includes(id)){
+        return;
+      }
+      const creator = await hashavatars.creators(id);
+      const metadata = await getMetadata(id,hashavatars)
+      const owner = res.returnValues._to;
+
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata,
-        creator: creator
+        creator: creator,
+        owner: owner
       }
       if(!nfts.includes(JSON.stringify(obj))){
         const newNfts = nfts;
@@ -134,30 +163,10 @@ function useContract() {
                           return y.returnValues._id - x.returnValues._id;
                 })]);
       }
+      getCreatorProfileCheck(creator);
       if(coinbase && creator){
-        if(coinbase.toLowerCase() === creator.toLowerCase() && !myNfts.includes(JSON.stringify(obj))){
-          const newMyNfts = myNfts;
-          newMyNfts.push(JSON.stringify(obj));
-          setMyNfts([...newMyNfts.sort(function(xstr, ystr){
-                          const x = JSON.parse(xstr)
-                          const y = JSON.parse(ystr)
-                          return y.returnValues._id - x.returnValues._id;
-                    })]);
-        }
-        const balance = await hashavatars.balanceOf(coinbase,id);
-        if(balance > 0 && !myOwnedNfts.includes(JSON.stringify(obj))){
-          const newMyOwnedNfts = myOwnedNfts;
-          newMyOwnedNfts.push(JSON.stringify(obj));
-          setMyOwnedNfts([...newMyOwnedNfts.sort(function(xstr, ystr){
-                          const x = JSON.parse(xstr)
-                          const y = JSON.parse(ystr)
-                          return y.returnValues._id - x.returnValues._id;
-                        })]);
-        }
-
+        await checkNftOwned(obj);
       }
-
-
       return({
         obj: obj
       });
@@ -168,9 +177,6 @@ function useContract() {
 
   const handleEventsSubgraph = useCallback(async(res) => {
     try{
-      if(res.address !== hashavatars.address){
-        Promise.reject("Changed network")
-      }
       const id = res.id;
       const returnValues = {
         _id: id
@@ -178,7 +184,6 @@ function useContract() {
       if(ids.includes(id)){
         return;
       }
-      //const metadata = JSON.parse(await ipfs.cat(res.metadata.replace("ipfs://","")))
       let metadata;
       if(!res.imageURI){
         metadata = JSON.parse(await (await fetch(`${res.metadata.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
@@ -189,14 +194,13 @@ function useContract() {
         }
       }
 
-      //fetch(metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
-
       const creator = res.creator;
 
       const obj = {
         returnValues: returnValues,
         metadata: metadata,
         creator: creator,
+        owner: res.owner,
         tokenUri: res.metadata
       }
       if(!nfts.includes(JSON.stringify(obj))){
@@ -208,66 +212,10 @@ function useContract() {
                           return y.returnValues._id - x.returnValues._id;
                 })]);
       }
-      if(coinbase && creator){
-        if(coinbase.toLowerCase() === creator.toLowerCase() && !myNfts.includes(JSON.stringify(obj))){
-          const newMyNfts = myNfts;
-          newMyNfts.push(JSON.stringify(obj));
-          setMyNfts([...newMyNfts.sort(function(xstr, ystr){
-                          const x = JSON.parse(xstr)
-                          const y = JSON.parse(ystr)
-                          return y.returnValues._id - x.returnValues._id;
-                    })]);
-        }
-        const owner = res.owner;
-        if(owner.toLowerCase() === coinbase.toLowerCase() && !myOwnedNfts.includes(JSON.stringify(obj))){
-          const newMyOwnedNfts = myOwnedNfts;
-          newMyOwnedNfts.push(JSON.stringify(obj));
-          setMyOwnedNfts([...newMyOwnedNfts.sort(function(xstr, ystr){
-                          const x = JSON.parse(xstr)
-                          const y = JSON.parse(ystr)
-                          return y.returnValues._id - x.returnValues._id;
-                        })]);
-        }
-
-      }
-
-
+      getCreatorProfileCheck(creator);
       if(id <= 1){
         setLoadingNFTs(false);
       }
-
-
-      getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
-        const creatorProfile = {
-          address: creator,
-          profile: profile
-        }
-        if(!creators.includes(JSON.stringify(creatorProfile))){
-          const newCreators = creators;
-          newCreators.push(JSON.stringify(creatorProfile));
-          setCreators([...newCreators]);
-        }
-
-      }).catch(err => {
-        console.log(err);
-        const creatorProfile = {
-          address: creator,
-          profile: undefined
-        }
-        if(!creators.includes(JSON.stringify(creatorProfile))){
-
-          const creatorProfile = {
-            address: creator,
-            profile: undefined
-          }
-          const newCreators = creators;
-          newCreators.push(JSON.stringify(creatorProfile));
-          setCreators([...newCreators]);
-        }
-      });
-
-
-
 
       return({
         obj: obj
@@ -275,7 +223,8 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,coinbase,creators,nfts,myNfts,myOwnedNfts])
+  },[hashavatars,creators,nfts,myNfts,myOwnedNfts,checkNftOwned])
+
 
   useMemo(() => {
     if(provider && netId && !hashavatars){
@@ -284,26 +233,11 @@ function useContract() {
       let newToken;
       if(netId === 4){
         newToken = new ethers.Contract(addresses.erc1155.rinkeby,abis.erc1155,provider);
-        newClient = new ApolloClient({
-          uri: APIURL_RINKEBY,
-          cache: new InMemoryCache(),
-          fetchOptions: {
-            mode: 'no-cors',
-          }
-        });
       }
       if(netId === 0x64){
         newToken = new ethers.Contract(addresses.erc1155.xdai,abis.erc1155,provider);
-        newClient = new ApolloClient({
-          uri: APIURL_XDAI,
-          cache: new InMemoryCache(),
-          fetchOptions: {
-            mode: 'no-cors',
-          }
-        });
       }
       setHashAvatars(newToken)
-      setClient(newClient);
     }
   },[
     hashavatars,
@@ -321,9 +255,9 @@ function useContract() {
       setHashAvatars(null);
       setLoadingNFTs(true);
   },[
-    netId,
-    coinbase
+    netId
   ])
+
   useEffect(() => {
     if(hashavatars){
       getTotalSupply();
@@ -375,8 +309,10 @@ function useContract() {
                       tokenID_lte: ${id}
                     }) {
               id
+              name
               tokenID
               metadataURI
+              imageURI
               creator {
                 id
               }
@@ -414,11 +350,12 @@ function useContract() {
                     name: token.name,
                     imageURI: token.imageURI
             })
-          )
+          );
           if(token.tokenID % 12 === 0 || token.tokenID === 1){
             await Promise.allSettled(promises);
             promises = [];
           }
+
         }
         id = id - 100;
         actualQuery = actualQuery + 1;
@@ -434,7 +371,9 @@ function useContract() {
                       }) {
                 id
                 tokenID
+                name
                 metadataURI
+                imageURI
                 creator {
                   id
                 }
@@ -452,13 +391,89 @@ function useContract() {
   },[
     hashavatars,
     nfts,
+    netId,
     totalSupply,
     getData,
     client
   ])
 
 
+  useMemo(async () => {
 
+
+
+    if(totalSupply && myNfts?.length === 0  && !getMyData && hashavatars && client && coinbase){
+      setGetMyData(true);
+      
+      const tokensQuery = `
+        query {
+              users(where: {
+                id: "${coinbase.toLowerCase()}"
+              }) {
+                id
+                tokens {
+                  id
+                  name
+                  tokenID,
+                  metadataURI,
+                  imageURI
+                  createdAtTimestamp
+                }
+                created {
+                  id
+                  name
+                  tokenID,
+                  metadataURI,
+                  imageURI
+                  createdAtTimestamp
+                }
+              }
+            }
+      `
+      const results = await client.query({
+        query: gql(tokensQuery)
+      });
+      const newMyOwnedNfts = results.data.users[0].tokens.map(token => {
+        const returnValues = {
+          _id: token.tokenID
+        }
+        const metadata = {
+          name: token.name,
+          image: token.imageURI,
+        }
+        const obj = {
+          returnValues: returnValues,
+          metadata: metadata,
+        }
+        return(JSON.stringify(obj))
+      });
+      const newMyCreatedNFts = results.data.users[0].created.map(token => {
+        const returnValues = {
+          _id: token.tokenID
+        }
+        const metadata = {
+          name: token.name,
+          image: token.imageURI,
+        }
+        const obj = {
+          returnValues: returnValues,
+          metadata: metadata,
+        }
+        return(JSON.stringify(obj))
+      });
+      setMyNfts(newMyCreatedNFts);
+      setMyOwnedNfts(newMyOwnedNfts);
+    }
+
+
+  },[
+    hashavatars,
+    myNfts,
+    totalSupply,
+    getMyData,
+    client,
+    coinbase
+  ])
 
   return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }

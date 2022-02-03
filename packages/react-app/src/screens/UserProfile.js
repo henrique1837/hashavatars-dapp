@@ -3,16 +3,15 @@ import { Container,Row,Col } from 'react-bootstrap';
 import { Link,IconLink,IdentityBadge,Split,LoadingRing,SyncIndicator,BackButton } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 import { useParams } from "react-router-dom";
-import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { gql } from '@apollo/client';
 
-import { useAppContext } from '../hooks/useAppState'
+import { useAppContext } from '../hooks/useAppState';
+import  useGraphClient  from '../hooks/useGraphClient';
 
 
 import useProfile from '../hooks/useProfile';
 
 
-const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
-const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
 
 
 
@@ -25,12 +24,11 @@ function UserProfile(){
   const [checking,setChecking] = useState(false);
   const [ownedNfts,setOwnedNfts] = useState([]);
   const [createdNfts,setCreatedNfts] = useState([]);
-  const [client,setClient] = useState();
+  const {client} = useGraphClient();
   const [profile,setProfile] = useState();
 
   useMemo(async () => {
     if(!state.hashavatars){
-      setClient();
       setOwnedNfts([])
       setChecking(false)
       setCreatedNfts([]);
@@ -39,7 +37,7 @@ function UserProfile(){
   useMemo(async () => {
     const newProfile = await getProfile(address);
     setProfile(newProfile);
-  },[profile,address])
+  },[profile,address]);
 
   useMemo(async () => {
     if(client && !checking && address){

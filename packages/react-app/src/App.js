@@ -25,7 +25,7 @@ import Governance from "./screens/Governance";
 
 import GamesPage from "./screens/Games";
 
-//import Feedbacks from "./screens/Feedbacks";
+import Feedbacks from "./screens/Feedbacks";
 
 import AllAvatars from "./screens/AllAvatars";
 
@@ -41,11 +41,8 @@ function App() {
   const {provider,coinbase,netId,profile,connecting,loadWeb3Modal} = useWeb3Modal();
   const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
   const {ipfs} = useIPFS();
-  const { state, actions } = useAppState()
-  const [nftsLength,setNftsLength] = useState();
+  const { state, actions } = useAppState();
   const [pinning,setPinning] = useState();
-  const [myNftsLength,setMyNftsLength] = useState();
-  const [myOwnedNftsLength,setMyOwnedNftsLength] = useState();
 
   useEffect(() => {
     actions.setConnecting(connecting);
@@ -98,7 +95,7 @@ function App() {
   useEffect(() => {
     actions.setIPFS(ipfs)
   },[ipfs]);
-  
+
   useMemo(() => {
     if(!loadingNFTs && ipfs &&!pinning){
       setPinning(true)
@@ -141,11 +138,7 @@ function App() {
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
             <Route path="/callback" component={CallbackUNSLogin}/>
-
-
-
-
-            {/*<Route path="/feedbacks" component={Feedbacks}/>*/}
+            <Route path="/feedbacks" component={Feedbacks}/>
             <Route render={() => {
 
               return(

@@ -17,7 +17,7 @@ function CallbackUNSLogin(){
       // Try to exchange authorization code for access and id tokens.
       UAuthWeb3Modal.getUAuth(UAuthSPA, uauthOptions)
         .loginCallback()
-        .then(async () => {
+        .then(async (user) => {
           const conn = await web3Modal.connectTo('custom-uauth');
           // Save provider in state and redirect to success page
 
@@ -28,6 +28,7 @@ function CallbackUNSLogin(){
           actions.setProvider(newProvider);
           actions.setCoinbase(newCoinbase);
           actions.setNetId(chainId);
+          alert(user)
           setRedirectTo('/');
 
         })

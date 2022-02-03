@@ -7,21 +7,13 @@ import {
 } from '@aragon/ui';
 import { Link } from 'react-router-dom';
 
-import { useAppContext } from '../hooks/useAppState'
-import useIpfs from '../hooks/useIPFS';
-
-
-
-const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.0.9";
-const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
+import { useAppContext } from '../hooks/useAppState';
+import useGraphClient from '../hooks/useGraphClient';
 
 
 function Activities(){
   const { state } = useAppContext();
-
-  const {ipfs} = useIpfs();
-
-  const [client,setClient] = useState();
+  const {client} = useGraphClient();
   const [stories,setStories] = useState([]);
   const [previousNetId,setPreviousNetId] = useState();
 
@@ -30,38 +22,12 @@ function Activities(){
 
   useEffect(() => {
     if(state.netId !== previousNetId){
-      setClient();
       setStories([]);
       setGetingData(false);
       setLoadingStories(true);
       setPreviousNetId(state.netId)
     }
   },[state.netId,previousNetId])
-
-  useMemo(async () => {
-    if(!client && state.netId){
-      let newClient;
-      if(state.netId === 4){
-        newClient = new ApolloClient({
-          uri: APIURL_RINKEBY,
-          cache: new InMemoryCache(),
-          fetchOptions: {
-            mode: 'no-cors',
-          }
-        });
-      }
-      if(state.netId === 0x64){
-        newClient = new ApolloClient({
-          uri: APIURL_XDAI,
-          cache: new InMemoryCache(),
-          fetchOptions: {
-            mode: 'no-cors',
-          }
-        });
-      }
-      setClient(newClient);
-    }
-  },[client,state.netId]);
 
   useMemo(async () => {
     if(client && state.hashavatars && !getingData){
@@ -104,12 +70,12 @@ function Activities(){
   },[stories,client,state.hashavatars,getingData]);
 
   useMemo(() => {
-    if(ipfs && stories && !loadingStories){
+    if(state.ipfs && stories && !loadingStories){
       stories.map(story => {
-        ipfs.pin.add(story.uri);
+        state.ipfs.pin.add(story.uri);
       })
     }
-  },[ipfs,stories,loadingStories]);
+  },[state.ipfs,stories,loadingStories]);
 
   return(
     <>

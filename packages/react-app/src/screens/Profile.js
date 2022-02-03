@@ -1,6 +1,6 @@
-import React,{useState} from "react";
+import React from "react";
 import { Container,Row,Col,Image } from 'react-bootstrap';
-import { Link,IconLink,IdentityBadge,Split,ProgressBar,SyncIndicator,TokenAmount,Info,Button } from '@aragon/ui'
+import { Link,IconLink,IdentityBadge,Split,ProgressBar,SyncIndicator } from '@aragon/ui'
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState'

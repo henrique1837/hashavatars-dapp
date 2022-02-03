@@ -62,10 +62,9 @@ function useWeb3Modal(config = {}) {
   const [netId , setNetId] = useState();
   const [connecting , setConnecting] = useState();
   const [noProvider , setNoProvider] = useState();
-  const [cyberConnect , setCyberConnect] = useState();
+  //const [cyberConnect , setCyberConnect] = useState();
 
   const [autoLoaded, setAutoLoaded] = useState(false);
-  const { autoLoad = true } = config;
   // Web3Modal also supports many other wallets.
   // You can see other options at https://github.com/Web3Modal/web3modal
   const logoutOfWeb3Modal = useCallback(
@@ -76,7 +75,7 @@ function useWeb3Modal(config = {}) {
       setNetId(0x64);
       setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com/"));
     },
-    [web3Modal],
+    [],
   );
   // Open wallet selection modal.
   const loadWeb3Modal = useCallback(async () => {
@@ -101,9 +100,7 @@ function useWeb3Modal(config = {}) {
         setCoinbase(accounts[0]);
       });
       conn.on('chainChanged', async chainId => {
-        const newProvider = new ethers.providers.Web3Provider(conn,"any");
-        setProvider(newProvider)
-        setNetId(Number(chainId))
+        window.location.reload();
       });
       // Subscribe to provider disconnection
       conn.on("disconnect", async (error: { code: number; message: string }) => {
@@ -127,7 +124,7 @@ function useWeb3Modal(config = {}) {
       logoutOfWeb3Modal();
     }
 
-  }, [web3Modal,logoutOfWeb3Modal]);
+  }, [logoutOfWeb3Modal]);
 
 
 
@@ -139,10 +136,10 @@ function useWeb3Modal(config = {}) {
       loadWeb3Modal();
       setNoProvider(true);
     }
-  },[autoLoaded,web3Modal.cachedProvider])
+  },[autoLoaded,loadWeb3Modal]);
   useMemo(() => {
 
-    if(!noProvider && !window.ethereum?.selectedAddress && !autoLoaded && !web3Modal.cachedProvider && !connecting){
+    if(!noProvider && !autoLoaded && !web3Modal.cachedProvider && !connecting){
       setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com"));
       setNetId(0x64);
       setNoProvider(true);
@@ -152,10 +149,9 @@ function useWeb3Modal(config = {}) {
 
 
   },[
-     autoLoaded,
-     web3Modal.cachedProvider,
-     noProvider,
-     connecting
+    noProvider,
+    autoLoaded,
+    connecting
    ]);
 
   return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile,connecting});

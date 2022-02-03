@@ -4,7 +4,6 @@ import { IdentityBadge,Pagination,Tabs,Split,TokenAmount,TransactionBadge,Button
 
 import { useAppContext } from '../hooks/useAppState'
 import  useHashGovern  from '../hooks/useHashGovern'
-import Feedbacks from '../components/Feedbacks';
 
 function Governance(){
   const { state } = useAppContext();
@@ -169,8 +168,6 @@ function Governance(){
                 }}
               />
             }
-            <Feedbacks />
-
             </>
 
           }

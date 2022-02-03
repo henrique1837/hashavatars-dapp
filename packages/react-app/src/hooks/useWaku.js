@@ -1,4 +1,4 @@
-import { useMemo,useState } from "react";
+import { useMemo,useState,useCallback } from "react";
 import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 
 import { Waku,WakuMessage } from 'js-waku';
@@ -23,19 +23,21 @@ function useWaku() {
     await waku.relay.send(msg);
   };
 
-  const handleMsgReceived = async (msg) => {
+  const handleMsgReceived = useCallback(async (msg) => {
     console.log('Message retrieved:', msg.payloadAsUtf8);
     const obj = JSON.parse(msg.payloadAsUtf8);
     if(obj.from !== null){
       obj.profile = await getLegacy3BoxProfileAsBasicProfile(obj.from);
     }
     const treatedMsg = {
-      payloadAsUtf8: JSON.stringify(obj),
-      timestamp: msg.timestamp
+      payload: obj,
+      timestamp: msg.timestamp,
     };
-    const newMessages = [...msgs,msg.payloadAsUtf8];
+
+    const newMessages = msgs;
+    newMessages.unshift(treatedMsg)
     setMsgs(newMessages);
-  };
+  },[msgs]);
 
   useMemo(async () => {
     if(!waku){
@@ -46,7 +48,7 @@ function useWaku() {
         handleMsgReceived(msg);
       }, [contentTopic]);
       // Process messages once they are all retrieved
-      const messages = await waku.store.queryHistory([contentTopic]);
+      const messages = await newWaku.store.queryHistory([contentTopic]);
       messages.forEach((msg) => {
           handleMsgReceived(msg);
       });
