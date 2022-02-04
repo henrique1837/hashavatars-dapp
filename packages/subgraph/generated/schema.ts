@@ -6,7 +6,6 @@ import {
   Value,
   ValueKind,
   store,
-  Address,
   Bytes,
   BigInt,
   BigDecimal
@@ -16,26 +15,37 @@ export class Token extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
+
+    this.set("tokenID", Value.fromBigInt(BigInt.zero()));
+    this.set("metadataURI", Value.fromString(""));
+    this.set("createdAtTimestamp", Value.fromBigInt(BigInt.zero()));
+    this.set("creator", Value.fromString(""));
+    this.set("owner", Value.fromString(""));
+    this.set("imageURI", Value.fromString(""));
+    this.set("name", Value.fromString(""));
+    this.set("supply", Value.fromBigInt(BigInt.zero()));
   }
 
   save(): void {
     let id = this.get("id");
-    assert(id !== null, "Cannot save Token entity without an ID");
-    assert(
-      id.kind == ValueKind.STRING,
-      "Cannot save Token entity with non-string ID. " +
-        'Considering using .toHex() to convert the "id" to a string.'
-    );
-    store.set("Token", id.toString(), this);
+    assert(id != null, "Cannot save Token entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        "Cannot save Token entity with non-string ID. " +
+          'Considering using .toHex() to convert the "id" to a string.'
+      );
+      store.set("Token", id.toString(), this);
+    }
   }
 
   static load(id: string): Token | null {
-    return store.get("Token", id) as Token | null;
+    return changetype<Token | null>(store.get("Token", id));
   }
 
   get id(): string {
     let value = this.get("id");
-    return value.toString();
+    return value!.toString();
   }
 
   set id(value: string) {
@@ -44,7 +54,7 @@ export class Token extends Entity {
 
   get tokenID(): BigInt {
     let value = this.get("tokenID");
-    return value.toBigInt();
+    return value!.toBigInt();
   }
 
   set tokenID(value: BigInt) {
@@ -53,7 +63,7 @@ export class Token extends Entity {
 
   get metadataURI(): string {
     let value = this.get("metadataURI");
-    return value.toString();
+    return value!.toString();
   }
 
   set metadataURI(value: string) {
@@ -62,7 +72,7 @@ export class Token extends Entity {
 
   get createdAtTimestamp(): BigInt {
     let value = this.get("createdAtTimestamp");
-    return value.toBigInt();
+    return value!.toBigInt();
   }
 
   set createdAtTimestamp(value: BigInt) {
@@ -71,7 +81,7 @@ export class Token extends Entity {
 
   get creator(): string {
     let value = this.get("creator");
-    return value.toString();
+    return value!.toString();
   }
 
   set creator(value: string) {
@@ -80,7 +90,7 @@ export class Token extends Entity {
 
   get owner(): string {
     let value = this.get("owner");
-    return value.toString();
+    return value!.toString();
   }
 
   set owner(value: string) {
@@ -89,7 +99,7 @@ export class Token extends Entity {
 
   get imageURI(): string {
     let value = this.get("imageURI");
-    return value.toString();
+    return value!.toString();
   }
 
   set imageURI(value: string) {
@@ -98,7 +108,7 @@ export class Token extends Entity {
 
   get name(): string {
     let value = this.get("name");
-    return value.toString();
+    return value!.toString();
   }
 
   set name(value: string) {
@@ -107,7 +117,7 @@ export class Token extends Entity {
 
   get supply(): BigInt {
     let value = this.get("supply");
-    return value.toBigInt();
+    return value!.toBigInt();
   }
 
   set supply(value: BigInt) {
@@ -123,22 +133,24 @@ export class User extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id !== null, "Cannot save User entity without an ID");
-    assert(
-      id.kind == ValueKind.STRING,
-      "Cannot save User entity with non-string ID. " +
-        'Considering using .toHex() to convert the "id" to a string.'
-    );
-    store.set("User", id.toString(), this);
+    assert(id != null, "Cannot save User entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        "Cannot save User entity with non-string ID. " +
+          'Considering using .toHex() to convert the "id" to a string.'
+      );
+      store.set("User", id.toString(), this);
+    }
   }
 
   static load(id: string): User | null {
-    return store.get("User", id) as User | null;
+    return changetype<User | null>(store.get("User", id));
   }
 
   get id(): string {
     let value = this.get("id");
-    return value.toString();
+    return value!.toString();
   }
 
   set id(value: string) {
@@ -147,7 +159,7 @@ export class User extends Entity {
 
   get tokens(): Array<string> {
     let value = this.get("tokens");
-    return value.toStringArray();
+    return value!.toStringArray();
   }
 
   set tokens(value: Array<string>) {
@@ -156,7 +168,7 @@ export class User extends Entity {
 
   get created(): Array<string> {
     let value = this.get("created");
-    return value.toStringArray();
+    return value!.toStringArray();
   }
 
   set created(value: Array<string>) {
@@ -168,26 +180,33 @@ export class Story extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
+
+    this.set("tokenID", Value.fromBigInt(BigInt.zero()));
+    this.set("uri", Value.fromString(""));
+    this.set("createdAtTimestamp", Value.fromBigInt(BigInt.zero()));
+    this.set("creator", Value.fromString(""));
   }
 
   save(): void {
     let id = this.get("id");
-    assert(id !== null, "Cannot save Story entity without an ID");
-    assert(
-      id.kind == ValueKind.STRING,
-      "Cannot save Story entity with non-string ID. " +
-        'Considering using .toHex() to convert the "id" to a string.'
-    );
-    store.set("Story", id.toString(), this);
+    assert(id != null, "Cannot save Story entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        "Cannot save Story entity with non-string ID. " +
+          'Considering using .toHex() to convert the "id" to a string.'
+      );
+      store.set("Story", id.toString(), this);
+    }
   }
 
   static load(id: string): Story | null {
-    return store.get("Story", id) as Story | null;
+    return changetype<Story | null>(store.get("Story", id));
   }
 
   get id(): string {
     let value = this.get("id");
-    return value.toString();
+    return value!.toString();
   }
 
   set id(value: string) {
@@ -196,7 +215,7 @@ export class Story extends Entity {
 
   get tokenID(): BigInt {
     let value = this.get("tokenID");
-    return value.toBigInt();
+    return value!.toBigInt();
   }
 
   set tokenID(value: BigInt) {
@@ -205,7 +224,7 @@ export class Story extends Entity {
 
   get uri(): string {
     let value = this.get("uri");
-    return value.toString();
+    return value!.toString();
   }
 
   set uri(value: string) {
@@ -214,7 +233,7 @@ export class Story extends Entity {
 
   get createdAtTimestamp(): BigInt {
     let value = this.get("createdAtTimestamp");
-    return value.toBigInt();
+    return value!.toBigInt();
   }
 
   set createdAtTimestamp(value: BigInt) {
@@ -223,7 +242,7 @@ export class Story extends Entity {
 
   get creator(): string {
     let value = this.get("creator");
-    return value.toString();
+    return value!.toString();
   }
 
   set creator(value: string) {

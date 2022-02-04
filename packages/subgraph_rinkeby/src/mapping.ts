@@ -14,10 +14,8 @@ import {
 } from "../generated/Stories/Stories"
 
 import {
-  Token, User,Metadata,Story
+  Token, User,Story
 } from '../generated/schema'
-
-
 
 
 export function handleApprovalForAll(event: ApprovalForAll): void {
@@ -37,10 +35,10 @@ export function handleTransferSingle(event: TransferSingle): void {
 
     let tokenContract = TokenContract.bind(event.address);
     token.metadataURI = tokenContract.uri(event.params._id);
-    //token.metadata = event.params._id.toString();
     token.createdAtTimestamp = event.block.timestamp;
     token.owner = event.params._to.toHexString();
-
+  } else {
+    token.owner = event.params._to.toHexString();
   }
 
 

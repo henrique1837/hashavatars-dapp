@@ -40,19 +40,20 @@ export function handleTransferSingle(event: TransferSingle): void {
     token.owner = event.params._to.toHexString();
     let tokenContract = TokenContract.bind(event.address);
     token.metadataURI = tokenContract.uri(event.params._id);
-    if(token.metadataURI != ''){
-      let hash = token.metadataURI.split('ipfs://').join('')
-      let data = ipfs.cat(hash) as Bytes;
-      if (data != null){
-        let value = json.fromBytes(data).toObject()
+    let hash = token.metadataURI.split('ipfs://').join('')
+    let data = ipfs.cat(hash) as Bytes;
+    let value = json.fromBytes(data).toObject()
 
-        let name = value.get('name');
-
-        let imageUri = value.get('image');
-        token.name = name.toString();
-        token.imageURI = imageUri.toString();
-      }
+    let name = value.get('name');
+    if(name){
+      token.name = name.toString();
     }
+    let imageUri = value.get('image');
+    if(imageUri){
+      token.imageURI = imageUri.toString();
+    }
+  } else {
+    token.owner = event.params._to.toHexString();
   }
 
 
@@ -65,28 +66,7 @@ export function handleTransferSingle(event: TransferSingle): void {
 
 }
 
-export function handleURI(event: URI): void {
-  let token = Token.load(event.params._id.toString());
-  if(!token.metadataURI){
-    let tokenContract = TokenContract.bind(event.address);
-    token.metadataURI = tokenContract.uri(event.params._id);
-    if(token.metadataURI != ''){
-      let hash = token.metadataURI.split('ipfs://').join('')
-      let data = ipfs.cat(hash) as Bytes;
-      if (data != null){
-        let value = json.fromBytes(data).toObject()
-
-        let name = value.get('name');
-
-        let imageUri = value.get('image');
-        token.name = name.toString();
-        token.imageURI = imageUri.toString();
-      }
-    }
-  }
-  token.save();
-
-}
+export function handleURI(event: URI): void {}
 
 
 

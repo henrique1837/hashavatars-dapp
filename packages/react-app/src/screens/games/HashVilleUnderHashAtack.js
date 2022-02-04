@@ -272,14 +272,12 @@ export default function HashAtack () {
         <p><small><Link href="https://medium.com/@michaelwesthadley/modular-game-worlds-in-phaser-3-tilemaps-1-958fc7e6bbd6" external>Based on Modular Game Worlds in Phaser3 <IconLink /></Link></small></p>
 
         {
-          state.loadingNFTs && state.nfts && state.totalSupply &&
+
+          state.loadingMyNFTs && state.myOwnedNfts && state.totalSupply &&
           <center>
-          <p>Loading all HashAvatars ...</p>
-          <p><small>Wait if you want that all yours HashAvatars join the game</small></p>
-          <ProgressBar
-            value={state.nfts.length/state.totalSupply}
-          />
+            <p>Loading your HashAvatars ...</p>
           </center>
+
         }
         {
           state.myOwnedNfts?.length > 0 &&

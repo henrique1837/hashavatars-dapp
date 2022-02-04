@@ -225,13 +225,12 @@ export default function HashAtack () {
         <p><small><Link href="https://phaser.io/tutorials/making-your-first-phaser-3-game/part1" external>Based on First Game Phaser3 tutorial <IconLink /></Link></small></p>
 
         {
-          state.loadingNFTs && state.nfts && state.totalSupply &&
+
+          state.loadingMyNFTs && state.myOwnedNfts && state.totalSupply &&
           <center>
-          <p>Loading all HashAvatars ...</p>
-          <ProgressBar
-            value={state.nfts.length/state.totalSupply}
-          />
+            <p>Loading your HashAvatars ...</p>
           </center>
+
         }
         {
           state.myOwnedNfts?.length > 0 &&

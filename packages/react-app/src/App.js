@@ -18,14 +18,12 @@ import Mint from "./screens/Mint";
 import Profile from "./screens/Profile";
 import UserProfile from "./screens/UserProfile";
 
-//import Dao from "./screens/DAO";
 import Histories from "./screens/HashHistories";
 import Activities from "./screens/Activities";
 import Governance from "./screens/Governance";
 
 import GamesPage from "./screens/Games";
 
-import Feedbacks from "./screens/Feedbacks";
 
 import AllAvatars from "./screens/AllAvatars";
 
@@ -39,7 +37,7 @@ import CallbackUNSLogin from "./callback/callbackUNSLogin";
 function App() {
 
   const {provider,coinbase,netId,profile,connecting,loadWeb3Modal} = useWeb3Modal();
-  const {hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
+  const {hashavatars,creators,nfts,loadingNFTs,loadingMyNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
   const {ipfs} = useIPFS();
   const { state, actions } = useAppState();
   const [pinning,setPinning] = useState();
@@ -84,6 +82,9 @@ function App() {
   useEffect(() => {
     actions.setLoadingNFTs(loadingNFTs)
   },[loadingNFTs])
+  useEffect(() => {
+    actions.setLoadingMyNFTs(loadingMyNFTs)
+  },[loadingMyNFTs])
   useEffect(() => {
     actions.setTotalSupply(totalSupply)
   },[totalSupply])
@@ -138,7 +139,6 @@ function App() {
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
             <Route path="/callback" component={CallbackUNSLogin}/>
-            <Route path="/feedbacks" component={Feedbacks}/>
             <Route render={() => {
 
               return(

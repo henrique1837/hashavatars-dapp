@@ -79,27 +79,19 @@ const MainScene = {
 
     this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
     this.load.image("tiles", "https://ipfs.io/ipfs/bafkreier6xkncx24wj4wm7td3v2k3ea2r2gpfg2qamtvh7digt27mmyqkm");
-    //this.load.image("background", "https://ipfs.io/ipfs/QmQuEkDthgq6Hd5XWpUYZQ3oEoopHbt3X6EH2EwapSGxUA");
 
-    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/bafkreicnzjogkejde3c5sj227seszgjduusx54sf6uvxrwi5xvecyjgvci");
+    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/bafkreigg4pedqz3vi3rmghxndfxusbina7kozs2pbfxszpd33tkd4mne3y");
 
 
 
   },
 
   create: async function(){
-
-    alert("Init")
-
-    const map = this.make.tilemap({ key: "map" });
-    alert( map.widthInPixels)
-    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    const map = this.make.tilemap({key: 'map'});
     //this.add.image(1000,1020,'background')
     // Parameters are the name you gave the tileset in Tiled and then the key of the tileset image in
     // Phaser's cache (i.e. the name you used in preload)
-    alert(map)
-    const tileset = map.addTilesetImage("FirstContactTilesets", "tiles");
-    alert(tileset)
+    const tileset = map.addTilesetImage("!CL_DEMO_32x32", "tiles");
     // Parameters: layer name (or index) from Tiled, tileset, x, y
     const bellowLayer = map.createStaticLayer("Ground", tileset, 0, 0);
     const worldLayer = map.createStaticLayer("Layer1", tileset, 0, 0);
@@ -109,25 +101,25 @@ const MainScene = {
     worldLayer.setCollisionByProperty({ collides: true });
     waterLayer.setCollisionByProperty({ collides: true });
     layer2.setCollisionByProperty({ collides: true });
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     this.room = room;
     this.otherPlayers = this.physics.add.group();
     this.friendlyPlayers = this.physics.add.group();
 
 
-    this.physics.world.setBounds(0, 0, 2000, 2000);
-    this.cameras.main.setBounds(0, 0, 2000, 2000);
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     //this.createLandscape();
     this.cameras.main.setZoom(2);
 
     //  Add a player ship and camera follow
     this.player = this.physics.add.sprite(Phaser.Math.Between(0, 400), Phaser.Math.Between(0, 400), 'ship')
-        .setScale(0.5);
-        alert(this.player)
-    this.player.setCollideWorldBounds(true);
+        .setScale(0.12);
+    this.player.setBounce(0.2).setCollideWorldBounds(true);
     this.player.name = metadata.name;
     this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
-    this.cameras.main.setZoom(2);
+    this.cameras.main.setZoom(1);
 
     cursors = this.input.keyboard.createCursorKeys();
 
@@ -149,7 +141,7 @@ const MainScene = {
             }
           });
           if(!added && obj.metadata.name !== metadata.name){
-            const otherPlayer = this.physics.add.sprite(0, 0,  obj.metadata.name).setScale(0.5);
+            const otherPlayer = this.physics.add.sprite(0, 0,  obj.metadata.name).setScale(0.12);
             otherPlayer.setCollideWorldBounds(true);
             otherPlayer.name =  obj.metadata.name
             otherPlayer.contractAddress = obj.contractAddress;
@@ -277,7 +269,7 @@ const MainScene = {
   update: async function(){
 
     //this.player.setVelocity(0);
-    /*
+
     const msg = JSON.stringify({
       metadata: metadata,
       player: this.player,
@@ -299,7 +291,7 @@ const MainScene = {
     } else {
       this.player.setVelocity(0);
     }
-    */
+
   }
 }
 
@@ -463,13 +455,12 @@ export default function FirstContact () {
         <p><small><Link href="https://merchant-shade.itch.io/16x16-mini-world-sprites" external>Tilesets by Shade <IconLink /></Link></small></p>
 
         {
-          state.loadingNFTs && state.nfts && state.totalSupply &&
+
+          state.loadingMyNFTs && state.myOwnedNfts && state.totalSupply &&
           <center>
-          <p>Loading all HashAvatars ...</p>
-          <ProgressBar
-            value={state.nfts.length/state.totalSupply}
-          />
+            <p>Loading your HashAvatars ...</p>
           </center>
+
         }
         {
           state.myOwnedNfts?.length > 0 &&

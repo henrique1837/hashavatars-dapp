@@ -32,12 +32,9 @@ function Profile(){
             }
 
             {
-              state.loadingNFTs && state.nfts && state.totalSupply &&
+              state.loadingMyNFTs && state.myOwnedNfts && state.totalSupply &&
               <center>
-              <p>Loading all HashAvatars ...</p>
-              <ProgressBar
-                value={state.nfts.length/state.totalSupply}
-              />
+              <p>Loading your HashAvatars ...</p>
               </center>
             }
             {

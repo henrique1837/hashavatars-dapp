@@ -17,6 +17,7 @@ const useAppState = () => {
     hashavatars: null,
     coinbase: null,
     loadingNFTs: true,
+    loadingMyNFTs: true,
     netId: null,
     nfts: [],
     myNfts: [],
@@ -66,6 +67,9 @@ const getActions = (setState) => ({
   },
   setLoadingNFTs: (loading) => {
     setState((state) => ({ ...state, loadingNFTs: loading }))
+  },
+  setLoadingMyNFTs: (loading) => {
+    setState((state) => ({ ...state, loadingMyNFTs: loading }))
   },
   setCreators: (creators) => {
     setState((state) => ({ ...state, creators: creators }))

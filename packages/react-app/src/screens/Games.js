@@ -30,13 +30,14 @@ function GamesPage() {
       description: "HashIsland is under war! Kill all others players by touching their head! Survive!",
       image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
     },
-
+    /*
     {
       component: <FirstContact />,
       name: "First Contact",
-      description: "Unknow ships have been saw for a long time. Now they are close.",
+      description: "Unknown ships have been seen on the horizon for a long time. Now they are close.",
       image: "https://ipfs.io/ipfs/QmbUD9ekE1CBvZZsSC3PvrRE6oxgkrVfbHyNx7GaGCuX6o"
     }
+    */
 
   ]
 

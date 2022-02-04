@@ -71,8 +71,8 @@ function Activities(){
 
   useMemo(() => {
     if(state.ipfs && stories && !loadingStories){
-      stories.map(story => {
-        state.ipfs.pin.add(story.uri);
+      stories.map(obj => {
+        state.ipfs.pin.add(obj.story.uri);
       })
     }
   },[state.ipfs,stories,loadingStories]);

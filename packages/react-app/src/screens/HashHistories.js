@@ -327,7 +327,6 @@ function HashHistories(){
               state.hashavatars && state.netId &&
               <>
               <p><small><Link href={`https://epor.io/tokens/${state.hashavatars.address}/${id}`} external={true}><IconLink />View on Epor.io</Link></small></p>
-              <p><small><Link href={`https://unifty.io/${state.netId === 4 ? "rinkeby" : "xdai"}/collectible.html?collection=${state.hashavatars.address}&id=${id}`} external={true}><IconLink />View on Unifty.io</Link></small></p>
               </>
             }
             {

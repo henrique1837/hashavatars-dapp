@@ -102,7 +102,7 @@ function AllAvatars(){
           secondary={
               <div style={{maxHeight: "1000px",overflowY: "scroll"}}>
               <h4>Creators</h4>
-              <p><small>Total of {!state.loadingNFTs ? state.creators.length : <Spinner animation="border" size="sm"/>} HashAvatars creators</small></p>
+              <p><small>Total of {!state.loadingNFTs ? state.creators?.length : <Spinner animation="border" size="sm"/>} HashAvatars creators</small></p>
               <div>
               {
                 state.creators?.map((string) => {

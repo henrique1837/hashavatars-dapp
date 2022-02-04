@@ -11,7 +11,7 @@ dataSources:
       startBlock: 8339486
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.4
+      apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
         - Token
@@ -41,7 +41,7 @@ dataSources:
           startBlock: 9659078
     mapping:
          kind: ethereum/events
-         apiVersion: 0.0.4
+         apiVersion: 0.0.5
          language: wasm/assemblyscript
          entities:
            - Stories

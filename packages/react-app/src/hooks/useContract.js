@@ -19,15 +19,15 @@ function useContract() {
   const [getMyData,setGetMyData] = useState();
 
   const [totalSupply,setSupply] = useState();
-  const [creators,setCreators] = useState([]);
-  const [nfts,setNfts] = useState([]);
+  const [creators,setCreators] = useState();
+  const [nfts,setNfts] = useState();
   const [checkingEvents,setCheckingEvents] = useState(false);
 
-  const [myNfts,setMyNfts] = useState([]);
-  const [myOwnedNfts,setMyOwnedNfts] = useState([]);
+  const [myNfts,setMyNfts] = useState();
+  const [myOwnedNfts,setMyOwnedNfts] = useState();
 
   const [loadingNFTs,setLoadingNFTs] = useState();
-  const [pinning,setPinning] = useState(false);
+  const [loadingMyNFTs,setLoadingMyNFTs] = useState();
 
   let ids = [];
 
@@ -48,39 +48,8 @@ function useContract() {
     return(totalSupply)
   },[hashavatars])
 
-  const getCreator = useCallback(async (id) => {
-    const creator = await hashavatars.creators(id);
-    //const creator = res.returnValues._to;
-    let profile;
-    let getProfile = true;
-    creators.map(str => {
-      const obj = JSON.parse(str);
-      if(obj.address === creator){
-        getProfile = false;
-        profile = obj.profile
-      }
-    });
-    if(getProfile){
-      try{
-        profile = await getLegacy3BoxProfileAsBasicProfile(creator);
-      } catch(err){
 
-      }
-
-    }
-    const creatorProfile = {
-      address: creator,
-      profile: profile
-    }
-    if(!creators.includes(JSON.stringify(creatorProfile))){
-      const newCreators = creators;
-      newCreators.push(JSON.stringify(creatorProfile));
-      setCreators([...newCreators]);
-    }
-    return(creatorProfile)
-  },[hashavatars,creators])
-
-  const getCreatorProfileCheck = useCallback(async (creator) => {
+  const getCreatorProfileCheck = useCallback(creator => {
     let getCreatorProfile = true;
     creators.map(str => {
       const creatorProfile = JSON.parse(str);
@@ -116,7 +85,6 @@ function useContract() {
   },[creators]);
 
   const checkNftOwned = useCallback((obj) => {
-
     if(coinbase.toLowerCase() === obj.creator.toLowerCase() && !myNfts.includes(JSON.stringify(obj))){
       const newMyNfts = myNfts;
       newMyNfts.push(JSON.stringify(obj));
@@ -140,6 +108,7 @@ function useContract() {
   },[coinbase,myNfts,myOwnedNfts]);
   const handleEvents = useCallback(async(err,res) => {
     try{
+
       const id = res.returnValues._id;
       if(ids.includes(id)){
         return;
@@ -148,6 +117,12 @@ function useContract() {
       const metadata = await getMetadata(id,hashavatars)
       const owner = res.returnValues._to;
 
+      if(creator.toLowerCase() === coinbase.toLowerCase() && myNfts.length === 0){
+        return;
+      }
+      if(owner.toLowerCase() === coinbase.toLowerCase() && myOwnedNfts.length === 0){
+        return;
+      }
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata,
@@ -164,7 +139,7 @@ function useContract() {
                 })]);
       }
       getCreatorProfileCheck(creator);
-      if(coinbase && creator){
+      if(coinbase){
         await checkNftOwned(obj);
       }
       return({
@@ -173,7 +148,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[creators,hashavatars,coinbase,nfts,myNfts,myOwnedNfts,ids,getCreator,netId])
+  },[hashavatars,coinbase,nfts,ids,checkNftOwned,getCreatorProfileCheck])
 
   const handleEventsSubgraph = useCallback(async(res) => {
     try{
@@ -223,13 +198,31 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,creators,nfts,myNfts,myOwnedNfts,checkNftOwned])
+  },[hashavatars,nfts,checkNftOwned,getCreatorProfileCheck])
 
+  const getTokenInfo = async token => {
 
+    const returnValues = {
+      _id: token.tokenID
+    }
+    let metadata
+    if(!token.imageURI){
+      metadata = JSON.parse(await (await fetch(`${token.metadataURI.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+    } else {
+      metadata = {
+        name: token.name,
+        image: token.imageURI,
+      }
+    }
+    const obj = {
+      returnValues: returnValues,
+      metadata: metadata,
+    }
+    return(JSON.stringify(obj))
+  }
   useMemo(() => {
     if(provider && netId && !hashavatars){
       ids = [];
-      let newClient;
       let newToken;
       if(netId === 4){
         newToken = new ethers.Contract(addresses.erc1155.rinkeby,abis.erc1155,provider);
@@ -257,22 +250,36 @@ function useContract() {
   },[
     netId
   ])
+  useEffect(() => {
+
+    setMyNfts([]);
+    setMyOwnedNfts([]);
+    setGetMyData(false);
+    setLoadingMyNFTs(true);
+
+  },[
+    coinbase
+  ])
 
   useEffect(() => {
     if(hashavatars){
       getTotalSupply();
     }
   },[
-    hashavatars
+    hashavatars,
+    getTotalSupply
   ])
   useMemo(async () => {
-    if(hashavatars && !checkingEvents){
-      hashavatars.on("URI", async (value,id) => {
+    if(hashavatars && !checkingEvents && !loadingNFTs && !loadingMyNFTs){
+      hashavatars.on("TransferSingle", async (operator,from,to,id,value) => {
+        if(ids.includes(id)){
+          return;
+        }
         const res = {
           address: hashavatars.address,
           returnValues: {
-            _id: id,
-
+            _id: Number(id),
+            _to: to,
           }
         }
         setLoadingNFTs(true);
@@ -285,7 +292,12 @@ function useContract() {
     }
   },[
     hashavatars,
-    checkingEvents
+    checkingEvents,
+    loadingNFTs,
+    loadingMyNFTs,
+    getTotalSupply,
+    handleEvents,
+    ids
   ])
 
   useMemo(async () => {
@@ -309,10 +321,10 @@ function useContract() {
                       tokenID_lte: ${id}
                     }) {
               id
-              name
+              ${netId !== 4 ? "name" : ""}
               tokenID
               metadataURI
-              imageURI
+              ${netId !== 4 ? "imageURI" : ""}
               creator {
                 id
               }
@@ -371,9 +383,9 @@ function useContract() {
                       }) {
                 id
                 tokenID
-                name
+                ${netId !== 4 ? "name" : ""}
                 metadataURI
-                imageURI
+                ${netId !== 4 ? "imageURI" : ""}
                 creator {
                   id
                 }
@@ -394,7 +406,8 @@ function useContract() {
     netId,
     totalSupply,
     getData,
-    client
+    client,
+    handleEventsSubgraph
   ])
 
 
@@ -404,27 +417,29 @@ function useContract() {
 
     if(totalSupply && myNfts?.length === 0  && !getMyData && hashavatars && client && coinbase){
       setGetMyData(true);
-      
-      const tokensQuery = `
+      setLoadingMyNFTs(true);
+      let tokensQuery = `
         query {
               users(where: {
                 id: "${coinbase.toLowerCase()}"
               }) {
                 id
-                tokens {
+                tokens(orderBy: tokenID,
+                       orderDirection: desc) {
                   id
-                  name
+                  ${netId !== 4 ? "name" : ""}
                   tokenID,
                   metadataURI,
-                  imageURI
+                  ${netId !== 4 ? "imageURI" : ""}
                   createdAtTimestamp
                 }
-                created {
+                created(orderBy: tokenID,
+                        orderDirection: desc) {
                   id
-                  name
+                  ${netId !== 4 ? "name" : ""}
                   tokenID,
                   metadataURI,
-                  imageURI
+                  ${netId !== 4 ? "imageURI" : ""}
                   createdAtTimestamp
                 }
               }
@@ -433,36 +448,15 @@ function useContract() {
       const results = await client.query({
         query: gql(tokensQuery)
       });
-      const newMyOwnedNfts = results.data.users[0].tokens.map(token => {
-        const returnValues = {
-          _id: token.tokenID
-        }
-        const metadata = {
-          name: token.name,
-          image: token.imageURI,
-        }
-        const obj = {
-          returnValues: returnValues,
-          metadata: metadata,
-        }
-        return(JSON.stringify(obj))
-      });
-      const newMyCreatedNFts = results.data.users[0].created.map(token => {
-        const returnValues = {
-          _id: token.tokenID
-        }
-        const metadata = {
-          name: token.name,
-          image: token.imageURI,
-        }
-        const obj = {
-          returnValues: returnValues,
-          metadata: metadata,
-        }
-        return(JSON.stringify(obj))
-      });
-      setMyNfts(newMyCreatedNFts);
-      setMyOwnedNfts(newMyOwnedNfts);
+      if(!results.data.users[0]){
+        setLoadingMyNFTs(false)
+        return;
+      }
+      const newMyOwnedNfts = results.data.users[0].tokens.map(getTokenInfo);
+      const newMyCreatedNFts = results.data.users[0].created.map(getTokenInfo);
+      setMyNfts(await Promise.all(newMyCreatedNFts));
+      setMyOwnedNfts(await Promise.all(newMyOwnedNfts));
+      setLoadingMyNFTs(false)
     }
 
 
@@ -472,10 +466,11 @@ function useContract() {
     totalSupply,
     getMyData,
     client,
-    coinbase
+    coinbase,
+    netId,
   ])
 
-  return({hashavatars,creators,nfts,loadingNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
+  return({hashavatars,creators,nfts,loadingNFTs,loadingMyNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
 }
 
 export default useContract;
