@@ -8,12 +8,10 @@ import {
 import { Link } from 'react-router-dom';
 
 import { useAppContext } from '../hooks/useAppState';
-import useGraphClient from '../hooks/useGraphClient';
 
 
 function Activities(){
   const { state } = useAppContext();
-  const {client} = useGraphClient();
   const [stories,setStories] = useState([]);
   const [previousNetId,setPreviousNetId] = useState();
 
@@ -30,7 +28,7 @@ function Activities(){
   },[state.netId,previousNetId])
 
   useMemo(async () => {
-    if(client && state.hashavatars && !getingData){
+    if(state.client && state.hashavatars && !getingData){
       setGetingData(true);
       const subquery = `
         {
@@ -48,7 +46,7 @@ function Activities(){
         }
       `
 
-      const results = await client.query({
+      const results = await state.client.query({
         query: gql(subquery)
       });
       const queryStories = results.data.stories;
@@ -67,7 +65,7 @@ function Activities(){
       }
       setLoadingStories(false);
     }
-  },[stories,client,state.hashavatars,getingData]);
+  },[stories,state.client,state.hashavatars,getingData]);
 
   useMemo(() => {
     if(state.ipfs && stories && !loadingStories){
