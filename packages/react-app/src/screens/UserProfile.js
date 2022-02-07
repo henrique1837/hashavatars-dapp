@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 import { gql } from '@apollo/client';
 
 import { useAppContext } from '../hooks/useAppState';
-import  useGraphClient  from '../hooks/useGraphClient';
 
 
 import useProfile from '../hooks/useProfile';
@@ -24,7 +23,6 @@ function UserProfile(){
   const [checking,setChecking] = useState(false);
   const [ownedNfts,setOwnedNfts] = useState([]);
   const [createdNfts,setCreatedNfts] = useState([]);
-  const {client} = useGraphClient();
   const [profile,setProfile] = useState();
 
   useMemo(async () => {
@@ -40,7 +38,7 @@ function UserProfile(){
   },[profile,address]);
 
   useMemo(async () => {
-    if(client && !checking && address){
+    if(state.client && !checking && address){
       setChecking(true);
       const tokensQuery = `
         query {
@@ -63,7 +61,7 @@ function UserProfile(){
               }
             }
       `
-      const results = await client.query({
+      const results = await state.client.query({
         query: gql(tokensQuery)
       });
       const objs = results.data.users[0].created;
@@ -73,7 +71,7 @@ function UserProfile(){
       setOwnedNfts(objsOwned);
     }
 
-  },[client,address]);
+  },[state.client,address]);
 
 
   return(
