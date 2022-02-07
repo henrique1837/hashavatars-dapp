@@ -10,6 +10,7 @@ import { Main,Box,Link,IconLink } from '@aragon/ui';
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import useContract from "./hooks/useContract";
 import useIPFS from "./hooks/useIPFS";
+import useClient from "./hooks/useGraphClient";
 
 import { AppContext, useAppState } from './hooks/useAppState'
 
@@ -35,12 +36,37 @@ import CallbackUNSLogin from "./callback/callbackUNSLogin";
 
 
 function App() {
-
-  const {provider,coinbase,netId,profile,connecting,loadWeb3Modal} = useWeb3Modal();
-  const {hashavatars,creators,nfts,loadingNFTs,loadingMyNFTs,myNfts,myOwnedNfts,totalSupply,getTotalSupply,getMetadata} = useContract();
-  const {ipfs} = useIPFS();
   const { state, actions } = useAppState();
+
+  const { client,initiateClient } = useClient();
+  const {
+    provider,
+    coinbase,
+    netId,
+    profile,
+    connecting,
+    loadWeb3Modal
+  } = useWeb3Modal();
+  const {
+    hashavatars,
+    creators,
+    nfts,
+    loadingNFTs,
+    loadingMyNFTs,
+    myNfts,
+    myOwnedNfts,
+    totalSupply,
+    getTotalSupply,
+    getMetadata,
+    initiateContracts,
+    getAllNFTs,
+    getMyNFTs,
+    checkEvents
+  } = useContract();
+  const {ipfs} = useIPFS();
   const [pinning,setPinning] = useState();
+  const [getData,setGetData] = useState();
+  const [checkingEvents,setCheckingEvents] = useState();
 
   useEffect(() => {
     actions.setConnecting(connecting);
@@ -52,9 +78,21 @@ function App() {
 
   useEffect(() => {
     actions.setCoinbase(coinbase);
-  },[coinbase])
+    if(!coinbase){
+      actions.setMyOwnedNfts([]);
+      actions.setMyNfts([])
+    }
+    if(coinbase && client){
+      getMyNFTs(client,coinbase,netId)
+    }
+    setCheckingEvents(false);
+  },[coinbase,client])
   useEffect(() => {
     actions.setNetId(netId);
+    initiateClient(netId);
+    setGetData(false);
+    setCheckingEvents(false);
+    initiateContracts(netId,provider);
   },[netId])
   useEffect(() => {
     actions.setProfile(profile);
@@ -64,9 +102,14 @@ function App() {
     actions.setHashAvatars(hashavatars);
     actions.setGetTotalSupply(getTotalSupply);
     actions.setGetMetadata(getMetadata);
-
   },[hashavatars])
 
+  useEffect(() => {
+    if(!checkingEvents && hashavatars && !loadingNFTs){
+      checkEvents(coinbase);
+      setCheckingEvents(true);
+    }
+  },[coinbase,hashavatars,checkingEvents,loadingNFTs]);
 
   useEffect(() => {
     actions.setNfts(nfts)
@@ -86,8 +129,12 @@ function App() {
     actions.setLoadingMyNFTs(loadingMyNFTs)
   },[loadingMyNFTs])
   useEffect(() => {
-    actions.setTotalSupply(totalSupply)
-  },[totalSupply])
+    actions.setTotalSupply(totalSupply);
+    if(!getData && client && totalSupply){
+      setGetData(true);
+      getAllNFTs(client,totalSupply,netId)
+    }
+  },[totalSupply,client,getData])
 
   useEffect(() => {
     actions.setCreators(creators)
@@ -96,9 +143,12 @@ function App() {
   useEffect(() => {
     actions.setIPFS(ipfs)
   },[ipfs]);
+  useEffect(() => {
+    actions.setClient(client);
+  },[client]);
 
   useMemo(() => {
-    if(!loadingNFTs && ipfs &&!pinning){
+    if(!loadingNFTs && ipfs &&!pinning && nfts){
       setPinning(true)
       nfts.map(async string => {
         const obj = JSON.parse(string);

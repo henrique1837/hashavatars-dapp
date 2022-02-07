@@ -78,49 +78,9 @@ const MainScene = {
 
     this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
     this.load.image("tiles", "https://ipfs.io/ipfs/QmVpCeH52ya9gWdGnsa1u6z7kDLTPosUoPxhuYkwfqgKqi");
-    //this.load.image("background", "https://ipfs.io/ipfs/QmQuEkDthgq6Hd5XWpUYZQ3oEoopHbt3X6EH2EwapSGxUA");
-
     this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/QmNhhHG84xkV4h8s8vBw6bQHncDwzyvcJZ8eAUqgmKMi63");
-    /*
-    for(let i = 0;i<metadatas.length;i++){
-      this.load.image(metadatas[i].name, metadatas[i].image.replace("ipfs://","https://ipfs.io/ipfs/"));
-    }
-    */
 
 
-  },
-  addOtherPlayers: function(playerInfo){
-    const otherPlayer = this.physics.add.sprite(0, 0,  playerInfo.name).setScale(0.05);
-    otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
-    otherPlayer.name = playerInfo.name;
-    this.load.image(playerInfo.name, playerInfo.image.replace("ipfs://","https://ipfs.io/ipfs/"))
-    this.otherPlayers.add(otherPlayer);
-  },
-  setPlayerPosition: function(objPlayer){
-
-    let added = false;
-    this.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      if (objPlayer.metadata.name === otherPlayer.name) {
-        otherPlayer.setPosition(objPlayer.player.x, objPlayer.player.y);
-        added = true;
-      }
-    });
-    if(!added && objPlayer.metadata.name !== metadata.name){
-      this.addOtherPlayers(objPlayer.metadata);
-    }
-  },
-
-  playerMoved: async function(){
-    const msg = JSON.stringify({
-      metadata: metadata,
-      player: this.player,
-      from: coinbase,
-      type: "movement"
-    });
-
-
-    const msgSend = new TextEncoder().encode(msg)
-    await room.pubsub.publish(topicMovements, msgSend)
 
   },
   create: async function(){
@@ -154,7 +114,7 @@ const MainScene = {
     //this.physics.add.collider(this.otherPlayers, this.otherPlayers);
     this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
     this.cameras.main.setZoom(2);
-
+    let loader = new Phaser.Loader.LoaderPlugin(this);
     cursors = this.input.keyboard.createCursorKeys();
 
     room.pubsub.subscribe(topicMovements,async (msg) => {
@@ -173,7 +133,12 @@ const MainScene = {
             const otherPlayer = this.physics.add.sprite(0, 0,  playerInfo.name).setScale(0.05);
             otherPlayer.setBounce(0.2).setCollideWorldBounds(true);
             otherPlayer.name = playerInfo.name
-            this.load.image(playerInfo.name, playerInfo.image.replace("ipfs://","https://ipfs.io/ipfs/"))
+            loader.image(playerInfo.name,playerInfo.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+            loader.once(Phaser.Loader.Events.COMPLETE, () => {
+              // texture loaded so use instead of the placeholder
+              otherPlayer.setTexture(obj.metadata.name)
+            })
+            loader.start()
             this.otherPlayers.add(otherPlayer);
           }
         }
@@ -187,22 +152,6 @@ const MainScene = {
               metadata: metadata,
               type: "message"
             });
-            /*
-            const objPlayer = {
-              player: this.player,
-              metadata: metadata
-            };
-            let added = false;
-            this.otherPlayers.getChildren().forEach(function (otherPlayer) {
-              if (objPlayer.metadata.name === otherPlayer.name) {
-                otherPlayer.setPosition(objPlayer.player.x, objPlayer.player.y);
-                added = true;
-              }
-            });
-            if(!added && objPlayer.metadata.name !== metadata.name){
-              this.addOtherPlayers(objPlayer.metadata);
-            }
-            */
 
             const msgSend = new TextEncoder().encode(str)
             await room.pubsub.publish(topic, msgSend)

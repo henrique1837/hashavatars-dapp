@@ -4,16 +4,9 @@ import { addresses, abis } from "@project/contracts";
 import { gql } from '@apollo/client';
 import { ethers } from "ethers";
 
-import useWeb3Modal from "./useWeb3Modal";
-import useGraphClient from "./useGraphClient";
-
-
-
 
 function useContract() {
 
-  const {provider,coinbase,netId} = useWeb3Modal();
-  const {client} = useGraphClient();
   const [hashavatars,setHashAvatars] = useState();
   const [getData,setGetData] = useState();
   const [getMyData,setGetMyData] = useState();
@@ -28,6 +21,7 @@ function useContract() {
 
   const [loadingNFTs,setLoadingNFTs] = useState();
   const [loadingMyNFTs,setLoadingMyNFTs] = useState();
+
 
   let ids = [];
 
@@ -84,7 +78,7 @@ function useContract() {
     }
   },[creators]);
 
-  const checkNftOwned = useCallback((obj) => {
+  const checkNftOwned = useCallback((obj,coinbase) => {
     if(coinbase.toLowerCase() === obj.creator.toLowerCase() && !myNfts.includes(JSON.stringify(obj))){
       const newMyNfts = myNfts;
       newMyNfts.push(JSON.stringify(obj));
@@ -105,11 +99,13 @@ function useContract() {
                     })]);
     }
 
-  },[coinbase,myNfts,myOwnedNfts]);
-  const handleEvents = useCallback(async(err,res) => {
+  },[myNfts,myOwnedNfts]);
+
+  const handleEvents = async(err,res) => {
     try{
 
       const id = res.returnValues._id;
+      const coinbase =  res.coinbase;
       if(ids.includes(id)){
         return;
       }
@@ -117,12 +113,6 @@ function useContract() {
       const metadata = await getMetadata(id,hashavatars)
       const owner = res.returnValues._to;
 
-      if(creator.toLowerCase() === coinbase.toLowerCase() && myNfts.length === 0){
-        return;
-      }
-      if(owner.toLowerCase() === coinbase.toLowerCase() && myOwnedNfts.length === 0){
-        return;
-      }
       const obj = {
         returnValues: res.returnValues,
         metadata: metadata,
@@ -140,7 +130,7 @@ function useContract() {
       }
       getCreatorProfileCheck(creator);
       if(coinbase){
-        await checkNftOwned(obj);
+        await checkNftOwned(obj,coinbase);
       }
       return({
         obj: obj
@@ -148,7 +138,8 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,coinbase,nfts,ids,checkNftOwned,getCreatorProfileCheck])
+  }
+
 
   const handleEventsSubgraph = useCallback(async(res) => {
     try{
@@ -198,7 +189,7 @@ function useContract() {
     } catch(err){
       throw(err)
     }
-  },[hashavatars,nfts,checkNftOwned,getCreatorProfileCheck])
+  },[hashavatars,nfts,getCreatorProfileCheck])
 
   const getTokenInfo = async token => {
 
@@ -220,161 +211,20 @@ function useContract() {
     }
     return(JSON.stringify(obj))
   }
-  useMemo(() => {
-    if(provider && netId && !hashavatars){
-      ids = [];
-      let newToken;
-      if(netId === 4){
-        newToken = new ethers.Contract(addresses.erc1155.rinkeby,abis.erc1155,provider);
-      }
-      if(netId === 0x64){
-        newToken = new ethers.Contract(addresses.erc1155.xdai,abis.erc1155,provider);
-      }
-      setHashAvatars(newToken)
-    }
-  },[
-    hashavatars,
-    provider,
-    netId
-  ])
-  useEffect(() => {
-      setSupply(null);
-      setNfts([]);
-      setMyNfts([]);
-      setMyOwnedNfts([]);
-      setCreators([]);
-      setGetData(false);
-      setCheckingEvents(false);
-      setHashAvatars(null);
-      setLoadingNFTs(true);
-  },[
-    netId
-  ])
-  useEffect(() => {
+  const getAllNFTs =   async (client,totalSupply,netId) => {
 
-    setMyNfts([]);
-    setMyOwnedNfts([]);
-    setGetMyData(false);
-    setLoadingMyNFTs(true);
 
-  },[
-    coinbase
-  ])
 
-  useEffect(() => {
-    if(hashavatars){
-      getTotalSupply();
-    }
-  },[
-    hashavatars,
-    getTotalSupply
-  ])
-  useMemo(async () => {
-    if(hashavatars && !checkingEvents && !loadingNFTs && !loadingMyNFTs){
-      hashavatars.on("TransferSingle", async (operator,from,to,id,value) => {
-        if(ids.includes(id)){
-          return;
-        }
-        const res = {
-          address: hashavatars.address,
-          returnValues: {
-            _id: Number(id),
-            _to: to,
-          }
-        }
+      //if(totalSupply && nfts?.length === 0  && !getData && hashavatars && client){
+        //setGetData(true);
         setLoadingNFTs(true);
-        await getTotalSupply();
-        await handleEvents(null,res);
-        setLoadingNFTs(false);
-
-      });
-      setCheckingEvents(true);
-    }
-  },[
-    hashavatars,
-    checkingEvents,
-    loadingNFTs,
-    loadingMyNFTs,
-    getTotalSupply,
-    handleEvents,
-    ids
-  ])
-
-  useMemo(async () => {
-
-
-
-    if(totalSupply && nfts?.length === 0  && !getData && hashavatars && client){
-      setGetData(true);
-      setLoadingNFTs(true);
-      if(Number(totalSupply) === 0){
-        setLoadingNFTs(false);
-        return
-      }
-      let promises = [];
-      let id = totalSupply;
-      let tokensQuery = `
-        query {
-              tokens(orderBy: tokenID,
-                     orderDirection:desc,
-                     where: {
-                      tokenID_lte: ${id}
-                    }) {
-              id
-              ${netId !== 4 ? "name" : ""}
-              tokenID
-              metadataURI
-              ${netId !== 4 ? "imageURI" : ""}
-              creator {
-                id
-              }
-              owner {
-                id
-              }
-            }
+        if(Number(totalSupply) === 0){
+          setLoadingNFTs(false);
+          return
         }
-      `
-      let totalQueries = id/100;
-      let actualQuery = 1;
-      if(totalQueries > Number(id/100).toFixed(0)){
-        totalQueries = totalQueries + 1;
-      }
-      if(totalQueries < actualQuery){
-        totalQueries = actualQuery
-      }
-      while(actualQuery <= totalQueries){
-        const results = await client.query({
-          query: gql(tokensQuery)
-        });
-
-        const tokens = results.data.tokens;
-        for(const token of tokens){
-          if(netId === 4 && token.metadataURI.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-            continue;
-          }
-          promises.push(
-            handleEventsSubgraph({
-                    address: token.address,
-                    id: token.tokenID,
-                    owner: token.owner.id,
-                    creator: token.creator.id,
-                    metadata: token.metadataURI,
-                    name: token.name,
-                    imageURI: token.imageURI
-            })
-          );
-          if(token.tokenID % 12 === 0 || token.tokenID === 1){
-            await Promise.allSettled(promises);
-            promises = [];
-          }
-
-        }
-        id = id - 100;
-        actualQuery = actualQuery + 1;
-        if(id <= 0 || actualQuery > totalQueries){
-          break;
-        }
-        tokensQuery = `
+        let promises = [];
+        let id = totalSupply;
+        let tokensQuery = `
           query {
                 tokens(orderBy: tokenID,
                        orderDirection:desc,
@@ -382,8 +232,8 @@ function useContract() {
                         tokenID_lte: ${id}
                       }) {
                 id
-                tokenID
                 ${netId !== 4 ? "name" : ""}
+                tokenID
                 metadataURI
                 ${netId !== 4 ? "imageURI" : ""}
                 creator {
@@ -395,28 +245,78 @@ function useContract() {
               }
           }
         `
+        let totalQueries = id/100;
+        let actualQuery = 1;
+        if(totalQueries > Number(id/100).toFixed(0)){
+          totalQueries = totalQueries + 1;
+        }
+        if(totalQueries < actualQuery){
+          totalQueries = actualQuery
+        }
+        while(actualQuery <= totalQueries){
+          const results = await client.query({
+            query: gql(tokensQuery)
+          });
+
+          const tokens = results.data.tokens;
+          for(const token of tokens){
+            if(netId === 4 && token.metadataURI.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
+              continue;
+            }
+            promises.push(
+              handleEventsSubgraph({
+                      address: token.address,
+                      id: token.tokenID,
+                      owner: token.owner.id,
+                      creator: token.creator.id,
+                      metadata: token.metadataURI,
+                      name: token.name,
+                      imageURI: token.imageURI
+              })
+            );
+            if(token.tokenID % 12 === 0 || token.tokenID === 1){
+              await Promise.allSettled(promises);
+              promises = [];
+            }
+
+          }
+          id = id - 100;
+          actualQuery = actualQuery + 1;
+          if(id <= 0 || actualQuery > totalQueries){
+            break;
+          }
+          tokensQuery = `
+            query {
+                  tokens(orderBy: tokenID,
+                         orderDirection:desc,
+                         where: {
+                          tokenID_lte: ${id}
+                        }) {
+                  id
+                  tokenID
+                  ${netId !== 4 ? "name" : ""}
+                  metadataURI
+                  ${netId !== 4 ? "imageURI" : ""}
+                  creator {
+                    id
+                  }
+                  owner {
+                    id
+                  }
+                }
+            }
+          `
+        }
+
       }
 
-    }
 
+  const getMyNFTs =   async (client,coinbase,netId) => {
 
-  },[
-    hashavatars,
-    nfts,
-    netId,
-    totalSupply,
-    getData,
-    client,
-    handleEventsSubgraph
-  ])
-
-
-  useMemo(async () => {
-
-
-
-    if(totalSupply && myNfts?.length === 0  && !getMyData && hashavatars && client && coinbase){
-      setGetMyData(true);
+    //if(totalSupply && myNfts?.length === 0  && !getMyData && hashavatars && client && coinbase){
+      //setGetMyData(true);
+      setMyNfts([]);
+      setMyOwnedNfts([]);
       setLoadingMyNFTs(true);
       let tokensQuery = `
         query {
@@ -457,20 +357,84 @@ function useContract() {
       setMyNfts(await Promise.all(newMyCreatedNFts));
       setMyOwnedNfts(await Promise.all(newMyOwnedNfts));
       setLoadingMyNFTs(false)
+    //}
+
+
+  }
+
+  const initiateContracts = (netId,provider) => {
+    //if(provider && netId && !hashavatars){
+      ids = [];
+      setSupply(null);
+      setNfts([]);
+      setMyNfts([]);
+      setMyOwnedNfts([]);
+      setCreators([]);
+      setGetData(false);
+      setCheckingEvents(false);
+      setHashAvatars(null);
+      setLoadingNFTs(true);
+      let newToken;
+      if(netId === 4){
+        newToken = new ethers.Contract(addresses.erc1155.rinkeby,abis.erc1155,provider);
+      }
+      if(netId === 0x64){
+        newToken = new ethers.Contract(addresses.erc1155.xdai,abis.erc1155,provider);
+      }
+      setHashAvatars(newToken)
+    //}
+  }
+
+
+  useEffect(() => {
+    if(hashavatars){
+      getTotalSupply();
     }
-
-
   },[
     hashavatars,
-    myNfts,
-    totalSupply,
-    getMyData,
-    client,
-    coinbase,
-    netId,
+    getTotalSupply
   ])
 
-  return({hashavatars,creators,nfts,loadingNFTs,loadingMyNFTs,myNfts,myOwnedNfts,totalSupply,getMetadata,getTotalSupply})
+  const checkEvents = async (coinbase) => {
+    //if(hashavatars){
+      hashavatars.on("TransferSingle", async (operator,from,to,id,value) => {
+        if(ids.includes(id)){
+          return;
+        }
+        const res = {
+          address: hashavatars.address,
+          coinbase: coinbase,
+          returnValues: {
+            _id: Number(id),
+            _to: to,
+          }
+        }
+        setLoadingNFTs(true);
+        await getTotalSupply();
+        await handleEvents(null,res);
+        setLoadingNFTs(false);
+
+      });
+    //}
+  }
+
+
+  return({
+    hashavatars,
+    creators,
+    nfts,
+    loadingNFTs,
+    loadingMyNFTs,
+    myNfts,
+    myOwnedNfts,
+    totalSupply,
+    getMetadata,
+    getTotalSupply,
+    initiateContracts,
+    getAllNFTs,
+    getMyNFTs,
+    checkEvents
+  })
 }
 
 export default useContract;

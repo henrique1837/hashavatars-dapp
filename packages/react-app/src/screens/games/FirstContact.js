@@ -80,7 +80,7 @@ const MainScene = {
     this.load.image('ship', metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
     this.load.image("tiles", "https://ipfs.io/ipfs/bafkreier6xkncx24wj4wm7td3v2k3ea2r2gpfg2qamtvh7digt27mmyqkm");
 
-    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/bafkreigg4pedqz3vi3rmghxndfxusbina7kozs2pbfxszpd33tkd4mne3y");
+    this.load.tilemapTiledJSON("map", "https://ipfs.io/ipfs/bafkreicmd6kczq36zz6sjdesnm7npxes5bargwkvd52t3562u4uuuyz2cy");
 
 
 
@@ -93,14 +93,18 @@ const MainScene = {
     // Phaser's cache (i.e. the name you used in preload)
     const tileset = map.addTilesetImage("!CL_DEMO_32x32", "tiles");
     // Parameters: layer name (or index) from Tiled, tileset, x, y
-    const bellowLayer = map.createStaticLayer("Ground", tileset, 0, 0);
-    const worldLayer = map.createStaticLayer("Layer1", tileset, 0, 0);
-    const waterLayer = map.createStaticLayer("Water", tileset, 0, 0);
-    const layer2 = map.createStaticLayer("Layer2", tileset, 0, 0);
+    const bellowLayer = map.createLayer("Ground", tileset, 0, 0);
+    const worldLayer = map.createLayer("Layer1", tileset, 0, 0);
+    const waterLayer = map.createLayer("Water", tileset, 0, 0);
+    const layer2 = map.createLayer("Layer2", tileset, 0, 0);
 
     worldLayer.setCollisionByProperty({ collides: true });
     waterLayer.setCollisionByProperty({ collides: true });
     layer2.setCollisionByProperty({ collides: true });
+    worldLayer.setCollisionByExclusion([-1]);
+    waterLayer.setCollisionByExclusion([-1]);
+    layer2.setCollisionByExclusion([-1]);
+
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     this.room = room;
@@ -120,6 +124,19 @@ const MainScene = {
     this.player.name = metadata.name;
     this.cameras.main.startFollow(this.player, false, 0.2, 0.2);
     this.cameras.main.setZoom(1);
+
+    this.physics.add.collider(this.player,worldLayer);
+    this.physics.add.collider(this.player,layer2);
+    this.physics.add.collider(this.player,waterLayer);
+
+    this.physics.add.collider(this.otherPlayers,worldLayer);
+    this.physics.add.collider(this.otherPlayers,layer2);
+    this.physics.add.collider(this.otherPlayers,waterLayer);
+
+    this.physics.add.collider(this.friendlyPlayers, worldLayer);
+    this.physics.add.collider(this.friendlyPlayers, layer2);
+    this.physics.add.collider(this.friendlyPlayers, waterLayer);
+    let loader = new Phaser.Loader.LoaderPlugin(this);
 
     cursors = this.input.keyboard.createCursorKeys();
 
@@ -141,11 +158,20 @@ const MainScene = {
             }
           });
           if(!added && obj.metadata.name !== metadata.name){
-            const otherPlayer = this.physics.add.sprite(0, 0,  obj.metadata.name).setScale(0.12);
+            let scale = 0.3;
+            if(obj.contractAddress === contractAddress){
+              scale = 0.12
+            }
+            const otherPlayer = this.physics.add.sprite(0, 0,  obj.metadata.name).setScale(scale);
             otherPlayer.setCollideWorldBounds(true);
             otherPlayer.name =  obj.metadata.name
             otherPlayer.contractAddress = obj.contractAddress;
-            this.load.image(obj.metadata.name, obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"))
+            loader.image(obj.metadata.name,obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+            loader.once(Phaser.Loader.Events.COMPLETE, () => {
+              // texture loaded so use instead of the placeholder
+              otherPlayer.setTexture(obj.metadata.name)
+            })
+            loader.start()
             if(obj.contractAddress !== contractAddress){
               this.otherPlayers.add(otherPlayer);
             } else {
@@ -155,7 +181,7 @@ const MainScene = {
         }
         if(obj.type === "collision"){
           if(obj.name === metadata.name){
-            this.player.setPosition(Phaser.Math.Between(800, 1300),Phaser.Math.Between(800, 1600));
+            this.player.setPosition(Phaser.Math.Between(0, 400),Phaser.Math.Between(0, 400));
             const str = JSON.stringify({
               message: `${metadata.name} died!`,
               from: coinbase,
@@ -201,17 +227,7 @@ const MainScene = {
       }
     },null, this);
 
-    this.physics.add.collider(this.player,worldLayer);
-    this.physics.add.collider(this.player,layer2);
-    this.physics.add.collider(this.player,waterLayer);
 
-    this.physics.add.collider(this.otherPlayers,worldLayer);
-    this.physics.add.collider(this.otherPlayers,layer2);
-    this.physics.add.collider(this.otherPlayers,waterLayer);
-
-    this.physics.add.collider(this.friendlyPlayers, worldLayer);
-    this.physics.add.collider(this.friendlyPlayers, layer2);
-    this.physics.add.collider(this.friendlyPlayers, waterLayer);
 
 
 
@@ -240,37 +256,12 @@ const MainScene = {
     await room.pubsub.publish(topicMovements, msgSend)
   },
 
-  hitEnemy: async function(player, enemy){
-      if(enemy.body.touching.up){
-        const msg = JSON.stringify({
-          name: enemy.name,
-          type: "collision"
-        });
-        enemy.destroy();
-        const msgSend = new TextEncoder().encode(msg)
-        await room.pubsub.publish(topicMovements, msgSend)
-      } else if(player.body.touching.up) {
-        const msg = JSON.stringify({
-          name: player.name,
-          type: "collision"
-        });
-        const msgSend = new TextEncoder().encode(msg)
-        await room.pubsub.publish(topicMovements, msgSend)
-      } else {
-        player.setVelocityX(0);
-        player.setVelocityY(0);
-
-        enemy.setVelocityX(0);
-        enemy.setVelocityX(0);
-      }
-  },
-
-
   update: async function(){
 
     //this.player.setVelocity(0);
 
     const msg = JSON.stringify({
+      contractAddress: contractAddress,
       metadata: metadata,
       player: this.player,
       from: coinbase,
@@ -367,6 +358,7 @@ export default function FirstContact () {
 
   useMemo(async () => {
     if(state.hashavatars && state.ipfs && !subscribed){
+      contractAddress = state.hashavatars.address;
       await state.ipfs.pubsub.subscribe(topic, async (msg) => {
         console.log(new TextDecoder().decode(msg.data));
         const obj = JSON.parse(new TextDecoder().decode(msg.data));

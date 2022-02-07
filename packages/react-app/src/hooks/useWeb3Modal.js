@@ -1,4 +1,4 @@
-import { useCallback,useMemo, useState } from "react";
+import { useCallback,useMemo, useState,useEffect } from "react";
 import { ethers } from "ethers";
 import * as UAuthWeb3Modal from '@uauth/web3modal'
 import UAuthSPA from '@uauth/js'
@@ -109,13 +109,6 @@ function useWeb3Modal(config = {}) {
       conn.on("close", async () => {
         logoutOfWeb3Modal();
       });
-      let profile;
-      try{
-        profile = await getLegacy3BoxProfileAsBasicProfile(newCoinbase);
-        setProfile(profile);
-      } catch(err){
-
-      }
 
       return;
     } catch(err){
@@ -153,6 +146,15 @@ function useWeb3Modal(config = {}) {
     autoLoaded,
     connecting
    ]);
+
+  useEffect(() => {
+    if(coinbase){
+      getLegacy3BoxProfileAsBasicProfile(coinbase)
+      .then(profile => {
+        setProfile(profile);
+      });
+    }
+  },[coinbase])
 
   return({provider, loadWeb3Modal, logoutOfWeb3Modal,coinbase,netId,profile,connecting});
 }
