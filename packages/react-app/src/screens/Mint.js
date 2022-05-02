@@ -71,14 +71,6 @@ function Mint(){
         const obj = JSON.parse(string);
         return(obj.metadata)
       });
-      /*
-      if(metadatas.length !== totalSupply){
-        for(let i = 1; i <= totalSupply; i++){
-          promises.push(state.getMetadata(i,state.hashavatars))
-        }
-        metadatas = await Promise.allSettled(promises);
-      }
-      */
 
       let cont = true;
 
@@ -102,7 +94,7 @@ function Mint(){
       let metadata = {
           name: avatar.name,
           image: `ipfs://${imgres[0].hash}`,
-          external_url: `https://thehashavatars.com/`,
+          external_url: `https://dweb.link/ipns/thehashavatars.crypto`,
           description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
             {

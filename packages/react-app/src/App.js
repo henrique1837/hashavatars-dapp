@@ -23,9 +23,6 @@ import Histories from "./screens/HashHistories";
 import Activities from "./screens/Activities";
 import Governance from "./screens/Governance";
 
-import GamesPage from "./screens/Games";
-
-
 import AllAvatars from "./screens/AllAvatars";
 
 import Menu from "./components/Menu";
@@ -183,8 +180,6 @@ function App() {
             <Route path="/mint" component={Mint}/>
             <Route path="/profile" component={Profile}/>
             <Route path="/profiles/:address" component={UserProfile}/>
-
-            <Route path="/games" component={GamesPage}/>
             <Route path="/tokens/:id" component={Histories}/>
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
@@ -202,7 +197,7 @@ function App() {
         </Router>
         <center style={{marginTop: "5px",fontSize: '10px'}}>
           <h4>Other projects from HashAvatars</h4>
-          <Link href="https://snowflakeshash.com" external><img alt="" style={{width: "10px"}} src="https://ipfs.io/ipfs/QmZossnC5rci4YzVe3n2Z9bEJEXZrzTKNg2jXKXM1kehiu" />SnowflakesHash</Link>
+          <Link href="https://dweb.link/ipns/snowflakeshash.crypto" external><img alt="" style={{width: "10px"}} src="https://ipfs.io/ipfs/QmZossnC5rci4YzVe3n2Z9bEJEXZrzTKNg2jXKXM1kehiu" />SnowflakesHash</Link>
         </center>
         <footer style={{textAlign: "center",marginTop: "50px"}}>
           <Link href="https://t.me/thehashavatars" external>Telegram<IconLink /></Link>
