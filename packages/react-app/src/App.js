@@ -9,7 +9,6 @@ import { Main,Box,Link,IconLink } from '@aragon/ui';
 
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import useContract from "./hooks/useContract";
-import useIPFS from "./hooks/useIPFS";
 import useClient from "./hooks/useGraphClient";
 
 import { AppContext, useAppState } from './hooks/useAppState'
@@ -26,7 +25,6 @@ import Governance from "./screens/Governance";
 import AllAvatars from "./screens/AllAvatars";
 
 import Menu from "./components/Menu";
-import CallbackUNSLogin from "./callback/callbackUNSLogin";
 
 
 //import GET_TRANSFERS from "./graphql/subgraph";
@@ -60,8 +58,6 @@ function App() {
     getMyNFTs,
     checkEvents
   } = useContract();
-  const {ipfs} = useIPFS();
-  const [pinning,setPinning] = useState();
   const [getData,setGetData] = useState();
   const [checkingEvents,setCheckingEvents] = useState();
 
@@ -137,24 +133,12 @@ function App() {
     actions.setCreators(creators)
   },[creators])
 
-  useEffect(() => {
-    actions.setIPFS(ipfs)
-  },[ipfs]);
+
   useEffect(() => {
     actions.setClient(client);
   },[client]);
 
-  useMemo(() => {
-    if(!loadingNFTs && ipfs &&!pinning && nfts){
-      setPinning(true)
-      nfts.map(async string => {
-        const obj = JSON.parse(string);
-        await ipfs.pin.add(obj.tokenUri.replace("ipfs://",""))
-        await ipfs.pin.add(obj.metadata.image.replace("ipfs://",""))
-        return(string);
-      })
-    }
-  },[ipfs,nfts,loadingNFTs,pinning])
+
   return (
     <Main>
 
@@ -183,7 +167,6 @@ function App() {
             <Route path="/tokens/:id" component={Histories}/>
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
-            <Route path="/callback" component={CallbackUNSLogin}/>
             <Route render={() => {
 
               return(

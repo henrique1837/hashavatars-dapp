@@ -1,5 +1,5 @@
 import React,{useState,useMemo} from "react";
-import { Button,IdentityBadge,EthIdenticon,Header,Tabs,IconLink,LoadingRing } from '@aragon/ui';
+import { Button,IdentityBadge,EthIdenticon,Header,Tabs,IconLink,LoadingRing, Link as ALink,IconExternal } from '@aragon/ui';
 import { useAppContext } from '../hooks/useAppState'
 
 import { Link,Redirect,useLocation } from 'react-router-dom';
@@ -94,6 +94,7 @@ function Menu(){
           <Link to="/activities" style={{textDecoration: "none"}}>Activities</Link>,
           state.coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>,
           state.netId === 4 && <Link to="/governance" style={{textDecoration: "none"}}>Governance</Link>,
+          <ALink href="https://dweb.link/ipns/thevibes-space.crypto/#/thespace3d-v0" external style={{textDecoration: "none"}}>TheVibes Space Games<IconExternal/></ALink>
 
         ]
       }

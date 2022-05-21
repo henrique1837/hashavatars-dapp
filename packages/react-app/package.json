@@ -39,7 +39,6 @@
     "eth-provider": "^0.9.4",
     "ethers": "^5.5.1",
     "graphql": "^14.7.0",
-    "ipfs": "^0.60.0",
     "ipfs-http-client-lite": "^0.3.0",
     "js-waku": "^0.14.2",
     "react": "16.14.0",
