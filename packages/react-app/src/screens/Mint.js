@@ -88,7 +88,7 @@ function Mint(){
       }
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
       const imgres = await ipfs.add(svg);
-      fetch(`https://ipfs.io/ipfs/${imgres[0].hash}`)
+      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${imgres[0].hash}`)
       const id = Number(totalSupply) + 1;
       console.log(id)
       let metadata = {
@@ -152,7 +152,7 @@ function Mint(){
       console.log(uri)
       setMintingMsg(
         <>
-        <p><small>Metadata stored at <Link href={`https://ipfs.io/ipfs/${uri}`} external><IconLink/>{uri}</Link>.</small></p>
+        <p><small>Metadata stored at <Link href={`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${uri}`} external><IconLink/>{uri}</Link>.</small></p>
         <p><small>Approve transaction ... </small></p>
         </>
       );
@@ -294,7 +294,7 @@ function Mint(){
             //const obj = JSON.parse(string);
             if(obj.name === av.name) {
               cont = false
-              const svg = <img src={obj.image.replace("ipfs://","https://ipfs.io/ipfs/")}  /> ;
+              const svg = <img src={obj.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}  /> ;
               setSVG(svg);
               setAvatar(null);
             }
@@ -408,7 +408,7 @@ function Mint(){
                       <p>{obj.metadata.name}</p>
                     </div>
                     <div>
-                      <img src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                      <img src={obj.metadata?.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="150px"/>
                     </div>
                   </center>
                   </RouterLink>

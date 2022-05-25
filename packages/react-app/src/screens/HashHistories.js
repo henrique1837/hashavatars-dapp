@@ -153,7 +153,7 @@ function HashHistories(){
           newCreator = obj.creator;
         } else {
           uriToken = await state.hashavatars.uri(id);
-          metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+          metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}`)).text());
           newCreator = await state.hashavatars.creators(id);
         }
         setMetadata(metadataToken);
@@ -185,7 +185,7 @@ function HashHistories(){
         }
         const newUris = [];
         for(let res of events){
-          const string = await (await fetch(`https://ipfs.io/ipfs/${res.args.uri}`)).text()
+          const string = await (await fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${res.args.uri}`)).text()
           newUris.push(string);
           setUris(newUris);
 
@@ -195,7 +195,7 @@ function HashHistories(){
         // thegraph
         histories.on(filter,async (from,tokenId,uri) => {
           setLoadingHistories(true);
-          const string = await (await fetch(`https://ipfs.io/ipfs/${uri}`)).text()
+          const string = await (await fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${uri}`)).text()
           const newUris = [...uris,string];
           setUris(newUris);
           if(state.coinbase){
@@ -320,7 +320,7 @@ function HashHistories(){
           }
           <div>
             <center>
-              <img src={metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+              <img src={metadata?.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="150px"/>
             </center>
             <p>ID: {id}</p>
             {
@@ -372,7 +372,7 @@ function HashHistories(){
                   <div>
                     <img
                       rounded
-                      src={creator.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
+                      src={creator.profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}
                       style={{width: '250px',heigth: "250px"}}
                     />
                   </div>

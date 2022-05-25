@@ -79,7 +79,7 @@ function AllAvatars(){
                           <p><b>{obj.metadata.name}</b></p>
                         </div>
                         <div>
-                          <img src={obj.metadata.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                          <img src={obj.metadata.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="150px"/>
                         </div>
                       </center>
                     </RouterLink>
@@ -118,7 +118,7 @@ function AllAvatars(){
                         badgeOnly
                         networkType={state.netId === 4 ? "rinkeby" : "xdai"}
                         icon={obj.profile?.image ?
-                              <img src={obj.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
+                              <img src={obj.profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} style={{width: '25px'}} /> :
                               <EthIdenticon address={obj.address}/>
                         }
                       />

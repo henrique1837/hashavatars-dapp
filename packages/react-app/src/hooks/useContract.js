@@ -25,11 +25,16 @@ function useContract() {
 
   let ids = [];
 
+  const gateways = [
+    'https://dweb.link/ipfs/',
+    'https://nftstorage.link/ipfs/',
+    'https://infura-ipfs.io/ipfs/'
+  ]
 
   const getMetadata = async(id,erc1155) => {
     const uriToken = await erc1155.uri(id);
-    const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
-    fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"));
+    const metadataToken = JSON.parse(await (await fetch(uriToken.replace("ipfs://",gateways[Math.floor(Math.random()*gateways.length)]))).text());
+    fetch(metadataToken.image.replace("ipfs://",gateways[Math.floor(Math.random()*gateways.length)]));
     //const image = await (await fetch(metadataToken.image.replace("ipfs://","https://ipfs.io/ipfs/"))).text()
     //metadataToken.svg = image;
 

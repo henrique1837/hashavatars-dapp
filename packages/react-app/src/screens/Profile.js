@@ -61,7 +61,7 @@ function Profile(){
                           <p><b>{obj.metadata.name}</b></p>
                         </div>
                         <div>
-                            <Image src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                            <Image src={obj.metadata?.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="150px"/>
                         </div>
 
                       </center>
@@ -95,7 +95,7 @@ function Profile(){
                 <div>
                   <Image
                     rounded
-                    src={state.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
+                    src={state.profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}
                     style={{width: '250px',heigth: "250px"}}
                   />
                 </div>

@@ -51,9 +51,9 @@ function Activities(){
       });
       const queryStories = results.data.stories;
       for(let story of queryStories){
-        const text =  await (await fetch(`https://ipfs.io/ipfs/${story.uri}`)).text();
+        const text =  await (await fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${story.uri}`)).text();
         const uriToken = await state.hashavatars.uri(Number(story.tokenID));
-        const metadataToken = JSON.parse(await (await fetch(`${uriToken.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+        const metadataToken = JSON.parse(await (await fetch(uriToken.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)]))).text());
         const obj = {
           story: story,
           text: text,
@@ -104,7 +104,7 @@ function Activities(){
                <Link to={`/tokens/${obj.story.tokenID}`} style={{textDecoration: "none"}}>
                 <div>
                   <div>
-                    <img src={obj.metadataToken?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="100px"/>
+                    <img src={obj.metadataToken?.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="100px"/>
                   </div>
                   <p><small>{obj.metadataToken.name}</small></p>
                 </div>

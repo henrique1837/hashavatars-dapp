@@ -27,7 +27,12 @@ const useAppState = () => {
     connecting: false,
     getMetadata: null,
     getTotalSupply: null,
-    client: null
+    client: null,
+    gateways : [
+      //'https://dweb.link/ipfs/',
+      'https://nftstorage.link/ipfs/',
+      'https://infura-ipfs.io/ipfs/'
+    ]
   }
 
   // Manage the state using React.useState()

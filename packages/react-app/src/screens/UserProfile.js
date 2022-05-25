@@ -105,7 +105,7 @@ function UserProfile(){
                         <p><b>{obj.metadata.name}</b></p>
                       </div>
                       <div>
-                          <img src={obj.metadata?.image.replace("ipfs://","https://ipfs.io/ipfs/")} width="150px"/>
+                          <img src={obj.metadata?.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} width="150px"/>
                       </div>
                     </center>
                     </RouterLink>
@@ -134,7 +134,7 @@ function UserProfile(){
                 profile?.image &&
                 <div>
                   <img
-                    src={profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")}
+                    src={profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}
                     style={{width: '250px',heigth: "250px"}}
                   />
                 </div>
