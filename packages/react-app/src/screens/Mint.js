@@ -5,15 +5,11 @@ import { Container,Row,Col,Spinner } from 'react-bootstrap';
 import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,LoadingRing,Link } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
-import IPFS from 'ipfs-http-client-lite';
 import { ethers } from "ethers";
 import Avatar from '../avataaars';
 
 import { useAppContext } from '../hooks/useAppState'
 
-const ipfs = IPFS({
-  apiUrl: 'https://ipfs.infura.io:5001'
-})
 function Mint(){
   const { state } = useAppContext();
 
@@ -87,13 +83,13 @@ function Mint(){
         return;
       }
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
-      const imgres = await ipfs.add(svg);
-      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${imgres[0].hash}`)
+      const imgres = await state.ipfs.add(svg);
+      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${imgres.path}`)
       const id = Number(totalSupply) + 1;
       console.log(id)
       let metadata = {
           name: avatar.name,
-          image: `ipfs://${imgres[0].hash}`,
+          image: `ipfs://${imgres.path}`,
           external_url: `https://dweb.link/ipns/thehashavatars.crypto`,
           description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
@@ -147,8 +143,9 @@ function Mint(){
             },
           ]
       }
-      const res = await ipfs.add(JSON.stringify(metadata));
-      const uri = res[0].hash;
+      const res = await state.ipfs.add(JSON.stringify(metadata));
+      const uri = res.path;
+      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${uri}`)
       console.log(uri)
       setMintingMsg(
         <>

@@ -28,10 +28,11 @@ const useAppState = () => {
     getMetadata: null,
     getTotalSupply: null,
     client: null,
+    ipfs: null,
     gateways : [
-      //'https://dweb.link/ipfs/',
+      'https://dweb.link/ipfs/',
       'https://nftstorage.link/ipfs/',
-      'https://infura-ipfs.io/ipfs/'
+      'https://ipfs.io/ipfs/'
     ]
   }
 
@@ -99,6 +100,9 @@ const getActions = (setState) => ({
   },
   setClient: (client) => {
     setState((state) => ({ ...state, client: client }))
+  },
+  setIPFS: (ipfs) => {
+    setState((state) => ({ ...state, ipfs: ipfs }))
   },
 })
 

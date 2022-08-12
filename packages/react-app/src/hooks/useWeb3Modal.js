@@ -73,7 +73,7 @@ function useWeb3Modal(config = {}) {
       setCoinbase();
       setProfile()
       setNetId(0x64);
-      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com/"));
+      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.gnosischain.com/"));
     },
     [],
   );
@@ -133,7 +133,7 @@ function useWeb3Modal(config = {}) {
   useMemo(() => {
 
     if(!noProvider && !autoLoaded && !web3Modal.cachedProvider && !connecting){
-      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com"));
+      setProvider(new ethers.providers.JsonRpcProvider("https://rpc.gnosischain.com/"));
       setNetId(0x64);
       setNoProvider(true);
       setAutoLoaded(true);

@@ -10,6 +10,7 @@ import { Main,Box,Link,IconLink } from '@aragon/ui';
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import useContract from "./hooks/useContract";
 import useClient from "./hooks/useGraphClient";
+import useIPFS from "./hooks/useIPFS";
 
 import { AppContext, useAppState } from './hooks/useAppState'
 
@@ -34,6 +35,8 @@ function App() {
   const { state, actions } = useAppState();
 
   const { client,initiateClient } = useClient();
+  const { ipfs,ipfsErr } = useIPFS();
+
   const {
     provider,
     coinbase,
@@ -64,6 +67,9 @@ function App() {
   useEffect(() => {
     actions.setConnecting(connecting);
   },[connecting])
+  useEffect(() => {
+    actions.setIPFS(ipfs);
+  },[ipfs])
   useEffect(() => {
     actions.setProvider(provider);
     actions.setLoadWeb3Modal(loadWeb3Modal);
