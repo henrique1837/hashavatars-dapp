@@ -20,7 +20,6 @@ import {
   IconStar,
   IconStarFilled
 } from '@aragon/ui';
-import IPFS from 'ipfs-http-client-lite';
 
 import { useAppContext } from '../hooks/useAppState'
 import useProfile from "../hooks/useProfile";
@@ -29,9 +28,6 @@ import useLikes from "../hooks/useLikes";
 
 //import useERC20 from "../hooks/useERC20";
 
-const ipfs = IPFS({
-  apiUrl: 'https://ipfs.infura.io:5001'
-})
 function HashHistories(){
   const { state } = useAppContext();
 
@@ -76,8 +72,9 @@ function HashHistories(){
         return
       }
 
-      const res = await ipfs.add(text);
-      const uri = res[0].hash;
+      const res = await state.ipfs.add(text);
+      const uri = res.path;
+      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${uri}`)
       setTxMsg(
         <center>
          <LoadingRing />
