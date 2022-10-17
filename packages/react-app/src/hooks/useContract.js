@@ -1,9 +1,9 @@
 import { useCallback,useMemo,useEffect, useState } from "react";
-import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 import { addresses, abis } from "@project/contracts";
 import { gql } from '@apollo/client';
 import { ethers } from "ethers";
 
+import getProfile from './useProfile';
 
 function useContract() {
 
@@ -26,9 +26,6 @@ function useContract() {
   let ids = [];
 
   const gateways = [
-    'https://w3s.link/ipfs/',
-    'https://ipfs.io/ipfs/',
-    'https://dweb.link/ipfs/',
     'https://nftstorage.link/ipfs/'
   ]
 
@@ -54,7 +51,7 @@ function useContract() {
       }
     });
     if(getCreatorProfile){
-      getLegacy3BoxProfileAsBasicProfile(creator).then(profile => {
+      getProfile(creator).then(profile => {
         const creatorProfile = {
           address: creator,
           profile: profile
@@ -142,22 +139,34 @@ function useContract() {
   }
 
 
+
   const handleEventsSubgraph = useCallback(async(res) => {
     try{
       const id = res.id;
-
       const returnValues = {
         _id: id
       }
-      const metadata = await getMetadata(id,hashavatars);
-      const creator = await hashavatars.creators(id);
+      if(ids.includes(id)){
+        return;
+      }
+      let metadata;
+      if(!res.imageURI){
+        metadata = JSON.parse(await (await fetch(`${res.metadata.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+      } else {
+        metadata = {
+          name: res.name,
+          image: res.imageURI,
+        }
+      }
+
+      const creator = res.creator;
 
       const obj = {
         returnValues: returnValues,
         metadata: metadata,
         creator: creator,
         owner: res.owner,
-        tokenUri: res.uri
+        tokenUri: res.metadata
       }
       if(!nfts.includes(JSON.stringify(obj))){
         const newNfts = nfts;
@@ -182,11 +191,19 @@ function useContract() {
   },[hashavatars,nfts,getCreatorProfileCheck])
 
   const getTokenInfo = async token => {
-    console.log(token)
+
     const returnValues = {
-      _id: token.identifier
+      _id: token.tokenID
     }
-    const metadata = await getMetadata(token.identifier,hashavatars);
+    let metadata
+    if(!token.imageURI){
+      metadata = JSON.parse(await (await fetch(`${token.metadataURI.replace("ipfs://","https://ipfs.io/ipfs/")}`)).text());
+    } else {
+      metadata = {
+        name: token.name,
+        image: token.imageURI,
+      }
+    }
     const obj = {
       returnValues: returnValues,
       metadata: metadata,
@@ -195,54 +212,100 @@ function useContract() {
   }
   const getAllNFTs =   async (client,totalSupply,netId) => {
 
-
-
-      //if(totalSupply && nfts?.length === 0  && !getData && hashavatars && client){
-        //setGetData(true);
-        setLoadingNFTs(true);
-        if(Number(totalSupply) === 0){
-          setLoadingNFTs(false);
-          return
-        }
-        let id = totalSupply;
-        let i = 0;
-        let tokensQuery;
-        let results;
-        while(i < totalSupply){
-          let promises = []
-          tokensQuery = `
-            query {
-            erc1155Tokens(
-              where:{contract:"${hashavatars.address.toLowerCase()}"},
-              orderBy: identifier,
-              orderDirection: desc
-              skip: ${i}
-            ) {
+    //if(totalSupply && nfts?.length === 0  && !getData && hashavatars && client){
+      //setGetData(true);
+      setLoadingNFTs(true);
+      if(Number(totalSupply) === 0){
+        setLoadingNFTs(false);
+        return
+      }
+      let promises = [];
+      let id = totalSupply;
+      let tokensQuery = `
+        query {
+              tokens(orderBy: tokenID,
+                     orderDirection:desc,
+                     where: {
+                      tokenID_lte: ${id}
+                    }) {
               id
-              identifier
-              uri
+              ${netId !== 4 ? "name" : ""}
+              tokenID
+              metadataURI
+              ${netId !== 4 ? "imageURI" : ""}
+              creator {
+                id
+              }
+              owner {
+                id
+              }
             }
-          }
-          `
-          results = await client.query({
-            query: gql(tokensQuery)
-          });
-          const tokens = results.data.erc1155Tokens;
-          for(const token of tokens){
-            if(netId === 4 && token.uri.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
-              continue;
-            }
-            promises.push(
-              handleEventsSubgraph({
-                  id: token.identifier,
-                  owner: null,
-                  uri: token.uri,
-              })
-            );
-          }
-          await Promise.allSettled(promises);
-          i = i + 100;
         }
+      `
+      let totalQueries = id/100;
+      let actualQuery = 1;
+      if(totalQueries < Number(id/100).toFixed(0)){
+        totalQueries = Number(id/100).toFixed(0);
+      } else if(totalQueries > Number(id/100).toFixed(0)){
+        totalQueries = Number(totalQueries + 1).toFixed(0);
+      }
+      if(totalQueries < actualQuery){
+        totalQueries = actualQuery
+      }
+      while(actualQuery <= totalQueries){
+        const results = await client.query({
+          query: gql(tokensQuery)
+        });
+
+        const tokens = results.data.tokens;
+        for(const token of tokens){
+          if(netId === 4 && token.metadataURI.includes("QmWXp3VmSc6CNiNvnPfA74rudKaawnNDLCcLw2WwdgZJJT")){
+            continue;
+          }
+          promises.push(
+            handleEventsSubgraph({
+                    address: token.address,
+                    id: token.tokenID,
+                    owner: token.owner.id,
+                    creator: token.creator.id,
+                    metadata: token.metadataURI,
+                    name: token.name,
+                    imageURI: token.imageURI
+            })
+          );
+          if(token.tokenID % 12 === 0 || token.tokenID === 1){
+            await Promise.race(promises);
+            promises = [];
+          }
+
+        }
+        id = id - 100;
+        actualQuery = actualQuery + 1;
+        if(id <= 0 || actualQuery > totalQueries){
+          break;
+        }
+        tokensQuery = `
+          query {
+                tokens(orderBy: tokenID,
+                       orderDirection:desc,
+                       where: {
+                        tokenID_lte: ${id}
+                      }) {
+                id
+                tokenID
+                ${netId !== 4 ? "name" : ""}
+                metadataURI
+                ${netId !== 4 ? "imageURI" : ""}
+                creator {
+                  id
+                }
+                owner {
+                  id
+                }
+              }
+          }
+        `
+      }
 
   }
 
@@ -256,49 +319,42 @@ function useContract() {
       setLoadingMyNFTs(true);
       let tokensQuery = `
         query {
-          accounts(where: {id: "${coinbase.toLowerCase()}"}) {
-            id
-            ERC1155transferToEvent(
-              where: {
-                contract:  "${hashavatars.address.toLowerCase()}",
-                from: ${null}
-              }
-            ){
-              id
-              token {
+              users(where: {
+                id: "${coinbase.toLowerCase()}"
+              }) {
                 id
-                identifier
-                uri
-              }
-              from {
-                id
-              }
-              to {
-                id
+                tokens(orderBy: tokenID,
+                       orderDirection: desc) {
+                  id
+                  ${netId !== 4 ? "name" : ""}
+                  tokenID,
+                  metadataURI,
+                  ${netId !== 4 ? "imageURI" : ""}
+                  createdAtTimestamp
+                }
+                created(orderBy: tokenID,
+                        orderDirection: desc) {
+                  id
+                  ${netId !== 4 ? "name" : ""}
+                  tokenID,
+                  metadataURI,
+                  ${netId !== 4 ? "imageURI" : ""}
+                  createdAtTimestamp
+                }
               }
             }
-        		ERC1155balances(where: {contract: "${hashavatars.address.toLowerCase()}"}) {
-        		  id
-              token {
-                id
-                identifier
-                uri
-              }
-        		}
-          }
-        }
       `
       const results = await client.query({
         query: gql(tokensQuery)
       });
-      if(!results.data.accounts[0]){
+      if(!results.data.users[0]){
         setLoadingMyNFTs(false)
         return;
       }
-      const newMyOwnedNfts = results.data.accounts[0].ERC1155balances.map(e => e.token);
-      const newMyCreatedNFts = results.data.accounts[0].ERC1155transferToEvent.map(e => e.token);
-      setMyNfts(await Promise.all(newMyOwnedNfts.map(getTokenInfo)));
-      setMyOwnedNfts(await Promise.all(newMyCreatedNFts.map(getTokenInfo)));
+      const newMyOwnedNfts = results.data.users[0].tokens.map(getTokenInfo);
+      const newMyCreatedNFts = results.data.users[0].created.map(getTokenInfo);
+      setMyNfts(await Promise.all(newMyCreatedNFts));
+      setMyOwnedNfts(await Promise.all(newMyOwnedNfts));
       setLoadingMyNFTs(false)
     //}
 

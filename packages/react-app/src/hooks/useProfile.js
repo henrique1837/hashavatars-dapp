@@ -1,22 +1,19 @@
-import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
+import { Orbis } from "@orbisclub/orbis-sdk";
+
+
+const orbis = new Orbis();
 
 // Enter a valid infura key here to avoid being rate limited
 // You can get a key for free at https://infura.io/register
 
 
-function useProfile() {
+const getProfile = async(address) => {
+  try{
+    let { data, error } = await orbis.getDids(address);
+    return(data[0])
+  } catch(err){
 
-  const getProfile = async(address) => {
-    let newProfile;
-    try{
-      newProfile = await getLegacy3BoxProfileAsBasicProfile(address);
-    } catch(err){
-
-    }
-    return(newProfile)
   }
-
-  return({getProfile})
 }
 
-export default useProfile;
+export default getProfile;

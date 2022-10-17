@@ -1,6 +1,8 @@
-specVersion: 0.0.2
+specVersion: 0.0.4
 schema:
   file: ./schema.graphql
+features:
+  - nonDeterministicIpfs
 dataSources:
   - kind: ethereum/contract
     name: HashAvatars
@@ -12,7 +14,7 @@ dataSources:
 
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - Token
@@ -31,25 +33,4 @@ dataSources:
           handler: handleTransferSingle
         - event: URI(string,indexed uint256)
           handler: handleURI
-      file: ./src/mapping.ts
-
-  - kind: ethereum/contract
-    name: Stories
-    network: xdai
-    source:
-          address: "0x4EDBD2c1dE6c29c0FC8c495d9dF76650ce310e24"
-          abi: Stories
-          startBlock: 19121672
-    mapping:
-         kind: ethereum/events
-         apiVersion: 0.0.5
-         language: wasm/assemblyscript
-         entities:
-           - Stories
-         abis:
-           - name: Stories
-             file: ./abis/Stories.json
-         eventHandlers:
-           - event: UriAdded(indexed address,indexed uint256,string)
-             handler: handleStoryAdded
-         file: ./src/mapping.ts
+      file: ./src/hash-avatars.ts

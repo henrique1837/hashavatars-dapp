@@ -7,10 +7,13 @@ import {
 } from 'react-router-dom';
 import { Main,Box,Link,IconLink } from '@aragon/ui';
 
+import { ChatBox } from '@orbisclub/modules'
+import "@orbisclub/modules/dist/index.modern.css";
+
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import useContract from "./hooks/useContract";
 import useClient from "./hooks/useGraphClient";
-import useIPFS from "./hooks/useIPFS";
+//import useIPFS from "./hooks/useIPFS";
 
 import { AppContext, useAppState } from './hooks/useAppState'
 
@@ -35,7 +38,7 @@ function App() {
   const { state, actions } = useAppState();
 
   const { client,initiateClient } = useClient();
-  const { ipfs,ipfsErr } = useIPFS();
+  //const { ipfs,ipfsErr } = useIPFS();
 
   const {
     provider,
@@ -67,9 +70,11 @@ function App() {
   useEffect(() => {
     actions.setConnecting(connecting);
   },[connecting])
+  /*
   useEffect(() => {
     actions.setIPFS(ipfs);
   },[ipfs])
+  */
   useEffect(() => {
     actions.setProvider(provider);
     actions.setLoadWeb3Modal(loadWeb3Modal);
@@ -147,8 +152,7 @@ function App() {
 
   return (
     <Main>
-
-
+      <ChatBox context="kjzl6cwe1jw148n3g6tpuuueerxv1qzuxjnakl5ssaytfmqsp1cth1yjytjinky" poweredByOrbis="black" />
       <AppContext.Provider value={{ state, actions }}>
 
         <Router>
@@ -170,7 +174,11 @@ function App() {
             <Route path="/mint" component={Mint}/>
             <Route path="/profile" component={Profile}/>
             <Route path="/profiles/:address" component={UserProfile}/>
-            <Route path="/tokens/:id" component={Histories}/>
+            {
+              /*
+              <Route path="/tokens/:id" component={Histories}/>
+              */
+            }
             <Route path="/activities" component={Activities}/>
             <Route path="/governance" component={Governance}/>
             <Route render={() => {
@@ -189,10 +197,10 @@ function App() {
           <Link href="https://dweb.link/ipns/snowflakeshash.crypto" external><img alt="" style={{width: "10px"}} src="https://ipfs.io/ipfs/QmZossnC5rci4YzVe3n2Z9bEJEXZrzTKNg2jXKXM1kehiu" />SnowflakesHash</Link>
         </center>
         <footer style={{textAlign: "center",marginTop: "50px"}}>
-          <Link href="https://t.me/thehashavatars" external>Telegram<IconLink /></Link>
           <Link href="https://twitter.com/thehashavatars" external>Twitter<IconLink /></Link>
           <Link href="https://github.com/henrique1837/hashavatars-dapp" external>Github<IconLink /></Link>
-          <Link href="https://www.xpollinate.io/" external>Bridge<IconLink /></Link>
+          <Link href="https://bridge.connext.network/" external>Bridge<IconLink /></Link>
+          <Link href="https://app.orbis.club/" external>OrbisClub<IconLink /></Link>
 
         </footer>
 

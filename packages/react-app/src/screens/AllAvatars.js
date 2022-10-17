@@ -113,12 +113,12 @@ function AllAvatars(){
                     <RouterLink to={`/profiles/${obj.address}`} style={{textDecoration: "none"}}>
 
                       <IdentityBadge
-                        label={obj.profile?.name && obj.profile.name}
+                        label={obj.profile?.username}
                         entity={obj.address}
                         badgeOnly
                         networkType={state.netId === 4 ? "rinkeby" : "xdai"}
-                        icon={obj.profile?.image ?
-                              <img src={obj.profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} style={{width: '25px'}} /> :
+                        icon={obj.profile?.details?.profile?.image ?
+                              <img src={obj.details.profile.image.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])} style={{width: '25px'}} /> :
                               <EthIdenticon address={obj.address}/>
                         }
                       />

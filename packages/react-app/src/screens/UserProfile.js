@@ -8,7 +8,7 @@ import { gql } from '@apollo/client';
 import { useAppContext } from '../hooks/useAppState';
 
 
-import useProfile from '../hooks/useProfile';
+import getProfile from '../hooks/useProfile';
 
 
 
@@ -18,7 +18,6 @@ import useProfile from '../hooks/useProfile';
 function UserProfile(){
   const { state } = useAppContext();
 
-  const {getProfile} = useProfile();
   const {address} = useParams();
   const [checking,setChecking] = useState(false);
   const [ownedNfts,setOwnedNfts] = useState([]);
@@ -122,11 +121,11 @@ function UserProfile(){
             <div>
               <div>
               <IdentityBadge
-                label={profile?.name}
+                label={profile?.username}
                 entity={address}
                 networkType={state.netId === 4 ? "rinkeby" : "xdai"}
                 popoverTitle={profile?.name }
-                popoverAction={{label:"View Profile",onClick: () => {window.open(`https://self.id/${address}`,"_blank")}}}
+                popoverAction={{label:"View Profile",onClick: () => {window.open(`https://app.orbis.club/profile/${profile.did}`,"_blank")}}}
 
               />
               </div>
@@ -134,7 +133,7 @@ function UserProfile(){
                 profile?.image &&
                 <div>
                   <img
-                    src={profile.image.original.src.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}
+                    src={profile?.details?.profile?.pfp?.replace("ipfs://",state.gateways[Math.floor(Math.random()*state.gateways.length)])}
                     style={{width: '250px',heigth: "250px"}}
                   />
                 </div>

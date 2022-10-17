@@ -6,7 +6,7 @@ type Token @entity {
   creator: User!
   owner: User!
   imageURI: String!
-  name: String!
+  name:  String!
   supply: BigInt!
 }
 
@@ -14,13 +14,4 @@ type User @entity {
   id: ID!
   tokens: [Token!]! @derivedFrom(field: "owner")
   created: [Token!]! @derivedFrom(field: "creator")
-}
-
-
-type Story @entity {
-  id: ID!
-  tokenID: BigInt!
-  uri: String!
-  createdAtTimestamp: BigInt!
-  creator: User!
 }

@@ -1,5 +1,5 @@
 import React,{useState,useMemo} from "react";
-import { Button,IdentityBadge,EthIdenticon,Header,Tabs,IconLink,LoadingRing, Link as ALink,IconExternal } from '@aragon/ui';
+import { Button,IdentityBadge,EthIdenticon,Header,Tabs,LoadingRing, Link as ALink,IconExternal } from '@aragon/ui';
 import { useAppContext } from '../hooks/useAppState'
 
 import { Link,Redirect,useLocation } from 'react-router-dom';
@@ -20,14 +20,16 @@ function Menu(){
       if(location.pathname === "/all-avatars"){
         setSelected(2);
       }
+      /*
       if(location.pathname === "/activities"){
         setSelected(3);
       }
+      */
       if(location.pathname === "/profile"){
-        setSelected(4);
+        setSelected(3);
       }
       if(location.pathname === "/governance"){
-        setSelected(5);
+        setSelected(4);
       }
 
     }
@@ -62,11 +64,11 @@ function Menu(){
         {
           state.coinbase ?
           <IdentityBadge
-            customLabel={state.profile?.name}
+            customLabel={state.profile?.username}
             entity={state.coinbase}
             connectedAccount
-            popoverTitle={state.profile?.name}
-            popoverAction={{label:"Edit profile",onClick: () => {window.open(`https://self.id/${state.coinbase}`,"_blank")}}}
+            popoverTitle={state.profile?.username}
+            popoverAction={{label:"Edit profile",onClick: () => {window.open(`https://app.orbis.club/profile/${state.profile?.did}`,"_blank")}}}
             icon={state.profile?.image ?
                   <img src={state.profile.image.original.src.replace("ipfs://","https://ipfs.io/ipfs/")} style={{width: '25px'}} /> :
                   <EthIdenticon address={state.coinbase}/>
@@ -91,7 +93,7 @@ function Menu(){
           <Link to="/home" style={{textDecoration: "none"}}>Informations</Link>,
           <Link to="/mint" style={{textDecoration: "none"}}><b>Generate Avatar</b></Link>,
           <Link to="/all-avatars" style={{textDecoration: "none"}}>All Avatars</Link>,
-          <Link to="/activities" style={{textDecoration: "none"}}>Activities</Link>,
+          //<Link to="/activities" style={{textDecoration: "none"}}>Activities</Link>,
           state.coinbase && <Link to="/profile" style={{textDecoration: "none"}}>Profile</Link>,
           state.netId === 4 && <Link to="/governance" style={{textDecoration: "none"}}>Governance</Link>,
           <ALink href="https://dweb.link/ipns/thevibes-space.crypto/#/thespace3d-v0" external style={{textDecoration: "none"}}>TheVibes Space Games<IconExternal/></ALink>
@@ -114,15 +116,17 @@ function Menu(){
       <Redirect to={"/all-avatars"} />
     }
     {
+      /*
       selected === 3 &&
       <Redirect to={"/activities"} />
+      */
     }
     {
-      selected === 4 && state.coinbase &&
+      selected === 3 && state.coinbase &&
       <Redirect to={"/profile"} />
     }
     {
-      selected === 5 && state.coinbase && state.netId === 4 &&
+      selected === 4 && state.coinbase && state.netId === 4 &&
       <Redirect to={"/governance"} />
     }
 

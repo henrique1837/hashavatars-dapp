@@ -4,11 +4,15 @@ import ReactDOMServer from 'react-dom/server';
 import { Container,Row,Col,Spinner } from 'react-bootstrap';
 import { Button,TextInput,TransactionBadge,ProgressBar,IconLink,LoadingRing,Link } from '@aragon/ui';
 import { Link as RouterLink } from 'react-router-dom';
+import { NFTStorage, Blob } from 'nft.storage'
 
 import { ethers } from "ethers";
 import Avatar from '../avataaars';
 
-import { useAppContext } from '../hooks/useAppState'
+import { useAppContext } from '../hooks/useAppState';
+
+const NFT_STORAGE_TOKEN = process.env.REACT_APP_NFT_STORAGE_API
+const client = new NFTStorage({ token: NFT_STORAGE_TOKEN })
 
 function Mint(){
   const { state } = useAppContext();
@@ -59,10 +63,11 @@ function Mint(){
         setMinting(false);
         return;
       }
-      setMintingMsg(<p><small>Checking all tokens already minted ... </small></p>);
+      setMintingMsg(<p><small>Checking if name has already been used ... </small></p>);
 
       const promises = [];
       const totalSupply = await state.totalSupply;
+      
       let metadatas = state.nfts.map(string => {
         const obj = JSON.parse(string);
         return(obj.metadata)
@@ -83,13 +88,14 @@ function Mint(){
         return;
       }
       setMintingMsg(<p><small>Storing image and metadata at IPFS ... </small></p>);
-      const imgres = await state.ipfs.add(svg);
-      fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${imgres.path}`)
+      const storageResImg = await NFTStorage.encodeBlob(new Blob([svg]));
+      const imgUri = await client.storeCar(storageResImg.car);
+
       const id = Number(totalSupply) + 1;
       console.log(id)
       let metadata = {
           name: avatar.name,
-          image: `ipfs://${imgres.path}`,
+          image: `ipfs://${imgUri}`,
           external_url: `https://dweb.link/ipns/thehashavatars.crypto`,
           description: "Generate and mint your own avatar as ERC1155 NFT",
           attributes: [
@@ -143,8 +149,9 @@ function Mint(){
             },
           ]
       }
-      const res = await state.ipfs.add(JSON.stringify(metadata));
-      const uri = res.path;
+      const storageRes = await NFTStorage.encodeBlob(new Blob([JSON.stringify(metadata)]));
+      const uri = await client.storeCar(storageRes.car);
+      console.log(uri)
       fetch(`${state.gateways[Math.floor(Math.random()*state.gateways.length)]}${uri}`)
       console.log(uri)
       setMintingMsg(
@@ -177,6 +184,7 @@ function Mint(){
         </div>
       )
       await tx.wait();
+
       setMintingMsg(<p><small>Transaction confirmed! UI will update soon ...</small></p>)
       setTimeout(() => {
         setMinting(false);

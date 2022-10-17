@@ -26,3 +26,7 @@ packages/subgraph/src/types/
 
 # hardhat
 packages/hardhat/node_modules/
+
+
+package-lock.json
+yarn.lock

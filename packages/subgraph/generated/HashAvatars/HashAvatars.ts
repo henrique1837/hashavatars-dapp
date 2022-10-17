@@ -167,6 +167,14 @@ export class HashAvatars__feesResult {
     map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
     return map;
   }
+
+  getRecipient(): Address {
+    return this.value0;
+  }
+
+  getValue(): BigInt {
+    return this.value1;
+  }
 }
 
 export class HashAvatars extends ethereum.SmartContract {

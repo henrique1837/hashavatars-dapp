@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 
 const APIURL_RINKEBY = "https://api.studio.thegraph.com/query/6693/hashavatars-rinkeby/0.1.0";
-const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/leon-do/xdai-erc721-erc1155";
+const APIURL_XDAI = "https://api.thegraph.com/subgraphs/name/henrique1837/hash-avatars";
 
 
 function useGraphClient() {

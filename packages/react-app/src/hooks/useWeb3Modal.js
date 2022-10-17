@@ -3,8 +3,9 @@ import { ethers } from "ethers";
 import * as UAuthWeb3Modal from '@uauth/web3modal'
 import UAuthSPA from '@uauth/js'
 import Web3Modal from "web3modal";
-import { getLegacy3BoxProfileAsBasicProfile } from '@self.id/3box-legacy';
 import WalletConnectProvider from "@walletconnect/web3-provider";
+
+import getProfile from './useProfile';
 
 // These options are used to construct the UAuthSPA instance.
 const uauthOptions: IUAuthOptions = {
@@ -148,11 +149,16 @@ function useWeb3Modal(config = {}) {
    ]);
 
   useEffect(() => {
+    async function getNewProfile(){
+      const newProfile = await getProfile(coinbase);
+      setProfile(newProfile);
+    }
     if(coinbase){
-      getLegacy3BoxProfileAsBasicProfile(coinbase)
-      .then(profile => {
-        setProfile(profile);
-      });
+      try{
+        getNewProfile()
+      } catch(err){
+
+      }
     }
   },[coinbase])
 

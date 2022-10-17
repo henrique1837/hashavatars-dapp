@@ -8,13 +8,9 @@ import {
   URI
 } from "../generated/HashAvatars/HashAvatars"
 
-import {
-  Stories as StoriesContract,
-  UriAdded,
-} from "../generated/Stories/Stories"
 
 import {
-  Token,User,Story
+  Token,User
 } from '../generated/schema'
 
 
@@ -40,17 +36,21 @@ export function handleTransferSingle(event: TransferSingle): void {
     token.owner = event.params._to.toHexString();
     let tokenContract = TokenContract.bind(event.address);
     token.metadataURI = tokenContract.uri(event.params._id);
+    token.name = "";
+    token.imageURI = "";
     let hash = token.metadataURI.split('ipfs://').join('')
-    let data = ipfs.cat(hash) as Bytes;
-    let value = json.fromBytes(data).toObject()
+    let data = ipfs.cat(hash);
+    if(data){
+      let value = json.fromBytes(data).toObject()
 
-    let name = value.get('name');
-    if(name){
-      token.name = name.toString();
-    }
-    let imageUri = value.get('image');
-    if(imageUri){
-      token.imageURI = imageUri.toString();
+      let name = value.get('name');
+      if(name){
+        token.name = name.toString();
+      }
+      let imageUri = value.get('image');
+      if(imageUri){
+        token.imageURI = imageUri.toString();
+      }
     }
   } else {
     token.owner = event.params._to.toHexString();
@@ -68,18 +68,3 @@ export function handleTransferSingle(event: TransferSingle): void {
 }
 
 export function handleURI(event: URI): void {}
-
-
-
-
-export function handleStoryAdded(event: UriAdded): void {
-  let story = Story.load(event.params.uri);
-  if (!story) {
-    story = new Story(event.params.uri);
-    story.creator = event.params.from.toHexString();
-    story.tokenID = event.params.tokenId;
-    story.createdAtTimestamp = event.block.timestamp;
-    story.uri = event.params.uri;
-  }
-  story.save();
-}

@@ -30,9 +30,9 @@ const useAppState = () => {
     client: null,
     ipfs: null,
     gateways : [
-      'https://w3s.link/ipfs/',
-      'https://ipfs.io/ipfs/',
-      'https://dweb.link/ipfs/',
+      //'https://w3s.link/ipfs/',
+      //'https://ipfs.io/ipfs/',
+      //'https://dweb.link/ipfs/',
       'https://nftstorage.link/ipfs/'
     ]
   }
